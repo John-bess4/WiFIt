@@ -949,6 +949,7 @@ RULES:
         generateSuggestions(suppParsed.msg);
         setThinking(false);return;
       }
+      const workoutParsed=parseWorkoutReply(reply);
       if(workoutParsed){
         setMessages(prev=>[...prev,{bot:true,type:"workout_plan",plan:workoutParsed.plan,text:workoutParsed.msg,added:false}]);
         setThinking(false);return;
