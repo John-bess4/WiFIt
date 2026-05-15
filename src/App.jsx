@@ -735,7 +735,11 @@ RULES:
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,system:buildSystem(),messages:[...contextMsgs,{role:"user",content:userMsg}]}),
     });
-    if(!res.ok)throw new Error("API error "+res.status);
+    if(!res.ok){
+      const errBody=await res.json().catch(()=>({}));
+      if(errBody.error)console.error("[WiFit/coach]",errBody.error);
+      throw new Error("API error "+res.status);
+    }
     const data=await res.json();
     return data.content?.[0]?.text||"Sorry, I couldn't get a response. Try again!";
   };

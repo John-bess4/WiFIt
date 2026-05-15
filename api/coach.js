@@ -9,7 +9,7 @@ export default async function handler(req) {
   if (!apiKey) {
     return new Response(
       JSON.stringify({ error: 'ANTHROPIC_API_KEY is not set on the server' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 503, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
