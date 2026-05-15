@@ -730,7 +730,7 @@ RULES:
 - level: Beginner / Intermediate / Advanced`;
   const callClaude=async(userMsg,history)=>{
     const contextMsgs=history.filter(m=>!m.type&&!m.isCheckin).slice(-10).map(m=>({role:m.bot?"assistant":"user",content:m.text}));
-    const res=await fetch("https://api.anthropic.com/v1/messages",{
+    const res=await fetch("/api/coach",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,system:buildSystem(),messages:[...contextMsgs,{role:"user",content:userMsg}]}),
@@ -995,7 +995,7 @@ RULES:
   const generateSuggestions=async(lastBotMsg)=>{
     if(!lastBotMsg||lastBotMsg.length<10)return;
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{
+      const res=await fetch("/api/coach",{
         method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
           model:"claude-sonnet-4-20250514",max_tokens:120,
@@ -1003,6 +1003,7 @@ RULES:
           messages:[{role:"user",content:"Assistant just said: \""+lastBotMsg.slice(0,200)+"\"\nGenerate 3 follow-ups:"}],
         }),
       });
+      const d=await res.json();
       const rawText=d.content?.[0]?.text||"[]";
       const bt=String.fromCharCode(96);
       const cleanText=rawText.split(bt+bt+bt+"json").join("").split(bt+bt+bt).join("").trim();
@@ -1023,7 +1024,7 @@ RULES:
       });
       const hour=new Date().getHours();
       const slotHint=hour<12?"breakfast":hour<17?"lunch":"dinner";
-      const resp=await fetch("https://api.anthropic.com/v1/messages",{
+      const resp=await fetch("/api/coach",{
         method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
           model:"claude-sonnet-4-20250514",max_tokens:600,
