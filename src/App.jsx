@@ -6135,7 +6135,7 @@ export default function App(){
         }
         // Workout history
         const sessions=await sb.select("workout_sessions","user_id=eq."+uid,{order:"created_at.desc",limit:20});
-        if(sessions?.length>0)setHistory(sessions.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[]})));
+        if(sessions?.length>0)setHistory(sessions.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[],prs:s.prs||[]})));
         // Water intake today
         const waterRows=await sb.select("water_log","user_id=eq."+uid+"&log_date=eq."+today);
         if(waterRows?.length>0)setWaterOzState(waterRows[0].oz||0);
@@ -6230,7 +6230,7 @@ export default function App(){
   const saveWorkoutSession=async(session)=>{
     setHistory(p=>[session,...p]);
     if(!uid)return;
-    await sb.insert("workout_sessions",{user_id:uid,workout_name:session.workoutName,completed_date:today,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises});
+    await sb.insert("workout_sessions",{user_id:uid,workout_name:session.workoutName,completed_date:today,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises,prs:session.prs||[]});
   };
 
   const [workouts,setWorkouts]=useState(INITIAL_WORKOUTS);
@@ -6338,7 +6338,7 @@ export default function App(){
           suppTakenMap:suppTaken,
           weightLog:weightLog,
         }}
-        onAddSupp={(item)=>{const k="ai"+Date.now();setSuppList(prev=>[...prev,{k,name:item.name,sub:(item.servingG?item.servingG+"g · ":"")+(item.brand||item.category||"Supplement"),dot:DOT_COLORS[item.category]||"#888"}]);setSuppTaken(prev=>({...prev,[k]:true}));}}/>
+        onAddSupp={addSuppToList}/>
       <QuickAddPanel open={quickOpen} onClose={()=>setQuickOpen(false)} onAddItem={addFoodItem} suppList={suppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} addSuppToList={addSuppToList} customFoods={customFoods} addCustomFood={addCustomFoodDB} waterOz={waterOz} setWaterOz={setWaterOz}/>
     </div>
     </ThemeCtx.Provider>
