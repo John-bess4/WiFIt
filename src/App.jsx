@@ -3510,14 +3510,13 @@ function ExercisePreviewList({exercises}){
 }
 
 // ── WORKOUT TAB ──────────────────────────────────────────────────
-function WorkoutTab({workouts,setWorkouts,onSessionComplete}){
+function WorkoutTab({workouts,setWorkouts,onSessionComplete,prHistory,setPrHistory}){
   const T=useTheme();
   const [createOpen,setCreateOpen]=useState(false);
   const [editWorkout,setEditWorkout]=useState(null);
   const [activeWorkout,setActiveWorkout]=useState(null);
   const [history,setHistory]=useState([]);
   const [view,setView]=useState("today");
-  const [prHistory,setPrHistory]=useState({});
 
   const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   const todayDayName=DAYS[new Date().getDay()];
@@ -6135,7 +6134,15 @@ export default function App(){
         }
         // Workout history
         const sessions=await sb.select("workout_sessions","user_id=eq."+uid,{order:"created_at.desc",limit:20});
-        if(sessions?.length>0)setHistory(sessions.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[],prs:s.prs||[]})));
+        if(sessions?.length>0){
+          const ph={};
+          sessions.forEach(s=>(s.exercises||[]).forEach(ex=>(ex.sets||[]).forEach(setStr=>{
+            const w=parseInt(String(setStr).split("×")[1])||0;
+            if(w>0&&w>(ph[ex.name]||0))ph[ex.name]=w;
+          })));
+          setPrHistory(ph);
+          setHistory(sessions.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[],prs:s.prs||[]})));
+        }
         // Water intake today
         const waterRows=await sb.select("water_log","user_id=eq."+uid+"&log_date=eq."+today);
         if(waterRows?.length>0)setWaterOzState(waterRows[0].oz||0);
@@ -6190,13 +6197,23 @@ export default function App(){
   const addFoodItem=async(slot,item)=>{
     setLog(p=>({...p,[slot]:[...p[slot],item]}));
     if(!uid)return;
-    await sb.insert("food_log",{user_id:uid,logged_date:today,meal_slot:slot,food_name:item.name,brand:item.brand||"",grams:item.grams,per100_cal:item.per100.cal,per100_protein:item.per100.protein,per100_carbs:item.per100.carbs,per100_fat:item.per100.fat,per100_fiber:item.per100.fiber||0,per100_sodium:item.per100.sodium||0,color:item.color||COLORS[0]});
+    try{
+      await sb.insert("food_log",{user_id:uid,logged_date:today,meal_slot:slot,food_name:item.name,brand:item.brand||"",grams:item.grams,per100_cal:item.per100.cal,per100_protein:item.per100.protein,per100_carbs:item.per100.carbs,per100_fat:item.per100.fat,per100_fiber:item.per100.fiber||0,per100_sodium:item.per100.sodium||0,color:item.color||COLORS[0]});
+    }catch{
+      setLog(p=>({...p,[slot]:p[slot].filter(i=>i!==item)}));
+      showError("Food couldn't be saved. Check your connection.");
+    }
   };
 
   const addCustomFoodDB=async(food)=>{
     setCustomFoods(p=>[food,...p]);
     if(!uid)return;
-    await sb.insert("custom_foods",{user_id:uid,name:food.name,brand:food.brand||"",serving_g:food.servingG,per100_cal:food.per100.cal,per100_protein:food.per100.protein,per100_carbs:food.per100.carbs,per100_fat:food.per100.fat,per100_fiber:food.per100.fiber||0,per100_sodium:food.per100.sodium||0});
+    try{
+      await sb.insert("custom_foods",{user_id:uid,name:food.name,brand:food.brand||"",serving_g:food.servingG,per100_cal:food.per100.cal,per100_protein:food.per100.protein,per100_carbs:food.per100.carbs,per100_fat:food.per100.fat,per100_fiber:food.per100.fiber||0,per100_sodium:food.per100.sodium||0});
+    }catch{
+      setCustomFoods(p=>p.filter(f=>f!==food));
+      showError("Custom food couldn't be saved. Check your connection.");
+    }
   };
 
   const addSuppToList=async(item)=>{
@@ -6218,7 +6235,11 @@ export default function App(){
   const toggleSuppTaken=async(k,val)=>{
     setSuppTaken(p=>({...p,[k]:val}));
     if(!uid)return;
-    await sb.upsert("supplement_log",{user_id:uid,supplement_id:k,log_date:today,taken:val});
+    try{
+      await sb.upsert("supplement_log",{user_id:uid,supplement_id:k,log_date:today,taken:val});
+    }catch{
+      setSuppTaken(p=>({...p,[k]:!val}));
+    }
   };
 
   const logWeight=async(lbs)=>{
@@ -6229,11 +6250,29 @@ export default function App(){
   };
   const saveWorkoutSession=async(session)=>{
     setHistory(p=>[session,...p]);
+    setPrHistory(prev=>{
+      const updated={...prev};
+      (session.exercises||[]).forEach(ex=>(ex.sets||[]).forEach(setStr=>{
+        const w=parseInt(String(setStr).split("×")[1])||0;
+        if(w>0&&w>(updated[ex.name]||0))updated[ex.name]=w;
+      }));
+      return updated;
+    });
     if(!uid)return;
-    await sb.insert("workout_sessions",{user_id:uid,workout_name:session.workoutName,completed_date:today,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises,prs:session.prs||[]});
+    try{
+      await sb.insert("workout_sessions",{user_id:uid,workout_name:session.workoutName,completed_date:today,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises,prs:session.prs||[]});
+    }catch{
+      setHistory(p=>p.filter(s=>s!==session));
+      showError("Workout couldn't be saved. Check your connection.");
+    }
   };
 
   const [workouts,setWorkouts]=useState(INITIAL_WORKOUTS);
+  const [prHistory,setPrHistory]=useState({});
+  const [errorBanner,setErrorBanner]=useState("");
+  const errorTimerRef=useRef(null);
+  const showError=(msg)=>{setErrorBanner(msg);if(errorTimerRef.current)clearTimeout(errorTimerRef.current);errorTimerRef.current=setTimeout(()=>setErrorBanner(""),3000);};
+
   const addWorkoutPlan=(plan)=>{
     const structured={
       id:"w"+Date.now(),
@@ -6279,6 +6318,7 @@ export default function App(){
     <ThemeCtx.Provider value={T}>
     <div style={{background:T.bg,maxWidth:480,margin:"0 auto",minHeight:"100vh",fontFamily:"-apple-system,sans-serif",color:T.text,position:"relative",overflow:"hidden",transition:"background 0.25s,color 0.25s"}}>
       <GlobalStyle/>
+      {errorBanner&&<div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",background:T.red,color:"#fff",borderRadius:10,padding:"10px 18px",fontSize:13,fontWeight:600,zIndex:999,maxWidth:340,textAlign:"center",boxShadow:"0 4px 20px rgba(0,0,0,0.3)",pointerEvents:"none"}}>{errorBanner}</div>}
       {profileMenuOpen&&<ProfileMenu userName={userName} isDark={isDark} onClose={()=>setProfileMenuOpen(false)} onOpenProfile={()=>{closeAll();setProfilePageOpen(true);}} onOpenSettings={()=>{closeAll();setSettingsPageOpen(true);}} onOpenPersonalization={()=>{closeAll();setPersonalizationPageOpen(true);}} onOpenUpgrade={()=>{closeAll();setUpgradePageOpen(true);}} onOpenHelp={()=>{closeAll();setHelpPageOpen(true);}} onSignOut={handleSignOut}/>}
       {profilePageOpen&&<ProfilePage goals={goals} setGoals={setGoals} userName={userName} setUserName={setUserName} isDark={isDark} setIsDark={setIsDark} onSignOut={handleSignOut} onClose={()=>setProfilePageOpen(false)}/>}
       {settingsPageOpen&&<SettingsPage onBack={()=>setSettingsPageOpen(false)} isDark={isDark} setIsDark={setIsDark} onSignOut={handleSignOut} userName={userName}/>}
@@ -6287,7 +6327,7 @@ export default function App(){
       {helpPageOpen&&<HelpPage onBack={()=>setHelpPageOpen(false)}/>}
       {tab==="home"&&<HomeTab setTab={setTab} log={log} suppList={suppList} suppTaken={suppTaken} workoutHistory={history} isDark={isDark} toggleTheme={()=>setIsDark(d=>!d)} userName={userName} goals={goals} onProfileOpen={()=>setProfileMenuOpen(true)} waterOz={waterOz} setWaterOz={setWaterOz} weightLog={weightLog} logWeight={logWeight}/>}
       {tab==="food"&&<FoodTab log={log} setLog={setLog} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/>}
-      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} onSessionComplete={saveWorkoutSession}/>}
+      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} onSessionComplete={saveWorkoutSession} prHistory={prHistory} setPrHistory={setPrHistory}/>}
       {tab==="supps"&&<SuppsTab suppList={suppList} setSuppList={setSuppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} taken={taken} total={total} uid={uid} addSuppToList={addSuppToList}/>}
       {tab==="calendar"&&<CalendarTab uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz}/>}
       {tab==="progress"&&<ProgressPage uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz} weightLog={weightLog} logWeight={logWeight} onProfileOpen={()=>setProfileMenuOpen(true)}/>}
