@@ -659,6 +659,8 @@ function AISidePanel({open,onClose,onAddFood,onAddSupp,onAddWorkout,onAddWater,l
   const buildSystem=()=>`You are an expert fitness and nutrition AI coach built into a personal fitness tracking app.
 
 Keep responses concise — mobile chat panel, 3-4 sentences max unless asked for detail. Be direct, specific, and reference the user's actual data when relevant.
+
+CRITICAL: Output EXACTLY ONE structured format block per response. Never combine multiple format blocks (e.g. do not output WORKOUT_PLAN and ADD_SUPP together). If a workout request makes you think of supplement recommendations, put that as plain text in the message after the | — do not append a second format block. One format, one pipe, done.
 ${buildContextBlock()}
 
 ══════════════════════════════════════
@@ -696,12 +698,12 @@ When the user mentions drinking water: WATER_LOG:{"oz":16}|Tip here.
 ══════════════════════════════════════
 SUPPLEMENT LOGGING — MANDATORY FORMAT
 ══════════════════════════════════════
-When the user asks to add a supplement, log taking a supplement, asks for supplement advice/recommendations, or says they took something — respond ONLY in this format:
+When the user explicitly asks to add or recommend a supplement — respond ONLY in this format:
 
 ADD_SUPP:[{"name":"Creatine Monohydrate","dose":"5g","timing":"Post-workout","category":"performance","note":"Take with water or juice for better absorption"},{"name":"Vitamin D3","dose":"2000 IU","timing":"Morning with food","category":"vitamin","note":"Pair with K2 for best absorption"}]|Your 1-2 sentence coaching note.
 
 STRICT RULES:
-- Use ADD_SUPP format for ALL supplement interactions — adding new supplements, recommending supplements, logging taken supplements
+- Use ADD_SUPP format when the user asks to add or get supplement recommendations — not for one-line coaching tips or general advice
 - category must be one of: protein, vitamin, mineral, performance, health, sleep, fat_burner, probiotic
 - Include realistic dose and optimal timing
 - If user already has the supplement in their stack (check SUPPLEMENT STACK above), say so in the message after | instead of adding a duplicate
@@ -816,7 +818,7 @@ RULES:
     if(!reply.startsWith("WORKOUT_PLAN:"))return null;
     try{
       const rest=reply.slice("WORKOUT_PLAN:".length);
-      const pipeIdx=rest.lastIndexOf("|");
+      const pipeIdx=rest.indexOf("|");
       const jsonStr=pipeIdx>-1?rest.slice(0,pipeIdx):rest;
       const msg=pipeIdx>-1?rest.slice(pipeIdx+1).trim():"Here's your workout!";
       const plan=JSON.parse(jsonStr);
