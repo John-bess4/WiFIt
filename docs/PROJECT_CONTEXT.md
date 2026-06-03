@@ -138,10 +138,41 @@ The AI Coach calls Anthropic directly using `fetch("https://api.anthropic.com/v1
 
 ## What's NOT done
 
-- ❌ Anthropic API key moved to server side (security)
+- ❌ Anthropic API key moved to server side (security) — **FIXED: 71e0741**
 - ❌ Component file splitting (still monolithic)
 - ❌ Real test coverage (zero tests)
 - ❌ Mobile-specific PWA manifest / install prompt polish
 - ❌ Notification scheduling for supplements (uses Web Notifications, browser-only, not reliable on iOS)
 - ❌ Data export (CSV/PDF) — mentioned in Settings "Pro" plan but not implemented
 - ❌ Body composition tracking — same
+
+---
+
+## Session Log — 2026-06-02
+
+### 8 commits shipped to production today
+
+| Commit | Description |
+|--------|-------------|
+| `71e0741` | Anthropic API moved server-side to Vercel Edge Function (`/api/coach`) |
+| `8a4bba1` | Added 503 error visibility when `/api/coach` edge function is unavailable |
+| `78a4c0b` | Fixed `workoutParsed` ReferenceError in AI Coach response handler |
+| `b5f1147` | AI Coach supplement recommendations persist to DB; PR max-weight saves to `workout_sessions` |
+| `bb23d90` | `prHistory` rebuilt from `workout_sessions` on sign-in; write-error handling added |
+| `5d1feb0` | AI Coach WORKOUT_PLAN multi-format parsing fixed (handles pipe separator + plain JSON) |
+| `48953cb` | **Fix C: persist workout plans to `workout_plans` table** |
+
+### Fix C — workout plan persistence (commit `48953cb`)
+
+**What changed in `App.jsx`:**
+
+- **`loadUserData`** — after loading weight log, now selects all rows from `workout_plans` ordered by `sort_order ASC` and hydrates the `workouts` state. If the user has no saved plans, `INITIAL_WORKOUTS` is kept as the default.
+- **`addWorkoutPlan`** (AI Coach path) — now `async`; after optimistic local prepend it inserts the plan into `workout_plans` and swaps the temp `"w{timestamp}"` id for the real Supabase UUID.
+- **`saveWorkoutPlanDB`** — new function. Called by WorkoutTab for both create (inserts) and edit (patches). On insert, swaps temp id with DB UUID; on update, PATCHes name/tag/level/est_min/scheduled_day/exercises.
+- **`deleteWorkoutPlanDB`** — new function. DELETEs the row via `id=eq.{id}&user_id=eq.{uid}`. No-op for unauthenticated / demo users.
+- **`WorkoutTab`** — accepts two new props (`onSavePlan`, `onDeletePlan`). `saveWorkout` detects new vs edit and calls `onSavePlan`; `deleteWorkout` calls `onDeletePlan`.
+- **WorkoutTab mount** — passes `onSavePlan={saveWorkoutPlanDB}` and `onDeletePlan={deleteWorkoutPlanDB}`.
+
+**`workout_plans` table columns used:** `id`, `user_id`, `name`, `tag`, `level`, `est_min`, `scheduled_day`, `exercises` (jsonb), `sort_order`, `created_at`.
+
+**sort_order:** set to 0 on AI-Coach-added plans (prepend), to `workouts.length` on manually created plans (append). Reorder UI does not exist for plans yet; column is in place for future drag-to-reorder feature.
