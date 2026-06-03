@@ -3512,7 +3512,7 @@ function ExercisePreviewList({exercises}){
 }
 
 // ── WORKOUT TAB ──────────────────────────────────────────────────
-function WorkoutTab({workouts,setWorkouts,onSessionComplete,prHistory,setPrHistory}){
+function WorkoutTab({workouts,setWorkouts,onSessionComplete,prHistory,setPrHistory,onSavePlan,onDeletePlan}){
   const T=useTheme();
   const [createOpen,setCreateOpen]=useState(false);
   const [editWorkout,setEditWorkout]=useState(null);
@@ -3525,14 +3525,19 @@ function WorkoutTab({workouts,setWorkouts,onSessionComplete,prHistory,setPrHisto
   const todayWorkout=workouts.find(w=>w.scheduledDay===todayDayName)||workouts[0]||null;
 
   const saveWorkout=(w)=>{
+    const isNew=!workouts.find(x=>x.id===w.id);
     setWorkouts(prev=>{
       const exists=prev.find(x=>x.id===w.id);
       return exists?prev.map(x=>x.id===w.id?w:x):[...prev,w];
     });
+    onSavePlan&&onSavePlan(w,isNew);
     setCreateOpen(false);setEditWorkout(null);
   };
 
-  const deleteWorkout=(id)=>setWorkouts(prev=>prev.filter(w=>w.id!==id));
+  const deleteWorkout=(id)=>{
+    setWorkouts(prev=>prev.filter(w=>w.id!==id));
+    onDeletePlan&&onDeletePlan(id);
+  };
 
   const finishWorkout=(sets,elapsed,newPRs=[])=>{
     const allSets=sets.flatMap(e=>e.sets);
@@ -6151,6 +6156,19 @@ export default function App(){
         // Weight log (last 30 days)
         const weightRows=await sb.select("weight_log","user_id=eq."+uid,{order:"log_date.asc",limit:30});
         if(weightRows?.length>0)setWeightLog(weightRows.map(w=>({date:w.log_date,lbs:w.lbs})));
+        // Workout plans
+        const planRows=await sb.select("workout_plans","user_id=eq."+uid,{order:"sort_order.asc"});
+        if(planRows?.length>0){
+          setWorkouts(planRows.map(p=>({
+            id:p.id,
+            name:p.name,
+            tag:p.tag||"Full Body",
+            level:p.level||"Intermediate",
+            estMin:p.est_min||45,
+            scheduledDay:p.scheduled_day||null,
+            exercises:p.exercises||[],
+          })));
+        }
         setAuthState("app");
       }else{
         setAuthState("onboarding");
@@ -6275,9 +6293,10 @@ export default function App(){
   const errorTimerRef=useRef(null);
   const showError=(msg)=>{setErrorBanner(msg);if(errorTimerRef.current)clearTimeout(errorTimerRef.current);errorTimerRef.current=setTimeout(()=>setErrorBanner(""),3000);};
 
-  const addWorkoutPlan=(plan)=>{
+  const addWorkoutPlan=async(plan)=>{
+    const tempId="w"+Date.now();
     const structured={
-      id:"w"+Date.now(),
+      id:tempId,
       name:plan.name,
       tag:plan.tag||"Full Body",
       level:plan.level||"Intermediate",
@@ -6290,7 +6309,47 @@ export default function App(){
       })),
     };
     setWorkouts(prev=>[structured,...prev]);
+    if(uid){
+      try{
+        const row=await sb.insert("workout_plans",{
+          user_id:uid,name:structured.name,tag:structured.tag,level:structured.level,
+          est_min:structured.estMin,scheduled_day:structured.scheduledDay||null,
+          exercises:structured.exercises,sort_order:0,
+        });
+        if(row?.id)setWorkouts(prev=>prev.map(w=>w.id===tempId?{...w,id:row.id}:w));
+      }catch{}
+    }
     return structured;
+  };
+
+  const saveWorkoutPlanDB=async(plan,isNew)=>{
+    if(!uid)return;
+    if(isNew){
+      const tempId=plan.id;
+      try{
+        const row=await sb.insert("workout_plans",{
+          user_id:uid,name:plan.name,tag:plan.tag,level:plan.level,
+          est_min:plan.estMin,scheduled_day:plan.scheduledDay||null,
+          exercises:plan.exercises,sort_order:workouts.length,
+        });
+        if(row?.id)setWorkouts(prev=>prev.map(w=>w.id===tempId?{...w,id:row.id}:w));
+      }catch{}
+    }else{
+      try{
+        await sb.update("workout_plans",{
+          name:plan.name,tag:plan.tag,level:plan.level,
+          est_min:plan.estMin,scheduled_day:plan.scheduledDay||null,
+          exercises:plan.exercises,
+        },{filter:"id=eq."+plan.id+"&user_id=eq."+uid});
+      }catch{}
+    }
+  };
+
+  const deleteWorkoutPlanDB=async(id)=>{
+    if(!uid)return;
+    try{
+      await sb.delete("workout_plans","id=eq."+id+"&user_id=eq."+uid);
+    }catch{}
   };
 
   const taken=suppList.filter(s=>suppTaken[s.k]).length;
@@ -6329,7 +6388,7 @@ export default function App(){
       {helpPageOpen&&<HelpPage onBack={()=>setHelpPageOpen(false)}/>}
       {tab==="home"&&<HomeTab setTab={setTab} log={log} suppList={suppList} suppTaken={suppTaken} workoutHistory={history} isDark={isDark} toggleTheme={()=>setIsDark(d=>!d)} userName={userName} goals={goals} onProfileOpen={()=>setProfileMenuOpen(true)} waterOz={waterOz} setWaterOz={setWaterOz} weightLog={weightLog} logWeight={logWeight}/>}
       {tab==="food"&&<FoodTab log={log} setLog={setLog} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/>}
-      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} onSessionComplete={saveWorkoutSession} prHistory={prHistory} setPrHistory={setPrHistory}/>}
+      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} onSessionComplete={saveWorkoutSession} prHistory={prHistory} setPrHistory={setPrHistory} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB}/>}
       {tab==="supps"&&<SuppsTab suppList={suppList} setSuppList={setSuppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} taken={taken} total={total} uid={uid} addSuppToList={addSuppToList}/>}
       {tab==="calendar"&&<CalendarTab uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz}/>}
       {tab==="progress"&&<ProgressPage uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz} weightLog={weightLog} logWeight={logWeight} onProfileOpen={()=>setProfileMenuOpen(true)}/>}
