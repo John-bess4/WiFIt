@@ -176,3 +176,28 @@ The AI Coach calls Anthropic directly using `fetch("https://api.anthropic.com/v1
 **`workout_plans` table columns used:** `id`, `user_id`, `name`, `tag`, `level`, `est_min`, `scheduled_day`, `exercises` (jsonb), `sort_order`, `created_at`.
 
 **sort_order:** set to 0 on AI-Coach-added plans (prepend), to `workouts.length` on manually created plans (append). Reorder UI does not exist for plans yet; column is in place for future drag-to-reorder feature.
+
+---
+
+## Session Log — June 2026
+
+### 7 commits shipped
+
+| Commit | Description |
+|--------|-------------|
+| `71e0741` | Anthropic API moved server-side to Vercel Edge Function — removes client-side key exposure |
+| `8a4bba1` | 503 error shown to user when `ANTHROPIC_API_KEY` is missing from Edge Function env |
+| `78a4c0b` | Fixed `workoutParsed` ReferenceError in AI Coach response handler |
+| `b5f1147` | AI Coach supplement recommendations persist to DB; PRs saved to `workout_sessions` |
+| `bb23d90` | `prHistory` rebuilt from `workout_sessions` on sign-in; error handling added on critical writes |
+| `5d1feb0` | AI Coach WORKOUT_PLAN multi-format parsing fixed (pipe separator + plain JSON) |
+| Fix C | Workout plan persistence to new `workout_plans` table (table created with RLS enabled) |
+
+### Still needs live-site verification
+
+- **Fix C** — workout plan persistence to `workout_plans` (confirm plans survive page refresh in production)
+- **Food logging** — end-to-end food log write + reload in production environment
+
+### Next initiative: AI Action Router
+
+Route AI Coach responses through a central action dispatcher so new response types (beyond `MULTI_FOOD`, `WORKOUT_PLAN`, `ADD_SUPP`, etc.) can be registered without growing the inline parse-and-branch block in `App.jsx`. Likely a `handleAIAction(type, payload)` function with a registry map.
