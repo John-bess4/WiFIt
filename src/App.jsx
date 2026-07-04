@@ -4514,8 +4514,58 @@ const sb={
   },
 };
 
-function loadSession(){
-  try{const s=JSON.parse(localStorage.getItem("sb_session")||"null");if(s?.access_token)sb._session=s;return s;}catch{return null;}
+// Treat a token expiring within this window as needing refresh (clock skew buffer).
+const REFRESH_SKEW_MS=60*1000;
+
+function persistSession(d){
+  // Refresh-grant responses may omit expires_at; derive it from expires_in.
+  if(d&&d.access_token&&!d.expires_at&&d.expires_in){
+    d.expires_at=Math.floor(Date.now()/1000)+d.expires_in;
+  }
+  sb._session=d;
+  try{localStorage.setItem("sb_session",JSON.stringify(d));}catch{}
+}
+
+function clearSession(){
+  sb._session=null;
+  try{localStorage.removeItem("sb_session");}catch{}
+}
+
+// Coalesce concurrent refreshes (StrictMode double-mount, component remount) onto
+// ONE network call so the single-use refresh_token is rotated exactly once.
+let _refreshInFlight=null;
+async function refreshSession(refresh_token){
+  if(_refreshInFlight)return _refreshInFlight;
+  _refreshInFlight=(async()=>{
+    try{
+      const r=await fetch(sb._url+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"Content-Type":"application/json","apikey":sb._key},body:JSON.stringify({refresh_token})});
+      if(!r.ok)return null;
+      const d=await r.json();
+      return d.access_token?d:null;
+    }catch{return null;}
+    finally{_refreshInFlight=null;}
+  })();
+  return _refreshInFlight;
+}
+
+// Single auth-resolution gate: turn the stored session into a definite state
+// BEFORE any data load runs. Refreshes at most once. Returns
+// {status:"valid"|"refreshed"|"logged-out", session?}.
+async function resolveSession(){
+  let s;
+  try{s=JSON.parse(localStorage.getItem("sb_session")||"null");}catch{s=null;}
+  if(!s?.access_token)return{status:"logged-out"};
+  const expMs=(s.expires_at||0)*1000;
+  const needsRefresh=!s.expires_at||((expMs-Date.now())<REFRESH_SKEW_MS);
+  if(!needsRefresh){sb._session=s;return{status:"valid",session:s};}
+  // Expired/expiring: attempt a single refresh with the rotated refresh_token.
+  if(!s.refresh_token){clearSession();return{status:"logged-out"};}
+  const fresh=await refreshSession(s.refresh_token);
+  if(!fresh){clearSession();return{status:"logged-out"};}
+  // Carry the user forward if the refresh response omits it (loadUserData/getUser need it).
+  if(!fresh.user&&s.user)fresh.user=s.user;
+  persistSession(fresh);
+  return{status:"refreshed",session:fresh};
 }
 
 // ── AUTH SCREEN ───────────────────────────────────────────────────
@@ -6093,11 +6143,13 @@ export default function App(){
 
   const today=new Date().toISOString().split("T")[0];
 
-  // Check session on mount
+  // Resolve the session to a definite state before any data load runs.
   useEffect(()=>{
-    const s=loadSession();
-    if(s?.access_token)loadUserData(s.user.id);
-    else setAuthState("auth");
+    (async()=>{
+      const res=await resolveSession();
+      if(res.status==="logged-out"||!res.session?.user?.id){setAuthState("auth");return;}
+      loadUserData(res.session.user.id);
+    })();
   },[]);
 
   const loadUserData=async(uid)=>{
