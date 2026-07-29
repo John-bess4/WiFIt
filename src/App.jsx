@@ -5239,6 +5239,9 @@ function HealthSyncSection({T:TFallback}){
 
 function SettingsPage({onBack,isDark,setIsDark,onSignOut,userName}){
   const T=useTheme();
+  // One of navItems' ids below; renderSection has no fallback branch, so this
+  // must always be a valid id. "account" matches the first nav item.
+  const [section,setSection]=useState("account");
   const [notifWorkout,setNotifWorkout]=useState(()=>JSON.parse(localStorage.getItem("notif_workout")||"true"));
   const [notifSupps,setNotifSupps]=useState(()=>JSON.parse(localStorage.getItem("notif_supps")||"true"));
   const [notifGoals,setNotifGoals]=useState(()=>JSON.parse(localStorage.getItem("notif_goals")||"false"));
