@@ -1923,6 +1923,18 @@ function WeekStrip({log,suppList=[],suppTaken={},workoutHistory=[],waterOz=0,goa
 
 
 
+// Serving units we can turn into grams ourselves. g and oz are exact; ml is a
+// disclosed water-density default the user can overwrite. cup/tbsp/piece are
+// food-dependent — there is no honest constant, so the user supplies the grams.
+const CF_UNIT_G={g:1,oz:28.3495,ml:1};
+const CF_AUTO_UNITS=["g","oz"];
+const cfGramsFor=(qty,unit)=>{
+  const f=CF_UNIT_G[unit];
+  const n=parseFloat(qty);
+  if(!f||!Number.isFinite(n)||n<=0)return"";
+  return String(Math.round(n*f*10)/10);
+};
+
 function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,addSuppToList,customFoods,addCustomFood,waterOz=0,setWaterOz}){
   const T=useTheme();
   const [mode,setMode]=useState("food");
@@ -1941,13 +1953,19 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
   const searchRef=useRef();
 
   // Create food form state
-  const [cf,setCf]=useState({name:"",brand:"",servingSize:"100",servingUnit:"g",cal:"",protein:"",carbs:"",fat:"",fiber:"",sugar:"",sodium:""});
+  const [cf,setCf]=useState({name:"",brand:"",servingSize:"100",servingUnit:"g",servingGrams:"100",cal:"",protein:"",carbs:"",fat:"",fiber:"",sugar:"",sodium:""});
   const [cfSaved,setCfSaved]=useState(false);
 
   const cfChange=(k,v)=>setCf(p=>({...p,[k]:v}));
+  const cfSetServing=v=>setCf(p=>({...p,servingSize:v,servingGrams:CF_UNIT_G[p.servingUnit]?cfGramsFor(v,p.servingUnit):p.servingGrams}));
+  const cfSetUnit=u=>setCf(p=>({...p,servingUnit:u,servingGrams:cfGramsFor(p.servingSize,u)}));
+  // The gram weight of one serving is the only thing per-100g macros may be
+  // divided by — per100_* means "per 100 grams" everywhere else in the app.
+  const cfGrams=parseFloat(cf.servingGrams);
+  const cfGramsOk=Number.isFinite(cfGrams)&&cfGrams>0;
 
-  const cfPreview=cf.cal?(()=>{
-    const s=parseFloat(cf.servingSize)||100;
+  const cfPreview=cf.cal&&cfGramsOk?(()=>{
+    const s=cfGrams;
     const per100={
       cal:Math.round((parseFloat(cf.cal)||0)/s*100),
       protein:Math.round((parseFloat(cf.protein)||0)/s*100*10)/10,
@@ -1961,12 +1979,14 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
   })():null;
 
   const saveCustomFood=()=>{
-    if(!cf.name.trim()||!cf.cal)return;
-    const s=parseFloat(cf.servingSize)||100;
+    if(!cf.name.trim()||!cf.cal||!cfGramsOk)return;
+    const s=cfGrams;
     const food={
       name:cf.name.trim(),
       brand:cf.brand.trim()||"My foods",
       servingG:s,
+      servingQty:parseFloat(cf.servingSize)||null,
+      servingUnit:cf.servingUnit,
       isCustom:true,
       per100:{
         cal:Math.round((parseFloat(cf.cal)||0)/s*100),
@@ -1982,7 +2002,7 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
     setCfSaved(true);
     setTimeout(()=>{
       setCfSaved(false);
-      setCf({name:"",brand:"",servingSize:"100",servingUnit:"g",cal:"",protein:"",carbs:"",fat:"",fiber:"",sugar:"",sodium:""});
+      setCf({name:"",brand:"",servingSize:"100",servingUnit:"g",servingGrams:"100",cal:"",protein:"",carbs:"",fat:"",fiber:"",sugar:"",sodium:""});
       setFoodView("search");
     },1200);
   };
@@ -2252,13 +2272,29 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
                   <div>
                     <div style={{fontSize:13,fontWeight:600,marginBottom:8}}>Serving size</div>
                     <div style={{display:"flex",gap:8,alignItems:"flex-start",flexWrap:"wrap"}}>
-                      <input type="number" value={cf.servingSize} onChange={e=>cfChange("servingSize",e.target.value)} min="1" style={{width:80,flexShrink:0,background:T.bg,border:("1px solid "+T.border),boxShadow:T.glowShadow,borderRadius:10,padding:"10px 10px",fontSize:15,fontWeight:600,outline:"none",textAlign:"center"}}/>
+                      <input type="number" value={cf.servingSize} onChange={e=>cfSetServing(e.target.value)} min="1" style={{width:80,flexShrink:0,background:T.bg,border:("1px solid "+T.border),boxShadow:T.glowShadow,borderRadius:10,padding:"10px 10px",fontSize:15,fontWeight:600,outline:"none",textAlign:"center"}}/>
                       <div style={{display:"flex",gap:6,flexWrap:"wrap",flex:1}}>
                         {["g","ml","oz","cup","tbsp","piece"].map(u=>(
-                          <div key={u} onClick={()=>cfChange("servingUnit",u)} style={{padding:"7px 8px",borderRadius:8,fontSize:12,fontWeight:500,cursor:"pointer",border:("1px solid "+T.border),boxShadow:T.glowShadow,background:cf.servingUnit===u?T.accent:T.card,color:cf.servingUnit===u?"#fff":T.muted,flexShrink:0}}>{u}</div>
+                          <div key={u} onClick={()=>cfSetUnit(u)} style={{padding:"7px 8px",borderRadius:8,fontSize:12,fontWeight:500,cursor:"pointer",border:("1px solid "+T.border),boxShadow:T.glowShadow,background:cf.servingUnit===u?T.accent:T.card,color:cf.servingUnit===u?"#fff":T.muted,flexShrink:0}}>{u}</div>
                         ))}
                       </div>
                     </div>
+                    {/* Grams is the source of truth for the per-100g macros below.
+                        Exact for g/oz, so we just show it; asked for otherwise. */}
+                    {CF_AUTO_UNITS.includes(cf.servingUnit)?(
+                      <div style={{fontSize:12,color:T.muted,marginTop:8}}>1 serving = {cfGramsOk?cfGrams:"—"} g</div>
+                    ):(
+                      <div style={{marginTop:10}}>
+                        <div style={{fontSize:11,color:T.muted,fontWeight:500,marginBottom:4}}>Weight of 1 serving (g)<span style={{color:"#E24B4A"}}> *</span></div>
+                        <input type="number" min="1" value={cf.servingGrams} onChange={e=>cfChange("servingGrams",e.target.value)} placeholder="grams"
+                          style={{width:110,background:T.bg,border:("1px solid "+(cf.servingGrams?T.accent:T.border)),boxShadow:T.glowShadow,borderRadius:10,padding:"10px 10px",fontSize:15,fontWeight:cf.servingGrams?600:400,outline:"none",textAlign:"center",color:T.text}}/>
+                        <div style={{fontSize:11,color:T.muted,marginTop:5,lineHeight:1.4}}>
+                          {cf.servingUnit==="ml"
+                            ?"Pre-filled at 1 ml ≈ 1 g (water). Adjust for oil, honey and other liquids."
+                            :"One "+cf.servingUnit+" weighs a different amount for every food — take it from the label."}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Macros grid */}
@@ -2383,8 +2419,8 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
         )}
         {mode==="food"&&foodView==="create"&&(
           <div style={{flexShrink:0,borderTop:("1px solid "+T.border),padding:"12px 20px 20px",background:T.card}}>
-            <button onClick={saveCustomFood} disabled={!cf.name.trim()||!cf.cal}
-              style={{width:"100%",background:cfSaved?"#22C55E":(!cf.name.trim()||!cf.cal?T.border:T.accent),border:"none",borderRadius:14,padding:"14px",color:"#fff",fontSize:15,fontWeight:700,cursor:(!cf.name.trim()||!cf.cal)?"not-allowed":"pointer",transition:"background 0.2s"}}>
+            <button onClick={saveCustomFood} disabled={!cf.name.trim()||!cf.cal||!cfGramsOk}
+              style={{width:"100%",background:cfSaved?"#22C55E":(!cf.name.trim()||!cf.cal||!cfGramsOk?T.border:T.accent),border:"none",borderRadius:14,padding:"14px",color:"#fff",fontSize:15,fontWeight:700,cursor:(!cf.name.trim()||!cf.cal||!cfGramsOk)?"not-allowed":"pointer",transition:"background 0.2s"}}>
               {cfSaved?"✓ Saved to My Foods":"Save food to my library"}
             </button>
           </div>
@@ -6178,7 +6214,7 @@ export default function App(){
         }
         // Custom foods
         const cf=await sb.select("custom_foods","user_id=eq."+uid,{order:"created_at.desc"});
-        if(cf?.length>0)setCustomFoods(cf.map(f=>({name:f.name,brand:f.brand||"My foods",servingG:f.serving_g,isCustom:true,per100:{cal:f.per100_cal,protein:f.per100_protein,carbs:f.per100_carbs,fat:f.per100_fat,fiber:f.per100_fiber||0,sodium:f.per100_sodium||0}})));
+        if(cf?.length>0)setCustomFoods(cf.map(f=>({name:f.name,brand:f.brand||"My foods",servingG:f.serving_g,servingQty:f.serving_qty,servingUnit:f.serving_unit||"g",isCustom:true,per100:{cal:f.per100_cal,protein:f.per100_protein,carbs:f.per100_carbs,fat:f.per100_fat,fiber:f.per100_fiber||0,sodium:f.per100_sodium||0}})));
         // Supplement stack
         const suppRows=await sb.select("supplement_stack","user_id=eq."+uid,{order:"sort_order.asc"});
         if(suppRows?.length>0){
@@ -6287,7 +6323,7 @@ export default function App(){
     setCustomFoods(p=>[food,...p]);
     if(!uid)return;
     try{
-      await sb.insert("custom_foods",{user_id:uid,name:food.name,brand:food.brand||"",serving_g:food.servingG,per100_cal:food.per100.cal,per100_protein:food.per100.protein,per100_carbs:food.per100.carbs,per100_fat:food.per100.fat,per100_fiber:food.per100.fiber||0,per100_sodium:food.per100.sodium||0});
+      await sb.insert("custom_foods",{user_id:uid,name:food.name,brand:food.brand||"",serving_g:food.servingG,serving_qty:food.servingQty??null,serving_unit:food.servingUnit||"g",per100_cal:food.per100.cal,per100_protein:food.per100.protein,per100_carbs:food.per100.carbs,per100_fat:food.per100.fat,per100_fiber:food.per100.fiber||0,per100_sodium:food.per100.sodium||0});
     }catch{
       setCustomFoods(p=>p.filter(f=>f!==food));
       showError("Custom food couldn't be saved. Check your connection.");
