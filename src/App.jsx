@@ -2647,7 +2647,7 @@ function WaterStrip({waterOz=0,setWaterOz}){
   );
 }
 
-function FoodTab({log,setLog,customFoods=[],addCustomFood,goals={cal:2200,protein:140,carbs:180,fat:78,fiber:25,sodium:2300},waterOz=0,setWaterOz}){
+function FoodTab({log,setLog,onAddItem,customFoods=[],addCustomFood,goals={cal:2200,protein:140,carbs:180,fat:78,fiber:25,sodium:2300},waterOz=0,setWaterOz}){
   const T=useTheme();
   const [modal,setModal]=useState(null);
   const M=totals(log);
@@ -2656,7 +2656,7 @@ function FoodTab({log,setLog,customFoods=[],addCustomFood,goals={cal:2200,protei
   const r=34,circ=2*Math.PI*r,dash=circ*Math.min(1,M.cal/calGoal);
   return(
     <div style={{paddingBottom:80}}>
-      {modal&&<AddFoodModal slot={modal} onAdd={item=>{setLog(p=>({...p,[modal]:[...p[modal],item]}));setModal(null);}} onClose={()=>setModal(null)} customFoods={customFoods}/>}
+      {modal&&<AddFoodModal slot={modal} onAdd={item=>{onAddItem(modal,item);setModal(null);}} onClose={()=>setModal(null)} customFoods={customFoods}/>}
       <div style={{background:T.card,padding:"16px 20px 12px",borderBottom:("1px solid "+T.border),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div><div style={{fontSize:20,fontWeight:600}}>Food log</div><div style={{fontSize:13,color:T.muted}}>Calorie tracker</div></div>
         <div onClick={()=>setModal("breakfast")} style={{fontSize:13,color:T.accent,fontWeight:500,cursor:"pointer"}}>+ Add food</div>
