@@ -1769,7 +1769,7 @@ function WeightLogWidget({weightLog=[],onLog}){
   const T=useTheme();
   const [input,setInput]=useState("");
   const [logged,setLogged]=useState(false);
-  const todayEntry=weightLog.find(w=>w.date===new Date().toISOString().split("T")[0]);
+  const todayEntry=weightLog.find(w=>w.date===localDate());
 
   const handleLog=()=>{
     const lbs=parseFloat(input);
@@ -1816,7 +1816,7 @@ function WeightLogWidget({weightLog=[],onLog}){
 function WeekStrip({log,suppList=[],suppTaken={},workoutHistory=[],waterOz=0,goals={},onViewCalendar}){
   const T=useTheme();
   const todayObj=new Date();
-  const todayStr=todayObj.toISOString().split("T")[0];
+  const todayStr=localDate(todayObj);
   const calGoal=goals?.cal||2200;
 
   // Build Mon–Sun week containing today
@@ -1827,7 +1827,7 @@ function WeekStrip({log,suppList=[],suppTaken={},workoutHistory=[],waterOz=0,goa
   const days=Array.from({length:7},(_,i)=>{
     const d=new Date(monday);d.setDate(monday.getDate()+i);
     return{
-      ds:d.toISOString().split("T")[0],
+      ds:localDate(d),
       label:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i],
       num:d.getDate(),
     };
@@ -2807,7 +2807,7 @@ function HomeTab({setTab,log,suppList=[],suppTaken={},workoutHistory=[],isDark:_
   const pct=Math.min(M.cal/calGoal,1);
   const takenCount=(suppList||[]).filter(s=>suppTaken[s.k]).length;
   const totalSupps=(suppList||[]).length;
-  const todayStr=new Date().toISOString().split("T")[0];
+  const todayStr=localDate();
   const todayWorkout=workoutHistory.find(w=>w.date===todayStr);
   const now=new Date();
   const hour=now.getHours();
@@ -3588,7 +3588,7 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory
     const entry={
       id:"h"+Date.now(),
       workoutName:activeWorkout.name,
-      date:new Date().toISOString().split("T")[0],
+      date:localDate(),
       duration:elapsed,
       setsCompleted:doneSets,
       totalSets:allSets.length,
@@ -4164,7 +4164,7 @@ function CalendarTab({uid,goals,suppList,userName,log,suppTaken,workoutHistory,w
   const DAY_NAMES=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   const WEEK_LABELS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   const todayObj=new Date();
-  const todayStr=todayObj.toISOString().split("T")[0];
+  const todayStr=localDate(todayObj);
   const [view,setView]=useState("month");
   const [month,setMonth]=useState(todayObj.getMonth());
   const [year,setYear]=useState(todayObj.getFullYear());
@@ -4173,8 +4173,8 @@ function CalendarTab({uid,goals,suppList,userName,log,suppTaken,workoutHistory,w
   const [loading,setLoading]=useState(false);
   const [chartView,setChartView]=useState("week");
 
-  // Zero-pad date parts into YYYY-MM-DD
-  const fmt=(y,m,d)=>y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+  // Local YYYY-MM-DD for a calendar cell (m is 0-based, as from getMonth)
+  const fmt=(y,m,d)=>localDate(new Date(y,m,d));
 
   // Compute today's live entry from in-memory App state (always up-to-date)
   const liveTodayEntry=()=>{
@@ -4258,7 +4258,7 @@ function CalendarTab({uid,goals,suppList,userName,log,suppTaken,workoutHistory,w
     const dow=d.getDay();
     const diff=dow===0?-6:1-dow;
     const mon=new Date(d);mon.setDate(d.getDate()+diff);
-    return Array.from({length:7},(_,i)=>{const dd=new Date(mon);dd.setDate(mon.getDate()+i);return dd.toISOString().split("T")[0];});
+    return Array.from({length:7},(_,i)=>{const dd=new Date(mon);dd.setDate(mon.getDate()+i);return localDate(dd);});
   };
   const weekDates=getWeekDates();
 
@@ -4501,6 +4501,12 @@ function CalendarTab({uid,goals,suppList,userName,log,suppTaken,workoutHistory,w
 // ── SUPABASE CLIENT ──────────────────────────────────────────────
 const SUPABASE_URL="https://vghqqksbjpgdzmvfmnru.supabase.co";
 const SUPABASE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnaHFxa3NianBnZHptdmZtbnJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NjAwNzgsImV4cCI6MjA5MzMzNjA3OH0.1JXmsIs9Jk87wd9uTIpNp93gnoqNMtOR78XiDQHUasg";
+
+// Every date column in this app stores the user's LOCAL day. toISOString()
+// returns the UTC day, which is already tomorrow for anyone west of UTC logging
+// in the evening. "en-CA" formats local time as YYYY-MM-DD. Writes, read
+// filters and comparisons all go through this so they cannot drift apart.
+const localDate=(d=new Date())=>d.toLocaleDateString("en-CA");
 
 const sb={
   _url:SUPABASE_URL,_key:SUPABASE_ANON,_session:null,
@@ -5853,7 +5859,7 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
       const today=new Date();
       const start=new Date();
       start.setDate(today.getDate()-(dayCount-1));
-      const fmt=(d)=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+      const fmt=(d)=>localDate(d);
       const startStr=fmt(start);
       const endStr=fmt(today);
       try{
@@ -5943,7 +5949,7 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
       }
     });
     // All PRs in current month
-    const thisMonth=new Date().toISOString().slice(0,7);
+    const thisMonth=localDate().slice(0,7);
     const monthPRs=[];
     valid.forEach(d=>{
       if(d.date.startsWith(thisMonth)&&d.prs&&d.prs.length>0){
@@ -6175,7 +6181,7 @@ export default function App(){
   const [userName,setUserName]=useState("");
   const [goals,setGoals]=useState({cal:2200,protein:140,carbs:180,fat:78});
 
-  const today=new Date().toISOString().split("T")[0];
+  const today=localDate();
 
   // Resolve the session to a definite state before any data load runs.
   useEffect(()=>{
