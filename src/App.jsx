@@ -1928,6 +1928,13 @@ function WeekStrip({log,suppList=[],suppTaken={},workoutHistory=[],waterOz=0,goa
 // food-dependent — there is no honest constant, so the user supplies the grams.
 const CF_UNIT_G={g:1,oz:28.3495,ml:1};
 const CF_AUTO_UNITS=["g","oz"];
+// Ceilings: one serving tops out around 2 L of liquid; one logged item around
+// 5 kg. Both are ~2x anything genuine, and catch a mistyped or doubled amount.
+const CF_MAX_SERVING_G=2000;
+const MAX_FOOD_GRAMS=5000;
+// Numeric fields here are pre-filled, so typing without selecting first appends
+// to the default — "100" + "100" = 100100. Select the value on focus instead.
+const selectOnFocus=e=>e.target.select();
 const cfGramsFor=(qty,unit)=>{
   const f=CF_UNIT_G[unit];
   const n=parseFloat(qty);
@@ -1962,7 +1969,8 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
   // The gram weight of one serving is the only thing per-100g macros may be
   // divided by — per100_* means "per 100 grams" everywhere else in the app.
   const cfGrams=parseFloat(cf.servingGrams);
-  const cfGramsOk=Number.isFinite(cfGrams)&&cfGrams>0;
+  const cfGramsOver=Number.isFinite(cfGrams)&&cfGrams>CF_MAX_SERVING_G;
+  const cfGramsOk=Number.isFinite(cfGrams)&&cfGrams>0&&!cfGramsOver;
 
   const cfPreview=cf.cal&&cfGramsOk?(()=>{
     const s=cfGrams;
@@ -2203,7 +2211,7 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
                     <div>
                       <div style={{fontSize:13,fontWeight:500,marginBottom:8,color:T.muted}}>Amount in grams</div>
                       <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                        <input type="number" value={grams} onChange={e=>setGrams(e.target.value)} min="1" style={{width:72,flexShrink:0,background:T.bg,border:("2px solid "+T.accent),borderRadius:10,padding:"9px 8px",fontSize:16,fontWeight:700,outline:"none",textAlign:"center"}}/>
+                        <input type="number" value={grams} onChange={e=>setGrams(e.target.value)} onFocus={selectOnFocus} min="1" style={{width:72,flexShrink:0,background:T.bg,border:("2px solid "+T.accent),borderRadius:10,padding:"9px 8px",fontSize:16,fontWeight:700,outline:"none",textAlign:"center"}}/>
                         <span style={{fontSize:13,color:T.muted,flexShrink:0}}>g</span>
                         <div style={{display:"flex",gap:5,flexWrap:"wrap",flex:1,justifyContent:"flex-end"}}>
                           {[50,100,150,200,300].map(g=>(
@@ -2217,7 +2225,7 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
                     <div>
                       <div style={{fontSize:13,fontWeight:500,marginBottom:8,color:T.muted}}>Servings {selected.servingG?("(1 serving ≈ "+selected.servingG+"g)"):"(1 serving = 100g)"}</div>
                       <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                        <input type="number" value={servings} onChange={e=>setServings(e.target.value)} min="0.25" step="0.25" style={{width:72,flexShrink:0,background:T.bg,border:("2px solid "+T.accent),borderRadius:10,padding:"9px 8px",fontSize:16,fontWeight:700,outline:"none",textAlign:"center"}}/>
+                        <input type="number" value={servings} onChange={e=>setServings(e.target.value)} onFocus={selectOnFocus} min="0.25" step="0.25" style={{width:72,flexShrink:0,background:T.bg,border:("2px solid "+T.accent),borderRadius:10,padding:"9px 8px",fontSize:16,fontWeight:700,outline:"none",textAlign:"center"}}/>
                         <span style={{fontSize:13,color:T.muted,flexShrink:0}}>serving{parseFloat(servings)!==1?"s":""}</span>
                         <div style={{display:"flex",gap:5,flexWrap:"wrap",flex:1,justifyContent:"flex-end"}}>
                           {[0.5,1,1.5,2,3].map(s=>(
@@ -2272,7 +2280,7 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
                   <div>
                     <div style={{fontSize:13,fontWeight:600,marginBottom:8}}>Serving size</div>
                     <div style={{display:"flex",gap:8,alignItems:"flex-start",flexWrap:"wrap"}}>
-                      <input type="number" value={cf.servingSize} onChange={e=>cfSetServing(e.target.value)} min="1" style={{width:80,flexShrink:0,background:T.bg,border:("1px solid "+T.border),boxShadow:T.glowShadow,borderRadius:10,padding:"10px 10px",fontSize:15,fontWeight:600,outline:"none",textAlign:"center"}}/>
+                      <input type="number" value={cf.servingSize} onChange={e=>cfSetServing(e.target.value)} onFocus={selectOnFocus} min="1" style={{width:80,flexShrink:0,background:T.bg,border:("1px solid "+T.border),boxShadow:T.glowShadow,borderRadius:10,padding:"10px 10px",fontSize:15,fontWeight:600,outline:"none",textAlign:"center"}}/>
                       <div style={{display:"flex",gap:6,flexWrap:"wrap",flex:1}}>
                         {["g","ml","oz","cup","tbsp","piece"].map(u=>(
                           <div key={u} onClick={()=>cfSetUnit(u)} style={{padding:"7px 8px",borderRadius:8,fontSize:12,fontWeight:500,cursor:"pointer",border:("1px solid "+T.border),boxShadow:T.glowShadow,background:cf.servingUnit===u?T.accent:T.card,color:cf.servingUnit===u?"#fff":T.muted,flexShrink:0}}>{u}</div>
@@ -2286,7 +2294,7 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
                     ):(
                       <div style={{marginTop:10}}>
                         <div style={{fontSize:11,color:T.muted,fontWeight:500,marginBottom:4}}>Weight of 1 serving (g)<span style={{color:"#E24B4A"}}> *</span></div>
-                        <input type="number" min="1" value={cf.servingGrams} onChange={e=>cfChange("servingGrams",e.target.value)} placeholder="grams"
+                        <input type="number" min="1" value={cf.servingGrams} onChange={e=>cfChange("servingGrams",e.target.value)} onFocus={selectOnFocus} placeholder="grams"
                           style={{width:110,background:T.bg,border:("1px solid "+(cf.servingGrams?T.accent:T.border)),boxShadow:T.glowShadow,borderRadius:10,padding:"10px 10px",fontSize:15,fontWeight:cf.servingGrams?600:400,outline:"none",textAlign:"center",color:T.text}}/>
                         <div style={{fontSize:11,color:T.muted,marginTop:5,lineHeight:1.4}}>
                           {cf.servingUnit==="ml"
@@ -2419,6 +2427,7 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
         )}
         {mode==="food"&&foodView==="create"&&(
           <div style={{flexShrink:0,borderTop:("1px solid "+T.border),padding:"12px 20px 20px",background:T.card}}>
+            {cfGramsOver&&<div style={{fontSize:13,color:"#E24B4A",marginBottom:10,padding:"9px 12px",background:"rgba(248,113,113,0.1)",borderRadius:10}}>One serving can't weigh more than {CF_MAX_SERVING_G} g — check the amount and unit.</div>}
             <button onClick={saveCustomFood} disabled={!cf.name.trim()||!cf.cal||!cfGramsOk}
               style={{width:"100%",background:cfSaved?"#22C55E":(!cf.name.trim()||!cf.cal||!cfGramsOk?T.border:T.accent),border:"none",borderRadius:14,padding:"14px",color:"#fff",fontSize:15,fontWeight:700,cursor:(!cf.name.trim()||!cf.cal||!cfGramsOk)?"not-allowed":"pointer",transition:"background 0.2s"}}>
               {cfSaved?"✓ Saved to My Foods":"Save food to my library"}
@@ -2525,7 +2534,7 @@ function AddFoodModal({slot,onAdd,onClose,customFoods=[]}){
               <div style={{marginBottom:16}}>
                 <div style={{fontSize:14,fontWeight:600,marginBottom:10}}>How many grams?</div>
                 <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                  <input type="number" value={grams} onChange={e=>setGrams(e.target.value)} min="1" max="2000" style={{width:80,flexShrink:0,background:T.bg,border:("2px solid "+T.accent),borderRadius:10,padding:"10px 10px",fontSize:17,fontWeight:700,outline:"none",textAlign:"center"}}/>
+                  <input type="number" value={grams} onChange={e=>setGrams(e.target.value)} onFocus={selectOnFocus} min="1" max={MAX_FOOD_GRAMS} style={{width:80,flexShrink:0,background:T.bg,border:("2px solid "+T.accent),borderRadius:10,padding:"10px 10px",fontSize:17,fontWeight:700,outline:"none",textAlign:"center"}}/>
                   <span style={{fontSize:14,color:T.muted,flexShrink:0}}>grams</span>
                   <div style={{display:"flex",gap:5,flexWrap:"wrap",flex:1,justifyContent:"flex-end"}}>
                     {[50,100,150,200,300].map(g=>(
@@ -6312,6 +6321,10 @@ export default function App(){
     const grams=Number(item?.grams);
     if(!item?.name||!item?.per100||!Number.isFinite(grams)||grams<=0){
       showError("Couldn't log "+(item?.name||"that food")+" — no valid gram amount.");
+      return;
+    }
+    if(grams>MAX_FOOD_GRAMS){
+      showError("Couldn't log "+item.name+" — "+grams+" g is over the "+MAX_FOOD_GRAMS+" g limit for one entry.");
       return;
     }
     setLog(p=>({...p,[slot]:[...p[slot],item]}));
