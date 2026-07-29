@@ -4491,17 +4491,17 @@ const sb={
   async select(table,filters="",opts={}){
     const q=[filters,opts.order?"order="+opts.order:"",opts.limit?"limit="+opts.limit:""].filter(Boolean).join("&");
     const r=await fetch(this._url+"/rest/v1/"+table+"?"+q,{headers:this.headers()});
-    if(!r.ok)return[];
+    if(!r.ok){console.error("[sb.select]",table,r.status,await r.text().catch(()=>""));return[];}
     return r.json();
   },
   async insert(table,row){
     const r=await fetch(this._url+"/rest/v1/"+table,{method:"POST",headers:this.headers({"Prefer":"return=representation"}),body:JSON.stringify(Array.isArray(row)?row:[row])});
-    if(!r.ok)return null;
+    if(!r.ok){console.error("[sb.insert]",table,r.status,await r.text().catch(()=>""));return null;}
     const d=await r.json();return Array.isArray(row)?d:d[0];
   },
   async upsert(table,row){
     const r=await fetch(this._url+"/rest/v1/"+table,{method:"POST",headers:this.headers({"Prefer":"resolution=merge-duplicates,return=representation"}),body:JSON.stringify(Array.isArray(row)?row:[row])});
-    if(!r.ok)return null;
+    if(!r.ok){console.error("[sb.upsert]",table,r.status,await r.text().catch(()=>""));return null;}
     const d=await r.json();return Array.isArray(row)?d:d[0];
   },
   async delete(table,filter){
