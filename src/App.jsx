@@ -5853,7 +5853,7 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
           if(day){
             day.workoutDone=true;
             day.workoutName=r.workout_name||"";
-            if(r.prs)try{day.prs=JSON.parse(r.prs);}catch{}
+            if(Array.isArray(r.prs))day.prs=r.prs;
           }
         });
         // Map supps
