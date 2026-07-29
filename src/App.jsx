@@ -5387,7 +5387,7 @@ function SettingsPage({onBack,isDark,setIsDark,onSignOut,userName}){
 }
 
 // ── PROFILE PAGE ──────────────────────────────────────────────────
-function ProfilePage({goals,setGoals,userName,setUserName,isDark,setIsDark,onSignOut,onClose}){
+function ProfilePage({goals,setGoals,userName,setUserName,isDark,setIsDark,themeFam,onSignOut,onClose}){
   const T=useTheme();
   const [name,setName]=useState(userName||"");
   const [calGoal,setCalGoal]=useState(String(goals?.cal||2200));
@@ -6495,7 +6495,7 @@ export default function App(){
       <GlobalStyle/>
       {errorBanner&&<div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",background:T.red,color:"#fff",borderRadius:10,padding:"10px 18px",fontSize:13,fontWeight:600,zIndex:999,maxWidth:340,textAlign:"center",boxShadow:"0 4px 20px rgba(0,0,0,0.3)",pointerEvents:"none"}}>{errorBanner}</div>}
       {profileMenuOpen&&<ProfileMenu userName={userName} isDark={isDark} onClose={()=>setProfileMenuOpen(false)} onOpenProfile={()=>{closeAll();setProfilePageOpen(true);}} onOpenSettings={()=>{closeAll();setSettingsPageOpen(true);}} onOpenPersonalization={()=>{closeAll();setPersonalizationPageOpen(true);}} onOpenUpgrade={()=>{closeAll();setUpgradePageOpen(true);}} onOpenHelp={()=>{closeAll();setHelpPageOpen(true);}} onSignOut={handleSignOut}/>}
-      {profilePageOpen&&<ProfilePage goals={goals} setGoals={setGoals} userName={userName} setUserName={setUserName} isDark={isDark} setIsDark={setIsDark} onSignOut={handleSignOut} onClose={()=>setProfilePageOpen(false)}/>}
+      {profilePageOpen&&<ProfilePage goals={goals} setGoals={setGoals} userName={userName} setUserName={setUserName} isDark={isDark} setIsDark={setIsDark} themeFam={themeFam} onSignOut={handleSignOut} onClose={()=>setProfilePageOpen(false)}/>}
       {settingsPageOpen&&<SettingsPage onBack={()=>setSettingsPageOpen(false)} isDark={isDark} setIsDark={setIsDark} onSignOut={handleSignOut} userName={userName}/>}
       {personalizationPageOpen&&<PersonalizationPage onBack={()=>setPersonalizationPageOpen(false)} isDark={isDark} themeFam={themeFam} setThemeFam={setThemeFam}/>}
       {upgradePageOpen&&<UpgradePage onBack={()=>setUpgradePageOpen(false)}/>}
