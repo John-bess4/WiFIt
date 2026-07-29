@@ -6267,10 +6267,18 @@ export default function App(){
   const uid=sb.getUser()?.id;
 
   const addFoodItem=async(slot,item)=>{
+    // grams is NOT NULL in food_log, and JSON.stringify drops undefined keys —
+    // an unparsed gram amount would 400 instead of saving. Reject it up front.
+    const grams=Number(item?.grams);
+    if(!item?.name||!item?.per100||!Number.isFinite(grams)||grams<=0){
+      showError("Couldn't log "+(item?.name||"that food")+" — no valid gram amount.");
+      return;
+    }
     setLog(p=>({...p,[slot]:[...p[slot],item]}));
     if(!uid)return;
     try{
-      await sb.insert("food_log",{user_id:uid,logged_date:today,meal_slot:slot,food_name:item.name,brand:item.brand||"",grams:item.grams,per100_cal:item.per100.cal,per100_protein:item.per100.protein,per100_carbs:item.per100.carbs,per100_fat:item.per100.fat,per100_fiber:item.per100.fiber||0,per100_sodium:item.per100.sodium||0,color:item.color||COLORS[0]});
+      const row=await sb.insert("food_log",{user_id:uid,logged_date:today,meal_slot:slot,food_name:item.name,brand:item.brand||"",grams,per100_cal:item.per100.cal,per100_protein:item.per100.protein,per100_carbs:item.per100.carbs,per100_fat:item.per100.fat,per100_fiber:item.per100.fiber||0,per100_sodium:item.per100.sodium||0,color:item.color||COLORS[0]});
+      if(!row)throw new Error("insert returned no row");
     }catch{
       setLog(p=>({...p,[slot]:p[slot].filter(i=>i!==item)}));
       showError("Food couldn't be saved. Check your connection.");
