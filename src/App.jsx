@@ -6338,7 +6338,8 @@ export default function App(){
     });
     if(!uid)return;
     try{
-      await sb.insert("workout_sessions",{user_id:uid,workout_name:session.workoutName,completed_date:today,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises,prs:session.prs||[]});
+      const row=await sb.insert("workout_sessions",{user_id:uid,workout_name:session.workoutName,completed_date:today,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises,prs:session.prs||[]});
+      if(!row)throw new Error("insert returned no row");
     }catch{
       setHistory(p=>p.filter(s=>s!==session));
       showError("Workout couldn't be saved. Check your connection.");
