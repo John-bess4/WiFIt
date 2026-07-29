@@ -5841,10 +5841,10 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
         (foodRows||[]).forEach(r=>{
           const day=days.find(d=>d.date===r.logged_date);
           if(day){
-            day.cal+=Math.round((r.cal_per_100g||0)*(r.grams||0)/100);
-            day.protein+=Math.round((r.protein_per_100g||0)*(r.grams||0)/100);
-            day.carbs+=Math.round((r.carbs_per_100g||0)*(r.grams||0)/100);
-            day.fat+=Math.round((r.fat_per_100g||0)*(r.grams||0)/100);
+            day.cal+=Math.round((r.per100_cal||0)*(r.grams||0)/100);
+            day.protein+=Math.round((r.per100_protein||0)*(r.grams||0)/100);
+            day.carbs+=Math.round((r.per100_carbs||0)*(r.grams||0)/100);
+            day.fat+=Math.round((r.per100_fat||0)*(r.grams||0)/100);
           }
         });
         // Map workouts
