@@ -6246,8 +6246,8 @@ export default function App(){
         const waterRows=await sb.select("water_log","user_id=eq."+uid+"&log_date=eq."+today);
         if(waterRows?.length>0)setWaterOzState(waterRows[0].oz||0);
         // Weight log (last 30 days)
-        const weightRows=await sb.select("weight_log","user_id=eq."+uid,{order:"log_date.asc",limit:30});
-        if(weightRows?.length>0)setWeightLog(weightRows.map(w=>({date:w.log_date,lbs:w.lbs})));
+        const weightRows=await sb.select("body_weight_log","user_id=eq."+uid,{order:"log_date.asc",limit:30});
+        if(weightRows?.length>0)setWeightLog(weightRows.map(w=>({date:w.log_date,lbs:w.weight_lbs})));
         // Workout plans
         const planRows=await sb.select("workout_plans","user_id=eq."+uid,{order:"sort_order.asc"});
         if(planRows?.length>0){
@@ -6366,7 +6366,7 @@ export default function App(){
     const entry={date:today,lbs};
     setWeightLog(prev=>{const filtered=prev.filter(w=>w.date!==today);return[...filtered,entry].sort((a,b)=>a.date.localeCompare(b.date));});
     if(!uid)return;
-    try{await sb.upsert("weight_log",{user_id:uid,log_date:today,lbs});}catch{}
+    try{await sb.upsert("body_weight_log",{user_id:uid,log_date:today,weight_lbs:lbs});}catch{}
   };
   const saveWorkoutSession=async(session)=>{
     setHistory(p=>[session,...p]);
