@@ -2647,7 +2647,7 @@ function WaterStrip({waterOz=0,setWaterOz}){
   );
 }
 
-function FoodTab({log,setLog,onAddItem,customFoods=[],addCustomFood,goals={cal:2200,protein:140,carbs:180,fat:78,fiber:25,sodium:2300},waterOz=0,setWaterOz}){
+function FoodTab({log,setLog,onAddItem,uid,customFoods=[],addCustomFood,goals={cal:2200,protein:140,carbs:180,fat:78,fiber:25,sodium:2300},waterOz=0,setWaterOz}){
   const T=useTheme();
   const [modal,setModal]=useState(null);
   const M=totals(log);
@@ -6439,7 +6439,7 @@ export default function App(){
       {upgradePageOpen&&<UpgradePage onBack={()=>setUpgradePageOpen(false)}/>}
       {helpPageOpen&&<HelpPage onBack={()=>setHelpPageOpen(false)}/>}
       {tab==="home"&&<HomeTab setTab={setTab} log={log} suppList={suppList} suppTaken={suppTaken} workoutHistory={history} isDark={isDark} toggleTheme={()=>setIsDark(d=>!d)} userName={userName} goals={goals} onProfileOpen={()=>setProfileMenuOpen(true)} waterOz={waterOz} setWaterOz={setWaterOz} weightLog={weightLog} logWeight={logWeight}/>}
-      {tab==="food"&&<FoodTab log={log} setLog={setLog} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/>}
+      {tab==="food"&&<FoodTab log={log} setLog={setLog} uid={uid} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/>}
       {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} onSessionComplete={saveWorkoutSession} prHistory={prHistory} setPrHistory={setPrHistory} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB}/>}
       {tab==="supps"&&<SuppsTab suppList={suppList} setSuppList={setSuppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} taken={taken} total={total} uid={uid} addSuppToList={addSuppToList}/>}
       {tab==="calendar"&&<CalendarTab uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz}/>}
