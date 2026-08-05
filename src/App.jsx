@@ -6380,12 +6380,27 @@ export default function App(){
   };
 
   const logWeight=async(lbs)=>{
-    const entry={date:today,lbs};
-    setWeightLog(prev=>{const filtered=prev.filter(w=>w.date!==today);return[...filtered,entry].sort((a,b)=>a.date.localeCompare(b.date));});
+    // weight_lbs is NOT NULL; parseFloat garbage becomes NaN, which JSON
+    // serializes as null → swallowed 400. Reject before touching state.
+    const w=Number(lbs);
+    if(!Number.isFinite(w)||w<=0||w>1500){showError("Couldn't log weight — enter your weight in lbs.");return;}
+    const prevEntry=weightLog.find(e=>e.date===today);
+    const entry={date:today,lbs:w};
+    setWeightLog(prev=>{const filtered=prev.filter(e=>e.date!==today);return[...filtered,entry].sort((a,b)=>a.date.localeCompare(b.date));});
     if(!uid)return;
-    try{await sb.upsert("body_weight_log",{user_id:uid,log_date:today,weight_lbs:lbs});}catch{}
+    try{
+      const row=await sb.upsert("body_weight_log",{user_id:uid,log_date:today,weight_lbs:w});
+      if(!row)throw new Error("upsert returned no row");
+    }catch{
+      setWeightLog(prev=>{const filtered=prev.filter(e=>e.date!==today);return prevEntry?[...filtered,prevEntry].sort((a,b)=>a.date.localeCompare(b.date)):filtered;});
+      showError("Weight couldn't be saved. Check your connection.");
+    }
   };
   const saveWorkoutSession=async(session)=>{
+    // workout_name is NOT NULL — a nameless session would 400 after the
+    // optimistic update and look saved.
+    const wname=(session?.workoutName||"").trim();
+    if(!wname){showError("Couldn't save workout — it has no name.");return;}
     setHistory(p=>[session,...p]);
     setPrHistory(prev=>{
       const updated={...prev};
@@ -6397,7 +6412,7 @@ export default function App(){
     });
     if(!uid)return;
     try{
-      const row=await sb.insert("workout_sessions",{user_id:uid,workout_name:session.workoutName,completed_date:today,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises,prs:session.prs||[]});
+      const row=await sb.insert("workout_sessions",{user_id:uid,workout_name:wname,completed_date:today,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises||[],prs:session.prs||[]});
       if(!row)throw new Error("insert returned no row");
     }catch{
       setHistory(p=>p.filter(s=>s!==session));
@@ -6412,15 +6427,24 @@ export default function App(){
   const showError=(msg)=>{setErrorBanner(msg);if(errorTimerRef.current)clearTimeout(errorTimerRef.current);errorTimerRef.current=setTimeout(()=>setErrorBanner(""),3000);};
 
   const addWorkoutPlan=async(plan)=>{
+    // AI-generated plans flow through here. name and exercises are NOT NULL —
+    // a malformed plan must be rejected visibly, not 400 after the optimistic
+    // add and leave a phantom plan on screen.
+    const pname=(plan?.name||"").trim();
+    const validExs=(Array.isArray(plan?.exercises)?plan.exercises:[]).filter(ex=>ex&&typeof ex.name==="string"&&ex.name.trim());
+    if(!pname||validExs.length===0){
+      showError("Couldn't add that workout plan — it's missing a name or exercises.");
+      return null;
+    }
     const tempId="w"+Date.now();
     const structured={
       id:tempId,
-      name:plan.name,
+      name:pname,
       tag:plan.tag||"Full Body",
       level:plan.level||"Intermediate",
       estMin:plan.estMin||45,
       scheduledDay:plan.scheduledDay||null,
-      exercises:(plan.exercises||[]).map((ex,i)=>({
+      exercises:validExs.map((ex,i)=>({
         id:"ex"+Date.now()+i,
         name:ex.name,
         sets:Array.from({length:ex.sets||3},()=>({reps:ex.reps||10,weight:ex.weight||0,done:false})),
@@ -6434,32 +6458,49 @@ export default function App(){
           est_min:structured.estMin,scheduled_day:structured.scheduledDay||null,
           exercises:structured.exercises,sort_order:0,
         });
-        if(row?.id)setWorkouts(prev=>prev.map(w=>w.id===tempId?{...w,id:row.id}:w));
-      }catch{}
+        if(!row)throw new Error("insert returned no row");
+        if(row.id)setWorkouts(prev=>prev.map(w=>w.id===tempId?{...w,id:row.id}:w));
+      }catch{
+        setWorkouts(prev=>prev.filter(w=>w.id!==tempId));
+        showError("Workout plan couldn't be saved. Check your connection.");
+        return null;
+      }
     }
     return structured;
   };
 
   const saveWorkoutPlanDB=async(plan,isNew)=>{
     if(!uid)return;
+    const pname=(plan?.name||"").trim();
+    if(!pname||!Array.isArray(plan?.exercises)){
+      showError("Couldn't save that workout plan — it's missing a name or exercises.");
+      return;
+    }
     if(isNew){
       const tempId=plan.id;
       try{
         const row=await sb.insert("workout_plans",{
-          user_id:uid,name:plan.name,tag:plan.tag,level:plan.level,
+          user_id:uid,name:pname,tag:plan.tag,level:plan.level,
           est_min:plan.estMin,scheduled_day:plan.scheduledDay||null,
           exercises:plan.exercises,sort_order:workouts.length,
         });
-        if(row?.id)setWorkouts(prev=>prev.map(w=>w.id===tempId?{...w,id:row.id}:w));
-      }catch{}
+        if(!row)throw new Error("insert returned no row");
+        if(row.id)setWorkouts(prev=>prev.map(w=>w.id===tempId?{...w,id:row.id}:w));
+      }catch{
+        setWorkouts(prev=>prev.filter(w=>w.id!==tempId));
+        showError("Workout plan couldn't be saved. Check your connection.");
+      }
     }else{
       try{
-        await sb.update("workout_plans",{
-          name:plan.name,tag:plan.tag,level:plan.level,
+        const ok=await sb.update("workout_plans",{
+          name:pname,tag:plan.tag,level:plan.level,
           est_min:plan.estMin,scheduled_day:plan.scheduledDay||null,
           exercises:plan.exercises,
         },{filter:"id=eq."+plan.id+"&user_id=eq."+uid});
-      }catch{}
+        if(!ok)throw new Error("update failed");
+      }catch{
+        showError("Workout plan changes couldn't be saved. Check your connection.");
+      }
     }
   };
 
