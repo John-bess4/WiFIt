@@ -179,6 +179,7 @@ function calc(item){
     carbs:Math.round(m.carbs*g*10)/10,
     fat:Math.round(m.fat*g*10)/10,
     fiber:Math.round(m.fiber*g*10)/10,
+    sugar:Math.round((m.sugar||0)*g*10)/10,
     sodium:Math.round(m.sodium*g),
   };
 }
@@ -186,8 +187,8 @@ function calc(item){
 function totals(log){
   return Object.values(log).flat().reduce((a,item)=>{
     const m=calc(item);
-    return{cal:a.cal+m.cal,protein:Math.round((a.protein+m.protein)*10)/10,carbs:Math.round((a.carbs+m.carbs)*10)/10,fat:Math.round((a.fat+m.fat)*10)/10,fiber:Math.round((a.fiber+m.fiber)*10)/10,sodium:a.sodium+m.sodium};
-  },{cal:0,protein:0,carbs:0,fat:0,fiber:0,sodium:0});
+    return{cal:a.cal+m.cal,protein:Math.round((a.protein+m.protein)*10)/10,carbs:Math.round((a.carbs+m.carbs)*10)/10,fat:Math.round((a.fat+m.fat)*10)/10,fiber:Math.round((a.fiber+m.fiber)*10)/10,sugar:Math.round((a.sugar+m.sugar)*10)/10,sodium:a.sodium+m.sodium};
+  },{cal:0,protein:0,carbs:0,fat:0,fiber:0,sugar:0,sodium:0});
 }
 
 // ── LONG-PRESS HOOK ───────────────────────────────────────────────
@@ -6225,14 +6226,14 @@ export default function App(){
         if(foodRows?.length>0){
           const nl={breakfast:[],lunch:[],dinner:[],snacks:[]};
           foodRows.forEach(r=>{
-            const item={id:r.id,name:r.food_name,grams:r.grams,color:r.color||COLORS[0],per100:{cal:r.per100_cal,protein:r.per100_protein,carbs:r.per100_carbs,fat:r.per100_fat,fiber:r.per100_fiber||0,sodium:r.per100_sodium||0}};
+            const item={id:r.id,name:r.food_name,grams:r.grams,color:r.color||COLORS[0],per100:{cal:r.per100_cal,protein:r.per100_protein,carbs:r.per100_carbs,fat:r.per100_fat,fiber:r.per100_fiber||0,sugar:r.per100_sugar||0,sodium:r.per100_sodium||0}};
             if(nl[r.meal_slot])nl[r.meal_slot].push(item);
           });
           setLog(nl);
         }
         // Custom foods
         const cf=await sb.select("custom_foods","user_id=eq."+uid,{order:"created_at.desc"});
-        if(cf?.length>0)setCustomFoods(cf.map(f=>({name:f.name,brand:f.brand||"My foods",servingG:f.serving_g,servingQty:f.serving_qty,servingUnit:f.serving_unit||"g",isCustom:true,per100:{cal:f.per100_cal,protein:f.per100_protein,carbs:f.per100_carbs,fat:f.per100_fat,fiber:f.per100_fiber||0,sodium:f.per100_sodium||0}})));
+        if(cf?.length>0)setCustomFoods(cf.map(f=>({name:f.name,brand:f.brand||"My foods",servingG:f.serving_g,servingQty:f.serving_qty,servingUnit:f.serving_unit||"g",isCustom:true,per100:{cal:f.per100_cal,protein:f.per100_protein,carbs:f.per100_carbs,fat:f.per100_fat,fiber:f.per100_fiber||0,sugar:f.per100_sugar||0,sodium:f.per100_sodium||0}})));
         // Supplement stack
         const suppRows=await sb.select("supplement_stack","user_id=eq."+uid,{order:"sort_order.asc"});
         if(suppRows?.length>0){
@@ -6333,7 +6334,7 @@ export default function App(){
     setLog(p=>({...p,[slot]:[...p[slot],item]}));
     if(!uid)return;
     try{
-      const row=await sb.insert("food_log",{user_id:uid,logged_date:today,meal_slot:slot,food_name:item.name,brand:item.brand||"",grams,per100_cal:item.per100.cal,per100_protein:item.per100.protein,per100_carbs:item.per100.carbs,per100_fat:item.per100.fat,per100_fiber:item.per100.fiber||0,per100_sodium:item.per100.sodium||0,color:item.color||COLORS[0]});
+      const row=await sb.insert("food_log",{user_id:uid,logged_date:today,meal_slot:slot,food_name:item.name,brand:item.brand||"",grams,per100_cal:item.per100.cal,per100_protein:item.per100.protein,per100_carbs:item.per100.carbs,per100_fat:item.per100.fat,per100_fiber:item.per100.fiber||0,per100_sugar:item.per100.sugar||0,per100_sodium:item.per100.sodium||0,color:item.color||COLORS[0]});
       if(!row)throw new Error("insert returned no row");
     }catch{
       setLog(p=>({...p,[slot]:p[slot].filter(i=>i!==item)}));
@@ -6345,7 +6346,7 @@ export default function App(){
     setCustomFoods(p=>[food,...p]);
     if(!uid)return;
     try{
-      await sb.insert("custom_foods",{user_id:uid,name:food.name,brand:food.brand||"",serving_g:food.servingG,serving_qty:food.servingQty??null,serving_unit:food.servingUnit||"g",per100_cal:food.per100.cal,per100_protein:food.per100.protein,per100_carbs:food.per100.carbs,per100_fat:food.per100.fat,per100_fiber:food.per100.fiber||0,per100_sodium:food.per100.sodium||0});
+      await sb.insert("custom_foods",{user_id:uid,name:food.name,brand:food.brand||"",serving_g:food.servingG,serving_qty:food.servingQty??null,serving_unit:food.servingUnit||"g",per100_cal:food.per100.cal,per100_protein:food.per100.protein,per100_carbs:food.per100.carbs,per100_fat:food.per100.fat,per100_fiber:food.per100.fiber||0,per100_sugar:food.per100.sugar||0,per100_sodium:food.per100.sodium||0});
     }catch{
       setCustomFoods(p=>p.filter(f=>f!==food));
       showError("Custom food couldn't be saved. Check your connection.");
