@@ -6186,9 +6186,16 @@ export default function App(){
   const setWaterOz=async(valOrFn)=>{
     const next=typeof valOrFn==="function"?valOrFn(waterOz):valOrFn;
     const clamped=Math.min(GOAL_OZ,Math.max(0,next));
+    const prevOz=waterOz;
     setWaterOzState(clamped);
     if(!uid)return;
-    try{await sb.upsert("water_log",{user_id:uid,log_date:today,oz:clamped});}catch{}
+    try{
+      const row=await sb.upsert("water_log",{user_id:uid,log_date:today,oz:clamped});
+      if(!row)throw new Error("upsert returned no row");
+    }catch{
+      setWaterOzState(prevOz);
+      showError("Water couldn't be saved. Check your connection.");
+    }
   };
   const [history,setHistory]=useState([]);
   const [profileMenuOpen,setProfileMenuOpen]=useState(false);
@@ -6368,21 +6375,28 @@ export default function App(){
     if(!uid)return;
     try{
       const row=await sb.insert("supplement_stack",{user_id:uid,name:item.name,sub:item.sub||"",dot_color:item.dot||"#888",category:item.category||null,note:item.note||null,sort_order:suppList.length,reminder_enabled:item.reminderEnabled||false,reminder_time:item.reminderTime||null});
-      if(row?.id&&row.id!==tempK){
+      if(!row)throw new Error("insert returned no row");
+      if(row.id&&row.id!==tempK){
         // Replace temp key with real DB id
         setSuppList(prev=>prev.map(s=>s.k===tempK?{...s,k:row.id}:s));
         setSuppTaken(prev=>{const n={...prev};n[row.id]=n[tempK]||false;delete n[tempK];return n;});
       }
-    }catch{}
+    }catch{
+      setSuppList(prev=>prev.filter(s=>s.k!==tempK));
+      setSuppTaken(prev=>{const n={...prev};delete n[tempK];return n;});
+      showError("Supplement couldn't be saved. Check your connection.");
+    }
   };
 
   const toggleSuppTaken=async(k,val)=>{
     setSuppTaken(p=>({...p,[k]:val}));
     if(!uid)return;
     try{
-      await sb.upsert("supplement_log",{user_id:uid,supplement_id:k,log_date:today,taken:val});
+      const row=await sb.upsert("supplement_log",{user_id:uid,supplement_id:k,log_date:today,taken:val});
+      if(!row)throw new Error("upsert returned no row");
     }catch{
       setSuppTaken(p=>({...p,[k]:!val}));
+      showError("Supplement couldn't be updated. Check your connection.");
     }
   };
 
