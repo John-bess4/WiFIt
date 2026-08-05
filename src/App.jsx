@@ -1460,13 +1460,13 @@ function SuppSearchPanel({suppList,suppTaken,setSuppTaken,addSuppToList}){
   const clearSearch=()=>{setQuery("");setResults([]);setSearched(false);setShowCreate(false);};
 
   const addFromSearch=(s)=>{
-    addSuppToList({k:"s"+Date.now(),name:s.name,sub:(s.servingG?s.servingG+"g · ":"")+(s.brand||s.category||"Supplement"),dot:DOT_COLORS[s.category]||"#888"});
+    addSuppToList({k:"s"+Date.now(),name:s.name,sub:(s.servingG?s.servingG+"g · ":"")+(s.brand||s.category||"Supplement"),dot:DOT_COLORS[s.category]||"#888",category:s.category||null});
     clearSearch();
   };
 
   const saveCustom=()=>{
     if(!newName.trim())return;
-    addSuppToList({k:"m"+Date.now(),name:newName.trim(),sub:newDose.trim()||newCat,dot:DOT_COLORS[newCat]||"#888"});
+    addSuppToList({k:"m"+Date.now(),name:newName.trim(),sub:newDose.trim()||newCat,dot:DOT_COLORS[newCat]||"#888",category:newCat||null});
     setCreateSaved(true);
     setTimeout(()=>{
       setCreateSaved(false);setNewName("");setNewDose("");setNewCat("Supplement");
@@ -6237,7 +6237,7 @@ export default function App(){
         // Supplement stack
         const suppRows=await sb.select("supplement_stack","user_id=eq."+uid,{order:"sort_order.asc"});
         if(suppRows?.length>0){
-          setSuppList(suppRows.map(s=>({k:s.id,name:s.name,sub:s.sub||"",dot:s.dot_color||"#888",reminderTime:s.reminder_time,reminderEnabled:s.reminder_enabled})));
+          setSuppList(suppRows.map(s=>({k:s.id,name:s.name,sub:s.sub||"",dot:s.dot_color||"#888",category:s.category||null,note:s.note||null,reminderTime:s.reminder_time,reminderEnabled:s.reminder_enabled})));
           const suppLog=await sb.select("supplement_log","user_id=eq."+uid+"&log_date=eq."+today);
           const taken={};
           suppRows.forEach(s=>{taken[s.id]=false;});
@@ -6356,11 +6356,11 @@ export default function App(){
   const addSuppToList=async(item)=>{
     const tempK=item.k||("s"+Date.now());
     // Optimistically add with temp key
-    setSuppList(prev=>{if(prev.find(s=>s.k===tempK))return prev;return [...prev,{k:tempK,name:item.name,sub:item.sub||"",dot:item.dot||"#888",reminderEnabled:item.reminderEnabled||false,reminderTime:item.reminderTime||"08:00"}];});
+    setSuppList(prev=>{if(prev.find(s=>s.k===tempK))return prev;return [...prev,{k:tempK,name:item.name,sub:item.sub||"",dot:item.dot||"#888",category:item.category||null,note:item.note||null,reminderEnabled:item.reminderEnabled||false,reminderTime:item.reminderTime||"08:00"}];});
     setSuppTaken(prev=>prev[tempK]!==undefined?prev:{...prev,[tempK]:false});
     if(!uid)return;
     try{
-      const row=await sb.insert("supplement_stack",{user_id:uid,name:item.name,sub:item.sub||"",dot_color:item.dot||"#888",sort_order:suppList.length,reminder_enabled:item.reminderEnabled||false,reminder_time:item.reminderTime||null});
+      const row=await sb.insert("supplement_stack",{user_id:uid,name:item.name,sub:item.sub||"",dot_color:item.dot||"#888",category:item.category||null,note:item.note||null,sort_order:suppList.length,reminder_enabled:item.reminderEnabled||false,reminder_time:item.reminderTime||null});
       if(row?.id&&row.id!==tempK){
         // Replace temp key with real DB id
         setSuppList(prev=>prev.map(s=>s.k===tempK?{...s,k:row.id}:s));
