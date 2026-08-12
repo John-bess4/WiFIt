@@ -4547,6 +4547,27 @@ const sb={
     if(!r.ok){console.error("[sb.select]",table,r.status,await r.text().catch(()=>""));return[];}
     return r.json();
   },
+  // Auth-critical sibling of select(). Same request construction, different
+  // response handling: select() collapses every non-2xx into [], which makes a
+  // 401 indistinguishable from "no rows" — the mount profile check then reads an
+  // expired session as a brand-new user and routes to onboarding.
+  // Never throws; rows is always an array. authError is set ONLY by 401/403, so a
+  // 500 or a network blip cannot sign anyone out.
+  async selectAuth(table,filters="",opts={}){
+    try{
+      const q=[filters,opts.order?"order="+opts.order:"",opts.limit?"limit="+opts.limit:""].filter(Boolean).join("&");
+      const r=await fetch(this._url+"/rest/v1/"+table+"?"+q,{headers:this.headers()});
+      if(!r.ok){
+        console.error("[sb.selectAuth]",table,r.status,await r.text().catch(()=>""));
+        return{authError:r.status===401||r.status===403,rows:[]};
+      }
+      const d=await r.json();
+      return{authError:false,rows:Array.isArray(d)?d:[]};
+    }catch(e){
+      console.error("[sb.selectAuth]",table,"network",e);
+      return{authError:false,rows:[]};
+    }
+  },
   async insert(table,row){
     const r=await fetch(this._url+"/rest/v1/"+table,{method:"POST",headers:this.headers({"Prefer":"return=representation"}),body:JSON.stringify(Array.isArray(row)?row:[row])});
     if(!r.ok){console.error("[sb.insert]",table,r.status,await r.text().catch(()=>""));return null;}
