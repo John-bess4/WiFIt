@@ -735,13 +735,16 @@ RULES:
     const contextMsgs=history.filter(m=>!m.type&&!m.isCheckin).slice(-10).map(m=>({role:m.bot?"assistant":"user",content:m.text}));
     const res=await fetch("/api/coach",{
       method:"POST",
-      headers:{"Content-Type":"application/json"},
+      headers:coachHeaders(),
       body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,system:buildSystem(),messages:[...contextMsgs,{role:"user",content:userMsg}]}),
     });
     if(!res.ok){
       const errBody=await res.json().catch(()=>({}));
       if(errBody.error)console.error("[WiFit/coach]",errBody.error);
-      throw new Error("API error "+res.status);
+      // Carry the status so callers can tell "signed out" from "network down".
+      const err=new Error("API error "+res.status);
+      err.status=res.status;
+      throw err;
     }
     const data=await res.json();
     return data.content?.[0]?.text||"Sorry, I couldn't get a response. Try again!";
@@ -869,8 +872,13 @@ RULES:
         const insight=await callClaude("WATER_LOG:{\"oz\":"+intent.oz+"}|Give one hydration tip.",[]);
         const parsed=parseWaterReply(insight);
         setMessages(prev=>[...prev,{bot:true,type:"water_logged",oz:intent.oz,text:parsed?.msg||(intent.oz+" oz logged! Great hydration habit.")}]);
-      }catch{
-        setMessages(prev=>[...prev,{bot:true,type:"water_logged",oz:intent.oz,text:intent.oz+" oz of water logged! 💧"}]);
+      }catch(e){
+        // The water IS logged (onAddWater already ran) — only the coach tip
+        // failed. Confirm the log, but don't pretend the coach answered.
+        setMessages(prev=>[...prev,{bot:true,type:"water_logged",oz:intent.oz,
+          text:intent.oz+" oz logged 💧 "+(e?.status===401
+            ?"(Sign in again for coach tips.)"
+            :"(Coach tip unavailable right now.)")}]);
       }
       setThinking(false);return;
     }
@@ -882,8 +890,12 @@ RULES:
       try{
         const insight=await callClaude("I just took "+intent.item.name+". Give one short sentence tip.",[]);
         setMessages(prev=>[...prev,{bot:true,type:"supp_logged",suppName:intent.item.name,text:insight}]);
-      }catch{
-        setMessages(prev=>[...prev,{bot:true,type:"supp_logged",suppName:intent.item.name,text:intent.item.name+" added and marked taken ✓"}]);
+      }catch(e){
+        // Same as water: the supplement was added; only the tip failed.
+        setMessages(prev=>[...prev,{bot:true,type:"supp_logged",suppName:intent.item.name,
+          text:intent.item.name+" added and marked taken ✓ "+(e?.status===401
+            ?"(Sign in again for coach tips.)"
+            :"(Coach tip unavailable right now.)")}]);
       }
       setThinking(false);return;
     }
@@ -961,8 +973,10 @@ RULES:
       // Plain text
       setMessages(prev=>[...prev,{bot:true,text:reply}]);
       generateSuggestions(reply);
-    }catch{
-      setMessages(prev=>[...prev,{bot:true,text:"I'm having trouble connecting right now. Try again!"}]);
+    }catch(e){
+      setMessages(prev=>[...prev,{bot:true,text:e?.status===401
+        ?"Your session expired. Sign out and sign back in to keep using the coach."
+        :"I'm having trouble connecting right now. Try again!"}]);
     }
     setThinking(false);
   };
@@ -1004,7 +1018,7 @@ RULES:
     if(!lastBotMsg||lastBotMsg.length<10)return;
     try{
       const res=await fetch("/api/coach",{
-        method:"POST",headers:{"Content-Type":"application/json"},
+        method:"POST",headers:coachHeaders(),
         body:JSON.stringify({
           model:"claude-sonnet-4-20250514",max_tokens:120,
           system:"You are a fitness AI. Given the assistant's last response, output EXACTLY 3 short follow-up questions/actions the user might want next, as a JSON array of strings. Max 6 words each. No punctuation. Output ONLY the JSON array, nothing else.",
@@ -1033,7 +1047,7 @@ RULES:
       const hour=new Date().getHours();
       const slotHint=hour<12?"breakfast":hour<17?"lunch":"dinner";
       const resp=await fetch("/api/coach",{
-        method:"POST",headers:{"Content-Type":"application/json"},
+        method:"POST",headers:coachHeaders(),
         body:JSON.stringify({
           model:"claude-sonnet-4-20250514",max_tokens:600,
           system:"You are a nutrition AI analyzing a food photo. Respond ONLY in this exact format:\n"+
@@ -1045,6 +1059,15 @@ RULES:
           ]}],
         }),
       });
+      if(!resp.ok){
+        // Without this a 401 fell through as an empty reply and reported
+        // "couldn't parse the meal" — blaming the photo for an auth failure.
+        const eb=await resp.json().catch(()=>({}));
+        if(eb.error)console.error("[WiFit/coach]",eb.error);
+        const err=new Error("API error "+resp.status);
+        err.status=resp.status;
+        throw err;
+      }
       const d=await resp.json();
       const reply=d.content?.[0]?.text||"";
       if(reply.startsWith("PHOTO_ERROR:")){
@@ -1065,7 +1088,9 @@ RULES:
           setMessages(prev=>[...prev,{bot:true,text:"Couldn't parse the meal from that photo. Try again with better lighting."}]);
         }
       }
-    }catch{setMessages(prev=>[...prev,{bot:true,text:"Photo analysis failed. Check your connection and try again."}]);}
+    }catch(e){setMessages(prev=>[...prev,{bot:true,text:e?.status===401
+      ?"Your session expired. Sign out and sign back in to analyze photos."
+      :"Photo analysis failed. Check your connection and try again."}]);}
     setPhotoLoading(false);
   };
 
@@ -4587,6 +4612,16 @@ const sb={
     return r.ok;
   },
 };
+
+// Headers for /api/coach. The token is read at call time, not captured, so a
+// just-refreshed access_token is used rather than a stale one. If there is no
+// session the request still goes out and the server answers 401 — the client
+// never decides for itself whether a token is valid.
+function coachHeaders(){
+  const t=sb._session?.access_token;
+  return t?{"Content-Type":"application/json","Authorization":"Bearer "+t}
+          :{"Content-Type":"application/json"};
+}
 
 // Treat a token expiring within this window as needing refresh (clock skew buffer).
 const REFRESH_SKEW_MS=60*1000;
