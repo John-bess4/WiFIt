@@ -6234,16 +6234,32 @@ export default function App(){
   // Resolve the session to a definite state before any data load runs.
   useEffect(()=>{
     (async()=>{
-      const res=await resolveSession();
-      if(res.status==="logged-out"||!res.session?.user?.id){setAuthState("auth");return;}
-      loadUserData(res.session.user.id);
+      try{
+        const res=await resolveSession();
+        if(res.status==="logged-out"||!res.session?.user?.id){setAuthState("auth");return;}
+        await loadUserData(res.session.user.id);
+      }catch(e){
+        // Without this the spinner would hang forever on an unexpected throw.
+        console.error("session resolve failed:",e);
+        setAuthState("auth");
+      }
     })();
   },[]);
 
   const loadUserData=async(uid)=>{
+    // Has identity been established? Decides where the catch below routes: a
+    // failure after the profile loaded is a secondary-load problem and the app
+    // stays usable; a failure before it means we never learned who this user is,
+    // so sign-in — never onboarding, which is the one path that would overwrite
+    // a real profile. Shared by both callers (mount and post-sign-in).
+    let profileLoaded=false;
     try{
-      const profiles=await sb.select("profiles","id=eq."+uid);
+      // selectAuth, not select: select() turns a 401 into [], which reads as
+      // "new user" and sends an expired session to the onboarding wizard.
+      const {authError,rows:profiles}=await sb.selectAuth("profiles","id=eq."+uid);
+      if(authError){setAuthState("auth");return;}
       if(profiles&&profiles.length>0){
+        profileLoaded=true;
         const p=profiles[0];
         setUserName(p.name||"");
         setGoals({cal:p.cal_goal||2200,protein:p.protein_goal||140,carbs:p.carbs_goal||180,fat:p.fat_goal||78});
@@ -6315,7 +6331,7 @@ export default function App(){
       }
     }catch(e){
       console.error("loadUserData error:",e);
-      setAuthState("app"); // fallback — still let them use the app
+      setAuthState(profileLoaded?"app":"auth");
     }
   };
 
