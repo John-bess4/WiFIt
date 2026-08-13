@@ -1,203 +1,394 @@
-# WiFit — Project Context Handoff
+# WiFit — Project Context
 
-This document is the bridge between the Claude artifact-chat development sessions and Claude Code on your local repo. Paste relevant sections into Claude Code or keep this file as `docs/PROJECT_CONTEXT.md` in the repo so future sessions can read it.
+**Rewritten 2026-08-13 from the live database and current `src/App.jsx`.**
+
+The previous version of this file was written from inference and drifted ~40 commits
+behind reality. It claimed `profiles.gender` did not exist, named the weight table
+`weight_log` instead of `body_weight_log`, and documented macro columns as
+`*_per_100g` instead of `per100_*`. Each of those became a silent HTTP 400 in
+production, because `sb.insert`/`sb.upsert` swallow non-2xx responses. **Every
+statement below was verified against the live schema or the current code. If you
+change the schema, change this file in the same commit.**
 
 ---
 
 ## What WiFit is
 
-A personal fitness tracking React app with food logging, workout tracking, supplement adherence, an AI Coach side panel (Claude API), and progress analytics. Single-page React app deployed on Vercel, backed by Supabase for auth + persistence.
+A single-user fitness PWA: food logging with macros, workout plans and sessions,
+supplements, water, body weight, and an AI coach. React + Vite, deployed on Vercel
+at `wifit.vercel.app`, backed by Supabase (Postgres + Auth).
 
-## Stack
+## Stack and layout
 
-| Layer | Tech |
+| Path | What |
 |---|---|
-| Frontend | React (functional components + hooks), single-file build, vanilla CSS-in-JS via inline styles + theme context, SVG icons |
-| Backend | Supabase (Postgres + Auth + REST) at `https://vghqqksbjpgdzmvfmnru.supabase.co` |
-| AI | Anthropic Claude API (`claude-sonnet-4-20250514`), called directly from client |
-| External APIs | USDA FoodData Central (food search), Open Food Facts (barcode lookup) |
-| Hosting | Vercel |
-| Repo | GitHub (existing, name unknown to me) |
+| `src/App.jsx` | The entire app — ~6,600 lines, one file. All components, the `sb` client, auth, parsers. |
+| `src/main.jsx` | Mount point. |
+| `api/coach.js` | Vercel **Edge** function proxying Anthropic. The only server-side code. |
+| `supabase/migrations/` | Applied migrations, recorded after the fact. |
+| `eslint.config.js` | Flat config, ESLint 9. Two rules only: `no-undef` error, `no-unused-vars` warn. |
 
-## Single source of truth
+Supabase project `vghqqksbjpgdzmvfmnru`, region **us-east-1**. Vercel deploys to
+**iad1** — the same AWS region, so server-to-Supabase round trips are single-digit ms.
 
-The current working file is `fitness_app.jsx` (~6,340 lines). Until the refactor it contains **every component, helper, and constant** in one module. You'll find it at the project root or wherever you map it on import.
+**Style note:** the codebase uses string concatenation rather than template literals
+throughout. This is intentional legacy, not a defect. Do not "fix" it.
 
-## Top-level components (in order they appear in the file)
+---
 
-1. **Theme system** — `ThemeCtx`, `useTheme`, `THEMES`, `THEME_FAMILIES`, `GLOBAL_CSS`
-2. **Utility functions** — `fmtDate`, `searchUSDA`, `searchOpenFoodFacts`, `barcodeLookup`, `searchLocalSupp`, `parseIntent`
-3. **Supabase client** — `sb` (custom thin fetch wrapper, not @supabase/supabase-js — it exposes `select`, `upsert`, `delete`, `update`, `getUser`, etc.)
-4. **WeightLogWidget** — body weight quick logger
-5. **AISidePanel** — the AI Coach, 11 features (see below)
-6. **SuppSearchPanel** — supplement library search
-7. **HomeTab** — dashboard with calorie ring, macro bars, WeekStrip, shortcut cards, today's meals
-8. **WeekStrip** — Mon–Sun activity strip at top of Home
-9. **QuickAddPanel** — center-tab modal with macro-aware food/supp/water add flows
-10. **FoodTab** — meal-by-meal log with search, edit, delete
-11. **WorkoutTab** + **ActiveWorkout** — plan builder + live session tracker with PR detection
-12. **SuppsTab** — supplement stack with drag-to-reorder, reminders
-13. **CalendarTab** — month-grid view, only reachable from WeekStrip
-14. **ProgressPage** — 7d/30d/90d analytics: weight chart, calorie bars, training grid, monthly highlights, PRs (newest, replaced old Calendar shortcut card)
-15. **OnboardingWizard** — 5-step setup (Name/Gender/Age → Height/Weight → Activity → Goal rate → Summary), uses Revised Harris-Benedict
-16. **SettingsPage** — Account / Notifications / Appearance / Units & data / Privacy / Advanced
-17. **ProfilePage** — body stats editor, live TDEE recalc, shared `GoalRatePicker`
-18. **HealthSyncSection** — `navigator.health` integration (Android), graceful fallback
-19. **PersonalizationPage** — theme family + light/dark picker
-20. **Auth screens** — sign-in / sign-up
-21. **App** — root component, state hub, tab router
+## Database schema (live, verified)
 
-## AI Coach features (11 + 1)
+All 11 tables have **RLS enabled**. Every `user_id` is a FK to `auth.users(id)` with
+`ON DELETE CASCADE`.
 
-| # | Feature | Format |
+### profiles
+PK `id` (FK → `auth.users`, cascade). One row per user.
+
+| Column | Type | Null | Default |
+|---|---|---|---|
+| id | uuid | NO | — |
+| name | text | YES | |
+| age | integer | YES | |
+| weight_lbs | numeric | YES | |
+| height_in | numeric | YES | |
+| activity_level | text | YES | `'moderate'` |
+| **goal** | text | YES | `'maintain'` | 
+| cal_goal | integer | YES | 2200 |
+| protein_goal | integer | YES | 140 |
+| carbs_goal | integer | YES | 180 |
+| fat_goal | integer | YES | 78 |
+| theme | text | YES | `'dark'` |
+| created_at | timestamptz | YES | now() |
+| updated_at | timestamptz | YES | now() |
+| gender | text | YES | |
+| bmr | numeric | YES | |
+| tdee | numeric | YES | |
+| **goal_rate** | **text** | YES | |
+
+`goal_rate` is **TEXT, not numeric** — values are keys like `"lose_2"`, `"lose_1"`,
+`"maintain"`, `"gain_1"`, `"gain_2"`. It was briefly created as numeric and every
+profile save 400'd until corrected.
+
+`theme` is a composite string: `"<family>_<dark|light>"`, e.g. `"aurora_dark"`. It is
+split on `_` when read; `parts[0]` is the family, the last part is the mode.
+
+**`goal` is vestigial.** Superseded by `goal_rate`. Nothing writes it. One read path
+still maps legacy values (`"lose"` → `"lose_1"`) for backward compatibility.
+
+### food_log
+| Column | Type | Null | Default |
+|---|---|---|---|
+| id | uuid | NO | gen_random_uuid() |
+| user_id | uuid | NO | |
+| logged_date | date | **NO** | CURRENT_DATE |
+| meal_slot | text | **NO** | |
+| food_name | text | **NO** | |
+| brand | text | YES | |
+| grams | numeric | **NO** | |
+| per100_cal / _protein / _carbs / _fat / _fiber / _sodium | numeric | YES | 0 |
+| **per100_sugar** | numeric | YES | **null** |
+| color | text | YES | |
+| created_at | timestamptz | YES | now() |
+
+`per100_sugar` defaults to **null**, unlike the other `per100_*` columns which default
+to 0. Read it as `r.per100_sugar || 0`.
+
+Macros are stored **per 100 grams**. `calc()` multiplies by `grams/100`. Any code that
+divides by a serving size must divide by the *gram weight*, never by a raw serving
+number in some other unit.
+
+### custom_foods
+`id`, `user_id`, `name` (NOT NULL), `brand`, `serving_g` numeric,
+`per100_cal/_protein/_carbs/_fat/_fiber/_sugar/_sodium` numeric default 0,
+`created_at`, plus:
+
+- **`serving_qty`** numeric — what the user typed (e.g. `4`)
+- **`serving_unit`** text — the unit they picked (e.g. `"oz"`)
+
+`serving_g` is the source of truth in grams. `serving_qty`/`serving_unit` exist so a
+future edit screen can redisplay "4 oz" instead of "113.4 g". Nothing reads them yet.
+
+### workout_sessions
+| Column | Type | Null | Default |
+|---|---|---|---|
+| id | uuid | NO | gen_random_uuid() |
+| user_id | uuid | NO | |
+| workout_name | text | **NO** | |
+| completed_date | date | **NO** | CURRENT_DATE |
+| duration_secs | integer | YES | 0 |
+| sets_completed | integer | YES | 0 |
+| total_sets | integer | YES | 0 |
+| exercises | jsonb | YES | `'[]'` |
+| created_at | timestamptz | YES | now() |
+| **prs** | **jsonb** | **NO** | `'[]'` |
+
+`prs` was missing for months while the client sent it on every insert — PostgREST
+returned 400 `PGRST204`, `sb.insert` swallowed it, and the table stayed empty while
+the UI showed saved workouts. It is a **native jsonb array**: read `r.prs` directly,
+never `JSON.parse(r.prs)`.
+
+`exercises` shape: `[{name, isPR, sets:["8×135lbs", ...]}]`.
+
+### workout_plans
+`id`, `user_id`, `name` (NOT NULL), `tag`, `level`, `est_min` integer,
+`scheduled_day` text, `exercises` **jsonb NOT NULL default `'[]'`**, `sort_order`
+integer default 0, `created_at`.
+
+### supplement_stack
+`id`, `user_id`, `name` (NOT NULL), `sub`, `dot_color` text default `'#888888'`,
+`reminder_time` text, `reminder_enabled` boolean default false, `sort_order` integer
+default 0, `created_at`, plus:
+
+- **`category`** text — the AI's taxonomy (e.g. `"Creatine"`), also the key into `DOT_COLORS`
+- **`note`** text — the AI's usage tip
+
+Before these existed, the ADD_SUPP path flattened `dose`+`timing` into `sub`, consumed
+`category` only to pick a hex color, and dropped `note` entirely. Both the AI path and
+the manual add path now persist `category` and `note`.
+
+### supplement_log
+`id`, `user_id`, `supplement_id` (NOT NULL, FK → `supplement_stack(id)` cascade),
+`log_date` date NOT NULL default CURRENT_DATE, `taken` boolean default false,
+`created_at`.
+
+**UNIQUE (supplement_id, log_date)** — upsert with `resolution=merge-duplicates`
+updates the day's row rather than appending.
+
+### water_log
+`id`, `user_id`, `log_date` date NOT NULL, **`cups` integer default 0**, `created_at`,
+**`oz` integer NOT NULL default 0**.
+
+**UNIQUE (user_id, log_date)** — one cumulative row per day. The write sends the
+day's **running total**, not the tap delta.
+
+**`cups` is dead.** Zero reads, zero writes. Superseded by `oz`.
+
+### body_weight_log
+`id`, `user_id`, **`weight_lbs` numeric NOT NULL**, `log_date` date NOT NULL default
+CURRENT_DATE, **`note` text**, `created_at`.
+
+**UNIQUE (user_id, log_date)** — same-day edits update rather than duplicate.
+
+The column is `weight_lbs`, **not `lbs`**. The client wrote `lbs` to a table called
+`weight_log` (which does not exist) — a 404 that became `[]`, so the weight chart and
+the coach's weight context were silently empty forever.
+
+**`note` is dead.** Nothing reads or writes it.
+
+### coach_usage
+`id`, `user_id` (FK → `auth.users`, cascade), `created_at` timestamptz NOT NULL
+default now(). One row per accepted `/api/coach` request.
+
+Index: `coach_usage_user_created_idx (user_id, created_at DESC)` — matches the query's
+sort order; the windowed count runs on every request.
+
+**RLS: INSERT and SELECT of own rows only. There is deliberately NO UPDATE and NO
+DELETE policy.** With RLS on, a command with no matching policy is denied, so a user
+cannot clear or backdate their usage to reset the rate limit. That is what allows the
+Edge function to authenticate these queries with the caller's own JWT instead of a
+service-role key. Verified as the `authenticated` role: SELECT saw 2 rows, DELETE
+removed 0, UPDATE changed 0.
+
+### workouts — LEGACY, DO NOT USE
+`id, user_id, name, tag, level, est_min, exercises, created_at, updated_at`. Zero rows.
+The application never references it. Plans live in `workout_plans`.
+
+---
+
+## The `sb` wrapper — read this before touching any data code
+
+`sb` is a hand-rolled Supabase REST client (module-level in `App.jsx`, ~line 4524).
+**No `@supabase/supabase-js`.** `sb.headers()` reads `sb._session` at call time, so a
+just-refreshed token is used automatically.
+
+| Method | Returns on success | Returns on failure |
 |---|---|---|
-| 1 | Context-aware responses | `buildContextBlock()` injects live cal/macros/water/workout/supps/weightLog/suppStack into every system prompt |
-| 2 | Meal suggestions | `MEAL_SUGGESTION:[...]\|msg` → card with "Log this meal" |
-| 3 | Weekly check-in | Monday-only, gated by `wifit_checkin_<year>_<month>_w<week>` localStorage key |
-| 4 | Voice input | `SpeechRecognition` API, mic button toggles red |
-| 5 | Weight progress | `WeightLogWidget`, `weight_log` table, AI sees last 7 entries |
-| 6 | Recipe mode | `RECIPE:{...}\|msg` with ingredients + steps + "Log all ingredients" |
-| 7 | Persistent chat | `localStorage` key `wifit_chat_{userId}`, last 30 messages, cleared on sign-out |
-| 8 | Suggested replies | Secondary Claude call generates 3 chips after plain-text bot responses |
-| 9 | Photo logging | Camera → base64 → Claude vision → `MULTI_FOOD:` |
-| 10 | Health sync | `HealthSyncSection` in Settings → Units & data |
-| 11 | Supplement reorder | Drag-to-reorder rows, `sort_order` column |
-| ★ | **ADD_SUPP** (latest) | `ADD_SUPP:[...]\|msg` — Claude adds supplements directly, with `name`, `dose`, `timing`, `category`, `note` |
+| `select(table, filters, opts)` | parsed array | **`[]` on ANY non-2xx** |
+| `selectAuth(table, filters, opts)` | `{authError:false, rows:[...]}` | `{authError:<401\|403>, rows:[]}` |
+| `insert(table, row)` | the row | **`null`** |
+| `upsert(table, row)` | the row | **`null`** |
+| `update(table, changes, {filter})` | `true` | `false` |
+| `delete(table, filter)` | `true` | `false` |
 
-### AI response formats (all use string concatenation, NOT template literals — see Known Issues)
+**None of these throw.** All log `[sb.<method>] <table> <status> <body>` to the console
+on failure — that logging is the only reason the schema mismatches above were ever found.
 
-- `MULTI_FOOD:[...]\|msg` — food logging (single or multi)
-- `MEAL_SUGGESTION:[...]\|msg` — macro-aware suggestions
-- `WATER_LOG:{"oz":N}\|msg` — water
-- `RECIPE:{...}\|msg` — full recipe
-- `WORKOUT_PLAN:{...}\|msg` — workout (≥4 exercises required)
-- `ADD_SUPP:[...]\|msg` — supplement add/recommend
+### The two rules that matter
 
-## Supabase schema (inferred from code — verify against your actual DB)
+1. **`select` collapses every error into `[]`.** A 401, a 500, and "no rows" are
+   indistinguishable. 16 call sites depend on this contract and are `[]`-guarded, and
+   several sit inside `Promise.all` batches where a throw would propagate differently.
+   **Do not change it.**
 
-| Table | Key columns |
+2. **`insert`/`upsert` return `null` on failure without throwing.** A `try/catch`
+   around them catches *nothing*. Callers **must** check the return value:
+   ```js
+   const row = await sb.insert("food_log", {...});
+   if (!row) throw new Error("insert returned no row");   // then roll back + surface
+   ```
+   This exact gap is why users saw workouts and food "save" for months while the tables
+   stayed empty.
+
+### `selectAuth` — narrow by design
+
+Used at **exactly one call site**: the mount profile check in `loadUserData`. It exists
+because `select`'s `[]`-on-error contract makes a 401 look like a brand-new user. It is
+a sibling method, not a replacement — adding callers is fine, changing `select` is not.
+
+---
+
+## Auth
+
+Session lives in `localStorage["sb_session"]` and in `sb._session`.
+`expires_at` is **UNIX seconds**, not milliseconds.
+
+- `persistSession(d)` — derives `expires_at` from `expires_in` when the refresh grant
+  omits it; writes both `sb._session` and localStorage.
+- `refreshSession(token)` — POSTs `grant_type=refresh_token`. Guarded by a
+  **module-level `_refreshInFlight` promise** so StrictMode double-mounts and concurrent
+  remounts collapse onto **one** network call. The refresh token is single-use and
+  rotates, so a second concurrent call would fail with an already-consumed token.
+- `resolveSession()` → `{status: "valid" | "refreshed" | "logged-out", session?}`.
+  Refreshes at most once. `REFRESH_SKEW_MS = 60s` — a token expiring within a minute is
+  treated as needing refresh.
+
+The mount effect awaits `resolveSession()` **before any data load**, inside
+`try/catch`; an unexpected throw routes to sign-in rather than hanging the spinner.
+
+### Routing rule — get this wrong and you destroy data
+
+```
+authError            -> "auth"        (returning user, expired/invalid session)
+rows.length > 0      -> "app"
+genuine 200, 0 rows  -> "onboarding"  (authenticated, truly no profile)
+```
+
+**Onboarding must never be a fallback.** It is the one path that overwrites a real
+profile. Before this was fixed, an expired token produced `[]` from `select`, which read
+as "new user" and dropped a returning user into the onboarding wizard — completing it
+would have overwritten their real data.
+
+`loadUserData`'s catch uses a `profileLoaded` flag: a failure **after** the profile
+resolved keeps the app usable (`"app"`), a failure **before** it goes to `"auth"`.
+`handleAuth` calls the same function, so a post-sign-in failure behaves identically.
+
+### Dates — `localDate()`
+
+```js
+const localDate = (d = new Date()) => d.toLocaleDateString("en-CA");
+```
+
+**Every `date` column stores the user's LOCAL day.** `toISOString()` returns the UTC
+day, which is already tomorrow for anyone west of UTC logging in the evening — a
+workout at 2026-07-28 19:42 PDT was stored as 2026-07-29, and every "today" view then
+failed to find it. Writes, read filters, and comparisons all go through `localDate()`
+so they cannot drift apart.
+
+`updated_at`/`created_at` (timestamptz) correctly stay UTC via `toISOString()`.
+
+**Known limitation:** `today` is computed **once per `App` mount**. A session left open
+across midnight keeps writing yesterday's date.
+
+---
+
+## `/api/coach` security
+
+Vercel Edge runtime. Not streaming — `await upstream.json()` buffers the whole response.
+
+**Auth gate.** The client attaches its `access_token` via `coachHeaders()`, read at call
+time. The server verifies against `GET {SUPABASE_URL}/auth/v1/user` and **rejects on any
+non-2xx — not `status === 401`.** Verified against the live endpoint:
+
+| Request | Response |
 |---|---|
-| `profiles` | `id` (FK auth.users), `name`, `gender`, `age`, `weight_lbs`, `height_in`, `activity_level`, `goal_rate`, `cal_goal`, `protein_goal`, `carbs_goal`, `fat_goal`, `theme`, `bmr`, `tdee`, `updated_at` |
-| `food_log` | `id`, `user_id`, `logged_date`, `slot` (breakfast/lunch/dinner/snacks), `name`, `grams`, `cal_per_100g`, `protein_per_100g`, `carbs_per_100g`, `fat_per_100g` |
-| `custom_foods` | `id`, `user_id`, `name`, per-100g macros |
-| `supplement_stack` | `id`, `user_id`, `name`, `sub`, `dot`, `category`, `note`, `reminder_time`, `sort_order` |
-| `supplement_log` | `id`, `user_id`, `log_date`, `supplement_id`, `taken` (bool) |
-| `workout_sessions` | `id`, `user_id`, `completed_date`, `workout_name`, `exercises` (jsonb), `prs` (jsonb), `duration_min` |
-| `weight_log` | `id`, `user_id`, `log_date`, `lbs` |
+| garbage token | **403** `bad_jwt` |
+| no Authorization header | 401 `no_authorization` |
+| **the public anon key** | **403** `invalid claim: missing sub claim` |
 
-## Theme system
+A 401-only check would admit both a malformed token **and the anon key that ships in the
+client bundle**. The gate runs before anything else, so no unauthenticated request ever
+reaches Anthropic. Confirmed in production: an unauthenticated curl returned an Anthropic
+`request_id` before the fix and returns `401 {"code":"unauthenticated"}` with no
+`request_id` after — the absence of that field is the proof Anthropic was not called.
 
-Two families: **Aurora** (default) and your two main themes:
-- **Midnight Purple** (dark) — `aurora_dark`
-- **Clean Slate** (light) — `aurora_light`
+**Body caps** — the gate alone still lets a signed-up user request the most expensive
+model in a loop, so the payload is **rebuilt from validated parts**, never forwarded:
 
-Theme is persisted to `profiles.theme` as `"<family>_<dark|light>"`. Auto-saves on every change via `saveTheme()`.
+- `model` **pinned server-side**, client value discarded
+- `max_tokens` clamped to **1200**
+- `messages` must be a non-empty array of ≤ 24
+- `system` truncated at 20,000 chars
+- 5 MB body ceiling when an `image` block is present, **128 KB** when text-only
 
-## Key constants
+Size tiers key off whether an image block actually exists. A client-declared "purpose"
+field would be attacker-controlled and would enforce nothing.
 
-- `GOAL_OZ = 128` (water goal)
-- `GOAL_RATES` — 7 options: lose 2/1/0.5, maintain, gain 0.5/1/2 lbs/wk
-- `ACTIVITY` — 7 levels matching calculator.net
-- `INITIAL_SUPPS` — sample supps shown only in demo mode (NOT for real users)
-- `MEAL_SLOTS = ["breakfast","lunch","dinner","snacks"]`
+**Rate limit: 60/hour + 400/day per authenticated user**, counted **on entry** —
+recorded before the Anthropic call, so nobody can burn quota and retry for free. Keyed
+to user id, not IP (mobile NAT sharing, IP rotation). State lives in `coach_usage`
+because Edge isolates are ephemeral, concurrent and per-region — an in-memory counter
+would enforce nothing. Over the limit returns **429** with `Retry-After` and a message
+naming the real wait. Any Supabase failure during the check **fails closed** (503).
 
-## Known issues / gotchas
+**Request accounting:** a plain-text coach reply costs **2** requests (`callClaude` +
+`generateSuggestions`). A structured reply — `MULTI_FOOD`, `MEAL_SUGGESTION`, `RECIPE`,
+`WORKOUT_PLAN` — returns early and costs **1**. A photo log costs 2.
 
-### 1. Template literals were nuked across the entire file
-The Claude artifact viewer's Babel parser chokes on certain nested template literal patterns. To work around this, **every template literal outside of two specific blocks has been replaced with string concatenation**. The two surviving template literals are:
-
-- `GLOBAL_CSS` (lines ~146–155) — plain CSS, no `${}` expressions
-- `buildSystem` (lines ~659–731) — system prompt for AI Coach, uses `${buildContextBlock()}` interpolation
-
-**In Claude Code (real build environment) this is a non-issue.** Feel free to restore template literals during refactor — they're cleaner. The string-concatenation style is a chat-artifact artifact, not a stylistic choice.
-
-### 2. Custom Supabase client (`sb`)
-We rolled our own thin REST wrapper instead of `@supabase/supabase-js`. Methods: `getUser`, `signIn`, `signUp`, `signOut`, `select`, `upsert`, `update`, `delete`. Auth uses access tokens from password sign-in. If you want to switch to the official client, the API surface is similar but not identical.
-
-### 3. Direct Anthropic API calls from client
-The AI Coach calls Anthropic directly using `fetch("https://api.anthropic.com/v1/messages", ...)` with no API key in the request — relies on the artifact viewer's proxy. **This will not work in production.** Move to a serverless function (Vercel Edge Function or API route) before launch.
-
-### 4. Single-file architecture
-6,340 lines in one file. The first refactor task should be splitting into `src/components/`, `src/lib/`, `src/hooks/`. See "First Claude Code prompt" below.
-
-### 5. Hardcoded sample data
-`INITIAL_SUPPS` ships with demo supplements. Make sure real users get empty arrays (already handled in sign-out reset).
-
-## What's already been built and tested
-
-- ✅ Full auth flow (sign-in, sign-up, sign-out with data reset)
-- ✅ Onboarding wizard with Revised Harris-Benedict TDEE
-- ✅ Food logging (USDA + custom + barcode)
-- ✅ Supplement stack with reminders + drag reorder
-- ✅ Workout tracker with PR detection
-- ✅ AI Coach with all 11 features + ADD_SUPP
-- ✅ Calendar grid view (accessed via WeekStrip)
-- ✅ Progress page (7d/30d/90d, weight chart, calorie bars, training grid, monthly highlights, PRs)
-- ✅ Theme system with auto-save
-- ✅ Settings + Profile + Personalization pages
-
-## What's NOT done
-
-- ❌ Anthropic API key moved to server side (security) — **FIXED: 71e0741**
-- ❌ Component file splitting (still monolithic)
-- ❌ Real test coverage (zero tests)
-- ❌ Mobile-specific PWA manifest / install prompt polish
-- ❌ Notification scheduling for supplements (uses Web Notifications, browser-only, not reliable on iOS)
-- ❌ Data export (CSV/PDF) — mentioned in Settings "Pro" plan but not implemented
-- ❌ Body composition tracking — same
+Anthropic response formats are unchanged and out of scope for security work:
+`MULTI_FOOD`, `MEAL_SUGGESTION`, `RECIPE`, `WORKOUT_PLAN`, `ADD_SUPP`, `WATER_LOG`.
 
 ---
 
-## Session Log — 2026-06-02
+## Known issues / not done
 
-### 8 commits shipped to production today
+1. **10 `sb.*` call sites still ignore the return value.** Verified count — an earlier
+   estimate of ~6 was low. Lines (approximate, locate by identifier):
+   `sb.delete` food_log (~2769), `sb.delete` supplement_stack (~3940), `sb.update`
+   supplement_stack (~3948, ~3963, ~4049), `sb.upsert` profiles (~4913, ~5541, ~6238),
+   `sb.insert` custom_foods (~6445), `sb.delete` workout_plans (~6613). Each can fail
+   silently. `addFoodItem` and `saveWorkoutSession` are the two that *do* check — copy
+   their shape.
 
-| Commit | Description |
-|--------|-------------|
-| `71e0741` | Anthropic API moved server-side to Vercel Edge Function (`/api/coach`) |
-| `8a4bba1` | Added 503 error visibility when `/api/coach` edge function is unavailable |
-| `78a4c0b` | Fixed `workoutParsed` ReferenceError in AI Coach response handler |
-| `b5f1147` | AI Coach supplement recommendations persist to DB; PR max-weight saves to `workout_sessions` |
-| `bb23d90` | `prHistory` rebuilt from `workout_sessions` on sign-in; write-error handling added |
-| `5d1feb0` | AI Coach WORKOUT_PLAN multi-format parsing fixed (handles pipe separator + plain JSON) |
-| `48953cb` | **Fix C: persist workout plans to `workout_plans` table** |
+2. **Open Food Facts search is CORS-blocked** from the browser. USDA works. Needs a
+   proxy (an Edge function like `/api/coach`) or removal.
 
-### Fix C — workout plan persistence (commit `48953cb`)
+3. **The AI parser contradicts the custom-food form.** `parseIntent` hardcodes
+   `cup → 240 g` and `scoop/serving → 30 g`, while the custom-food form deliberately
+   refuses to guess and requires the user to supply grams for food-dependent units. Two
+   different positions on what a cup weighs.
 
-**What changed in `App.jsx`:**
+4. **USDA `servingSizeUnit` is never read** — `servingG: f.servingSize` takes the number
+   regardless of whether USDA reported grams, ml, or IU. Same class of bug as the
+   custom-food unit bug, on data the user doesn't control.
 
-- **`loadUserData`** — after loading weight log, now selects all rows from `workout_plans` ordered by `sort_order ASC` and hydrates the `workouts` state. If the user has no saved plans, `INITIAL_WORKOUTS` is kept as the default.
-- **`addWorkoutPlan`** (AI Coach path) — now `async`; after optimistic local prepend it inserts the plan into `workout_plans` and swaps the temp `"w{timestamp}"` id for the real Supabase UUID.
-- **`saveWorkoutPlanDB`** — new function. Called by WorkoutTab for both create (inserts) and edit (patches). On insert, swaps temp id with DB UUID; on update, PATCHes name/tag/level/est_min/scheduled_day/exercises.
-- **`deleteWorkoutPlanDB`** — new function. DELETEs the row via `id=eq.{id}&user_id=eq.{uid}`. No-op for unauthenticated / demo users.
-- **`WorkoutTab`** — accepts two new props (`onSavePlan`, `onDeletePlan`). `saveWorkout` detects new vs edit and calls `onSavePlan`; `deleteWorkout` calls `onDeletePlan`.
-- **WorkoutTab mount** — passes `onSavePlan={saveWorkoutPlanDB}` and `onDeletePlan={deleteWorkoutPlanDB}`.
+5. **No edit or delete UI for custom foods.** Create-only. A bad row can only be removed
+   from the database directly.
 
-**`workout_plans` table columns used:** `id`, `user_id`, `name`, `tag`, `level`, `est_min`, `scheduled_day`, `exercises` (jsonb), `sort_order`, `created_at`.
+6. **`GoalDots`** (~line 498) is a complete component nothing renders. `WeightLogWidget`
+   had the same problem and is now wired in.
 
-**sort_order:** set to 0 on AI-Coach-added plans (prepend), to `workouts.length` on manually created plans (append). Reorder UI does not exist for plans yet; column is in place for future drag-to-reorder feature.
+7. **`coach_usage` retention.** One row per request, ~110 bytes with the index. At 100
+   active users it approaches the 500 MB free tier within a year. Only the last 24h is
+   ever read. When the table nears ~1M rows, add a nightly `pg_cron`:
+   `delete from coach_usage where created_at < now() - interval '2 days';` — it runs as
+   `postgres`, so the absent DELETE policy does not block it.
+
+8. **`today` is computed once per mount** (see Dates above).
+
+9. **ESLint reports 28 `no-unused-vars` warnings**, 0 errors. Untriaged.
 
 ---
 
-## Session Log — June 2026
+## Current data state (2026-08-13)
 
-### 7 commits shipped
+`profiles` 3 · `workout_plans` 2 · `supplement_stack` 2 · `supplement_log` 1 ·
+`custom_foods` 1 · **`food_log` 0 · `workout_sessions` 0 · `water_log` 0 ·
+`body_weight_log` 0 · `coach_usage` 0** · `workouts` 0 (legacy).
 
-| Commit | Description |
-|--------|-------------|
-| `71e0741` | Anthropic API moved server-side to Vercel Edge Function — removes client-side key exposure |
-| `8a4bba1` | 503 error shown to user when `ANTHROPIC_API_KEY` is missing from Edge Function env |
-| `78a4c0b` | Fixed `workoutParsed` ReferenceError in AI Coach response handler |
-| `b5f1147` | AI Coach supplement recommendations persist to DB; PRs saved to `workout_sessions` |
-| `bb23d90` | `prHistory` rebuilt from `workout_sessions` on sign-in; error handling added on critical writes |
-| `5d1feb0` | AI Coach WORKOUT_PLAN multi-format parsing fixed (pipe separator + plain JSON) |
-| Fix C | Workout plan persistence to new `workout_plans` table (table created with RLS enabled) |
+The zeroes are a deliberate clean slate. Five `workout_sessions` rows were deleted as
+click-through artifacts (3–13 second durations; one recorded 12 sets in 13 seconds and
+generated 4 phantom PRs because `prHistory` was empty). Leaving them would have seeded
+the planned PR baseline with template-default weights.
 
-### Still needs live-site verification
-
-- **Fix C** — workout plan persistence to `workout_plans` (confirm plans survive page refresh in production)
-- **Food logging** — end-to-end food log write + reload in production environment
-
-### Next initiative: AI Action Router
-
-Route AI Coach responses through a central action dispatcher so new response types (beyond `MULTI_FOOD`, `WORKOUT_PLAN`, `ADD_SUPP`, etc.) can be registered without growing the inline parse-and-branch block in `App.jsx`. Likely a `handleAIAction(type, payload)` function with a registry map.
+**No real workout, water, or body-weight entry has ever been persisted through the UI.**
+Those write paths are fixed in code but not yet runtime-confirmed.
