@@ -744,6 +744,7 @@ RULES:
       // Carry the status so callers can tell "signed out" from "network down".
       const err=new Error("API error "+res.status);
       err.status=res.status;
+      err.userMessage=errBody.error||"";
       throw err;
     }
     const data=await res.json();
@@ -876,9 +877,7 @@ RULES:
         // The water IS logged (onAddWater already ran) — only the coach tip
         // failed. Confirm the log, but don't pretend the coach answered.
         setMessages(prev=>[...prev,{bot:true,type:"water_logged",oz:intent.oz,
-          text:intent.oz+" oz logged 💧 "+(e?.status===401
-            ?"(Sign in again for coach tips.)"
-            :"(Coach tip unavailable right now.)")}]);
+          text:intent.oz+" oz logged 💧 "+coachTipNote(e)}]);
       }
       setThinking(false);return;
     }
@@ -893,9 +892,7 @@ RULES:
       }catch(e){
         // Same as water: the supplement was added; only the tip failed.
         setMessages(prev=>[...prev,{bot:true,type:"supp_logged",suppName:intent.item.name,
-          text:intent.item.name+" added and marked taken ✓ "+(e?.status===401
-            ?"(Sign in again for coach tips.)"
-            :"(Coach tip unavailable right now.)")}]);
+          text:intent.item.name+" added and marked taken ✓ "+coachTipNote(e)}]);
       }
       setThinking(false);return;
     }
@@ -974,9 +971,8 @@ RULES:
       setMessages(prev=>[...prev,{bot:true,text:reply}]);
       generateSuggestions(reply);
     }catch(e){
-      setMessages(prev=>[...prev,{bot:true,text:e?.status===401
-        ?"Your session expired. Sign out and sign back in to keep using the coach."
-        :"I'm having trouble connecting right now. Try again!"}]);
+      setMessages(prev=>[...prev,{bot:true,
+        text:coachErrorText(e,"I'm having trouble connecting right now. Try again!")}]);
     }
     setThinking(false);
   };
@@ -1066,6 +1062,7 @@ RULES:
         if(eb.error)console.error("[WiFit/coach]",eb.error);
         const err=new Error("API error "+resp.status);
         err.status=resp.status;
+        err.userMessage=eb.error||"";
         throw err;
       }
       const d=await resp.json();
@@ -1088,9 +1085,8 @@ RULES:
           setMessages(prev=>[...prev,{bot:true,text:"Couldn't parse the meal from that photo. Try again with better lighting."}]);
         }
       }
-    }catch(e){setMessages(prev=>[...prev,{bot:true,text:e?.status===401
-      ?"Your session expired. Sign out and sign back in to analyze photos."
-      :"Photo analysis failed. Check your connection and try again."}]);}
+    }catch(e){setMessages(prev=>[...prev,{bot:true,
+      text:coachErrorText(e,"Photo analysis failed. Check your connection and try again.")}]);}
     setPhotoLoading(false);
   };
 
@@ -4621,6 +4617,20 @@ function coachHeaders(){
   const t=sb._session?.access_token;
   return t?{"Content-Type":"application/json","Authorization":"Bearer "+t}
           :{"Content-Type":"application/json"};
+}
+
+// One place to turn a coach failure into something honest. 429 prefers the
+// server's message because it carries the actual retry time.
+function coachErrorText(e,fallback){
+  if(e?.status===401)return "Your session expired. Sign out and sign back in to keep using the coach.";
+  if(e?.status===429)return e.userMessage||"You've reached the coach's usage limit. Try again later.";
+  return fallback;
+}
+// Short suffix for paths where the log itself succeeded and only the tip failed.
+function coachTipNote(e){
+  if(e?.status===401)return "(Sign in again for coach tips.)";
+  if(e?.status===429)return "(Coach tip limit reached — the log was saved.)";
+  return "(Coach tip unavailable right now.)";
 }
 
 // Treat a token expiring within this window as needing refresh (clock skew buffer).

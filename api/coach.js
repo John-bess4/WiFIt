@@ -15,6 +15,13 @@ const MAX_SYSTEM_CHARS = 20000;           // buildSystem() renders well under 8k
 const MAX_BODY_BYTES = 5 * 1024 * 1024;   // one base64 phone photo
 const MAX_TEXT_BODY_BYTES = 128 * 1024;   // text-only: ~32k tokens of input
 
+// Per-user rate limit. One chat turn is already two requests (callClaude, then
+// generateSuggestions on the reply), so 60/hour is ~30 turns an hour today and
+// fewer once the Action Router multiplies calls per message. The daily cap
+// exists because the hourly one alone would still permit 1,440 requests a day.
+const RATE_PER_HOUR = 60;
+const RATE_PER_DAY = 400;
+
 // Both values are public — the anon key already ships inside the client bundle —
 // so these env vars are a convenience, not a secret. The literal fallbacks mean
 // the gate works without provisioning anything on Vercel.
@@ -33,9 +40,12 @@ const json = (status, obj) =>
 //   the anon key       -> 403 "invalid claim: missing sub claim"
 // A 401-only check would therefore admit both a malformed token AND the public
 // anon key that ships in the client bundle.
-async function verifyUser(req) {
+function bearerToken(req) {
   const auth = req.headers.get('authorization') || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+  return auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+}
+
+async function verifyUser(token) {
   if (!token) return null;
   try {
     const r = await fetch(SUPABASE_URL + '/auth/v1/user', {
@@ -49,13 +59,83 @@ async function verifyUser(req) {
   }
 }
 
+function retryPhrase(sec) {
+  const m = Math.ceil(sec / 60);
+  if (m < 60) return 'about ' + m + ' minute' + (m === 1 ? '' : 's');
+  const h = Math.ceil(m / 60);
+  return 'about ' + h + ' hour' + (h === 1 ? '' : 's');
+}
+
+// Per-user rate limit, counted on entry.
+//
+// Edge isolates are ephemeral, concurrent and per-region, so an in-memory
+// counter would reset constantly and enforce nothing. State lives in
+// coach_usage instead, which is co-located with the function (Supabase
+// us-east-1 / Vercel iad1).
+//
+// Uses the caller's own JWT, not a service-role key: coach_usage grants
+// INSERT and SELECT of your own rows and has no UPDATE or DELETE policy, so a
+// user cannot clear or backdate their history to reset the limit.
+//
+// One read covers both windows. Rows come back newest-first capped at
+// RATE_PER_DAY + 1, and that cap is far above RATE_PER_HOUR, so every row
+// inside the hour window is present and the hourly count is exact.
+async function checkRate(userId, token) {
+  const now = Date.now();
+  const h = { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + token };
+  const url =
+    SUPABASE_URL +
+    '/rest/v1/coach_usage?user_id=eq.' + encodeURIComponent(userId) +
+    '&created_at=gte.' + encodeURIComponent(new Date(now - 86400000).toISOString()) +
+    '&select=created_at&order=created_at.desc&limit=' + (RATE_PER_DAY + 1);
+
+  let rows;
+  try {
+    const r = await fetch(url, { headers: h });
+    if (!r.ok) return { fail: true };
+    rows = await r.json();
+  } catch {
+    return { fail: true };
+  }
+  if (!Array.isArray(rows)) return { fail: true };
+
+  const times = rows.map((x) => Date.parse(x.created_at)).filter(Number.isFinite);
+  const hourCount = times.filter((t) => t > now - 3600000).length;
+
+  // A slot frees when the Nth-newest request in the window ages out of it.
+  if (hourCount >= RATE_PER_HOUR) {
+    const freesAt = times[RATE_PER_HOUR - 1] + 3600000;
+    return { limited: true, scope: 'hour', retryAfter: Math.max(1, Math.ceil((freesAt - now) / 1000)) };
+  }
+  if (times.length >= RATE_PER_DAY) {
+    const freesAt = times[RATE_PER_DAY - 1] + 86400000;
+    return { limited: true, scope: 'day', retryAfter: Math.max(1, Math.ceil((freesAt - now) / 1000)) };
+  }
+
+  // Count on entry — recorded before Anthropic is called, so a caller cannot
+  // burn quota and retry for free. A failed write fails closed for the same
+  // reason: unrecorded usage is unenforceable usage.
+  try {
+    const w = await fetch(SUPABASE_URL + '/rest/v1/coach_usage', {
+      method: 'POST',
+      headers: { ...h, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ user_id: userId }),
+    });
+    if (!w.ok) return { fail: true };
+  } catch {
+    return { fail: true };
+  }
+  return { ok: true };
+}
+
 export default async function handler(req) {
   if (req.method !== 'POST') {
     return new Response('Method Not Allowed', { status: 405 });
   }
 
   // Auth first: no unauthenticated request may ever cost money.
-  const user = await verifyUser(req);
+  const token = bearerToken(req);
+  const user = await verifyUser(token);
   if (!user) {
     return json(401, { error: 'Sign in to use the AI coach.', code: 'unauthenticated' });
   }
@@ -106,6 +186,32 @@ export default async function handler(req) {
   // caller cannot smuggle in a different model or any other Anthropic parameter.
   const payload = { model: MODEL, max_tokens, messages };
   if (system) payload.system = system;
+
+  // Last gate before spending money. Placed after validation so a malformed
+  // request, which never reaches Anthropic anyway, does not consume quota.
+  const rate = await checkRate(user.id, token);
+  if (rate.fail) {
+    return json(503, {
+      error: 'Could not verify usage limits right now. Try again in a moment.',
+      code: 'rate_check_failed',
+    });
+  }
+  if (rate.limited) {
+    return new Response(
+      JSON.stringify({
+        error:
+          "You've reached the coach's " + (rate.scope === 'hour' ? 'hourly' : 'daily') +
+          ' limit. Try again in ' + retryPhrase(rate.retryAfter) + '.',
+        code: 'rate_limited',
+        scope: rate.scope,
+        retryAfter: rate.retryAfter,
+      }),
+      {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', 'Retry-After': String(rate.retryAfter) },
+      }
+    );
+  }
 
   const upstream = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
