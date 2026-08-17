@@ -593,7 +593,8 @@ function AISidePanel({open,onClose,onAddFood,onAddSupp,onAddWorkout,onAddWater,l
 
   // Persist messages to localStorage whenever they change (keep last 30)
   useEffect(()=>{
-    try{localStorage.setItem(STORAGE_KEY,JSON.stringify(messages.slice(-30)));}catch{}
+    // Never persist error bubbles — a transient failure shouldn't outlive the session.
+    try{localStorage.setItem(STORAGE_KEY,JSON.stringify(messages.filter(m=>!m.isError).slice(-30)));}catch{}
   },[messages]);
 
   const [input,setInput]=useState("");
@@ -732,7 +733,11 @@ RULES:
 - Always include at least 4 exercises
 - level: Beginner / Intermediate / Advanced`;
   const callClaude=async(userMsg,history)=>{
-    const contextMsgs=history.filter(m=>!m.type&&!m.isCheckin).slice(-10).map(m=>({role:m.bot?"assistant":"user",content:m.text}));
+    // isError bubbles are our own failure text, not something the coach said.
+    // Replayed as assistant turns they poison every later request — and if one
+    // lands first in the window, messages[0].role is "assistant" and Anthropic
+    // 400s, so a single failure breaks the conversation permanently.
+    const contextMsgs=history.filter(m=>!m.type&&!m.isCheckin&&!m.isError).slice(-10).map(m=>({role:m.bot?"assistant":"user",content:m.text}));
     const res=await fetch("/api/coach",{
       method:"POST",
       headers:coachHeaders(),
@@ -971,7 +976,7 @@ RULES:
       setMessages(prev=>[...prev,{bot:true,text:reply}]);
       generateSuggestions(reply);
     }catch(e){
-      setMessages(prev=>[...prev,{bot:true,
+      setMessages(prev=>[...prev,{bot:true,isError:true,
         text:coachErrorText(e,"I'm having trouble connecting right now. Try again!")}]);
     }
     setThinking(false);
@@ -1085,7 +1090,7 @@ RULES:
           setMessages(prev=>[...prev,{bot:true,text:"Couldn't parse the meal from that photo. Try again with better lighting."}]);
         }
       }
-    }catch(e){setMessages(prev=>[...prev,{bot:true,
+    }catch(e){setMessages(prev=>[...prev,{bot:true,isError:true,
       text:coachErrorText(e,"Photo analysis failed. Check your connection and try again.")}]);}
     setPhotoLoading(false);
   };
