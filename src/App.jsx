@@ -736,7 +736,7 @@ RULES:
     const res=await fetch("/api/coach",{
       method:"POST",
       headers:coachHeaders(),
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,system:buildSystem(),messages:[...contextMsgs,{role:"user",content:userMsg}]}),
+      body:JSON.stringify({max_tokens:1200,system:buildSystem(),messages:[...contextMsgs,{role:"user",content:userMsg}]}),
     });
     if(!res.ok){
       const errBody=await res.json().catch(()=>({}));
@@ -1016,7 +1016,7 @@ RULES:
       const res=await fetch("/api/coach",{
         method:"POST",headers:coachHeaders(),
         body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",max_tokens:120,
+          max_tokens:120,
           system:"You are a fitness AI. Given the assistant's last response, output EXACTLY 3 short follow-up questions/actions the user might want next, as a JSON array of strings. Max 6 words each. No punctuation. Output ONLY the JSON array, nothing else.",
           messages:[{role:"user",content:"Assistant just said: \""+lastBotMsg.slice(0,200)+"\"\nGenerate 3 follow-ups:"}],
         }),
@@ -1045,7 +1045,7 @@ RULES:
       const resp=await fetch("/api/coach",{
         method:"POST",headers:coachHeaders(),
         body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",max_tokens:600,
+          max_tokens:600,
           system:"You are a nutrition AI analyzing a food photo. Respond ONLY in this exact format:\n"+
 "MULTI_FOOD:[{\"name\":\"Food Name\",\"grams\":150,\"slot\":\""+slotHint+"\",\"cal\":247,\"protein\":46,\"carbs\":0,\"fat\":6}]|One sentence about the meal.\n"+
 "Rules: estimate grams from visual cues, include ALL visible foods, use slot \""+slotHint+"\". If no food visible: PHOTO_ERROR:Cannot identify food in this image.|",

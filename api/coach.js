@@ -14,6 +14,18 @@ export const config = { runtime: 'edge' };
 const MODEL = 'claude-sonnet-5';
 const ANTHROPIC_VERSION = '2023-06-01';
 
+// None of the three call sites is a reasoning task: chat coaching, three
+// suggestion chips, photo food parsing. Thinking tokens are billed AND count
+// against max_tokens, so leaving it on would inflate cost and eat into the
+// 1200/600/120 ceilings the 60/hour limit was calibrated against — the 120-token
+// suggestion call would likely return truncated JSON.
+//
+// Set here rather than at the call sites: the payload below is rebuilt from
+// validated parts, so a `thinking` field sent by a caller is discarded exactly
+// like `model` is. Client-side edits would be inert. To re-enable for the main
+// chat only, branch here on something the server can verify.
+const THINKING = { type: 'disabled' };
+
 // Ceilings. Deliberately NOT per-call-site: a client-declared "purpose" would be
 // attacker-controlled and would enforce nothing. Every limit below is derived
 // from the request itself, and the one real distinction — an image payload vs a
@@ -193,7 +205,7 @@ export default async function handler(req) {
 
   // Rebuilt from validated parts. The client body is never forwarded as-is, so a
   // caller cannot smuggle in a different model or any other Anthropic parameter.
-  const payload = { model: MODEL, max_tokens, messages };
+  const payload = { model: MODEL, max_tokens, messages, thinking: THINKING };
   if (system) payload.system = system;
 
   // Last gate before spending money. Placed after validation so a malformed
