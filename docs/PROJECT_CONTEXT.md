@@ -377,6 +377,27 @@ Anthropic response formats are unchanged and out of scope for security work:
 
 9. **ESLint reports 28 `no-unused-vars` warnings**, 0 errors. Untriaged.
 
+10. **The pinned model ID in `api/coach.js` is a maintenance liability — and it is
+    the first thing to check when the coach breaks.** `MODEL` is pinned
+    server-side (deliberately: callers must not choose the model). But a model ID
+    is not permanent. `claude-sonnet-4-20250514` retired on 2026-06-15, and from
+    that moment every authenticated coach request returned **HTTP 404** — the
+    proxy passes `upstream.status` through verbatim, so Anthropic's
+    `not_found_error` surfaced as a 404 from `/api/coach` and looked exactly like
+    a missing or undeployed function. There is **no graceful degradation**: the
+    coach simply stops, with a status code that points at the wrong layer.
+
+    Dateless IDs like `claude-sonnet-5` are **still pinned snapshots, not
+    evergreen pointers** — this one will retire too. Check the constant against
+    <https://platform.claude.com/docs/en/about-claude/models/overview> before
+    debugging anything else.
+
+    Two diagnostics that tell a retired model apart from a broken deployment:
+    the Vercel runtime log shows the request reaching the function
+    (`source=edge-function`) and returning 404 rather than the route 404ing; and
+    `coach_usage` gains a row per attempt, because usage is recorded on entry,
+    just before the Anthropic call.
+
 ---
 
 ## Current data state (2026-08-13)
