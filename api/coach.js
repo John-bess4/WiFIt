@@ -2,7 +2,16 @@ export const config = { runtime: 'edge' };
 
 // Pinned server-side. Callers send a `model` field; it is ignored. Changing the
 // coach's model is a one-line change here, never something a caller can do.
-const MODEL = 'claude-sonnet-4-20250514';
+//
+// ⚠️ THIS CONSTANT MUST BE MAINTAINED. A retired model ID is a hard 404 from
+// Anthropic with no graceful degradation: this proxy returns upstream.status
+// verbatim, so the coach simply stops working. That is exactly how the previous
+// value died — claude-sonnet-4-20250514 retired 2026-06-15 and every request
+// 404'd until it was noticed. Dateless IDs are still pinned snapshots, not
+// evergreen pointers, so this one will retire too. Check it against
+// https://platform.claude.com/docs/en/about-claude/models/overview when the
+// coach starts 404ing, and on any planned upgrade.
+const MODEL = 'claude-sonnet-5';
 const ANTHROPIC_VERSION = '2023-06-01';
 
 // Ceilings. Deliberately NOT per-call-site: a client-declared "purpose" would be
