@@ -597,6 +597,15 @@ function AISidePanel({open,onClose,onAddFood,onAddSupp,onAddWorkout,onAddWater,l
     try{localStorage.setItem(STORAGE_KEY,JSON.stringify(messages.filter(m=>!m.isError).slice(-30)));}catch{}
   },[messages]);
 
+  // Two-step so a mis-tap next to the ✕ can't wipe the history. Reverts on its own.
+  const [confirmClear,setConfirmClear]=useState(false);
+  const clearChat=()=>{
+    setConfirmClear(false);
+    setSuggestions([]);
+    try{localStorage.removeItem(STORAGE_KEY);}catch{}
+    setMessages([{bot:true,text:"Hey"+(userName?" "+userName.split(" ")[0]:"")+"! I'm your AI Coach. Tell me what you ate and I'll log it, ask for meal ideas based on your remaining macros, or say make me a workout 💪"}]);
+  };
+
   const [input,setInput]=useState("");
   const [thinking,setThinking]=useState(false);
   const [suggestions,setSuggestions]=useState([]); // Feature 8
@@ -1372,8 +1381,21 @@ RULES:
               <div style={{fontSize:15,fontWeight:600,color:T.text}}>AI Coach</div>
               {thinking&&<div style={{fontSize:11,color:"#F59E0B",fontWeight:500}}>thinking…</div>}
             </div>
-            <div onClick={onClose} style={{width:28,height:28,borderRadius:"50%",background:T.accentPill,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
-              <svg width="10" height="10" viewBox="0 0 10 10"><line x1="1" y1="1" x2="9" y2="9" stroke={T.text} strokeWidth="1.5" strokeLinecap="round"/><line x1="9" y1="1" x2="1" y2="9" stroke={T.text} strokeWidth="1.5" strokeLinecap="round"/></svg>
+            {/* Text, not an icon: this is destructive and sits next to the ✕.
+                The only escape from a broken chat, so it lives in the header —
+                the message list scrolls away and the composer needs a working
+                round trip. */}
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <div onClick={()=>{
+                if(confirmClear){clearChat();return;}
+                setConfirmClear(true);
+                setTimeout(()=>setConfirmClear(false),3000);
+              }} style={{fontSize:12,fontWeight:confirmClear?700:500,color:confirmClear?"#E24B4A":T.muted,cursor:"pointer",padding:"4px 6px",userSelect:"none"}}>
+                {confirmClear?"Clear?":"Clear"}
+              </div>
+              <div onClick={onClose} style={{width:28,height:28,borderRadius:"50%",background:T.accentPill,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+                <svg width="10" height="10" viewBox="0 0 10 10"><line x1="1" y1="1" x2="9" y2="9" stroke={T.text} strokeWidth="1.5" strokeLinecap="round"/><line x1="9" y1="1" x2="1" y2="9" stroke={T.text} strokeWidth="1.5" strokeLinecap="round"/></svg>
+              </div>
             </div>
           </div>
           <div style={{flex:1,overflowY:"auto",padding:"12px 12px 8px",display:"flex",flexDirection:"column",gap:10}}>
