@@ -3458,10 +3458,13 @@ function CreateWorkoutModal({onSave,onClose,existing}){
 }
 
 // ── ACTIVE WORKOUT VIEW ──────────────────────────────────────────
-function ActiveWorkout({workout,onFinish,onClose,prHistory={}}){
+function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapKey=null}){
   const T=useTheme();
+  // `restore` is a snapshot of this same workout from before an unmount — a tab
+  // switch, a reload, or the app being evicted. Seeding from it is what makes
+  // those recoverable instead of silent data loss.
   const [sets,setSets]=useState(()=>
-    workout.exercises.map(ex=>({
+    restore?.sets||workout.exercises.map(ex=>({
       ...ex,
       sets:ex.sets.map(s=>({...s,done:false,actualReps:s.reps,actualWeight:s.weight}))
     }))
@@ -3470,7 +3473,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={}}){
   const [restSecs,setRestSecs]=useState(null);   // null = not resting
   const [restTotal,setRestTotal]=useState(90);   // configured duration
   const [restDuration,setRestDuration]=useState(90); // picker value
-  const [newPRs,setNewPRs]=useState([]);         // ["Bench Press","Squat",…]
+  const [newPRs,setNewPRs]=useState(()=>restore?.newPRs||[]); // ["Bench Press",…]
   const timerRef=useRef();
   const audioCtx=useRef(null);
   // Both timers are derived from wall-clock timestamps, not from counting ticks.
@@ -3481,8 +3484,11 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={}}){
   // direction as the 3-13 second click-through artifacts, so the two would have
   // been indistinguishable. Deriving from timestamps means a throttled or
   // suspended tab simply catches up on its next tick.
-  const startedAtRef=useRef(Date.now());
-  const restEndsAtRef=useRef(null);
+  // Restored so a resumed session keeps its true start — otherwise elapsed
+  // would restart at zero and duration_secs would under-report, which is the
+  // failure the timestamp timer exists to prevent.
+  const startedAtRef=useRef(restore?.startedAt||Date.now());
+  const restEndsAtRef=useRef(restore?.restEndsAt??null);
 
   // Rest is a deadline, not a countdown, for the same reason.
   const startRest=(secs)=>{restEndsAtRef.current=Date.now()+secs*1000;setRestSecs(secs);setRestTotal(secs);};
@@ -3494,6 +3500,26 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={}}){
   // a throttled tab may not have ticked for a minute. `elapsed` drives the
   // display; this drives the row in workout_sessions.
   const finalElapsed=()=>Math.floor((Date.now()-startedAtRef.current)/1000);
+
+  // Debounced: updateSet fires on every keystroke in the reps and weight inputs,
+  // so saving directly on change would write to localStorage once per character.
+  // elapsed and restSecs are deliberately NOT dependencies — they change every
+  // second and would turn this into a 1Hz write loop. restEndsAt is read from
+  // the ref at save time, so it rides along with the next real change.
+  useEffect(()=>{
+    if(!snapKey)return;
+    const t=setTimeout(()=>{
+      try{
+        localStorage.setItem(snapKey,JSON.stringify({
+          v:1,workout,sets,newPRs,
+          startedAt:startedAtRef.current,
+          restEndsAt:restEndsAtRef.current,
+          savedAt:Date.now(),
+        }));
+      }catch{}
+    },500);
+    return()=>clearTimeout(t);
+  },[snapKey,workout,sets,newPRs]);
 
   // Play a short beep using Web Audio API
   const beep=()=>{
@@ -3585,7 +3611,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={}}){
           <div style={{fontSize:14,fontWeight:700,color:T.text}}>{workout.name}</div>
           <div style={{fontSize:12,color:T.accent,fontWeight:600}}>{fmt(elapsed)}</div>
         </div>
-        <div onClick={()=>onFinish(sets,finalElapsed(),newPRs)} style={{fontSize:13,color:T.accent,fontWeight:700,cursor:"pointer"}}>Finish</div>
+        <div onClick={()=>onFinish(sets,finalElapsed(),newPRs,startedAtRef.current)} style={{fontSize:13,color:T.accent,fontWeight:700,cursor:"pointer"}}>Finish</div>
       </div>
 
       {/* Progress bar */}
@@ -3673,7 +3699,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={}}){
 
       {/* Finish button */}
       <div style={{padding:"20px 16px 0"}}>
-        <button onClick={()=>onFinish(sets,finalElapsed(),newPRs)} style={{width:"100%",background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:14,padding:"16px",color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",boxShadow:("0 4px 20px "+T.accentGlow)}}>
+        <button onClick={()=>onFinish(sets,finalElapsed(),newPRs,startedAtRef.current)} style={{width:"100%",background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:14,padding:"16px",color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",boxShadow:("0 4px 20px "+T.accentGlow)}}>
           🏁 Finish workout
         </button>
       </div>
@@ -3765,12 +3791,28 @@ function ExercisePreviewList({exercises}){
 }
 
 // ── WORKOUT TAB ──────────────────────────────────────────────────
-function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory,setPrHistory,onSavePlan,onDeletePlan}){
+function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory,setPrHistory,onSavePlan,onDeletePlan,uid,onActiveChange}){
   const T=useTheme();
   const [createOpen,setCreateOpen]=useState(false);
   const [editWorkout,setEditWorkout]=useState(null);
-  const [activeWorkout,setActiveWorkout]=useState(null);
+  // Read once, on mount. This component is remounted by every visit to the tab,
+  // so this is also the resume path after navigating away mid-workout.
+  const snapKey=workoutKey(uid);
+  const [restored]=useState(()=>readWorkoutSnapshot(snapKey));
+  const [activeWorkout,setActiveWorkout]=useState(()=>restored?.workout||null);
   const [view,setView]=useState("today");
+
+  // Lets the nav show that a session is live while the user is on another tab.
+  // No cleanup on unmount: unmounting is exactly the case where the workout is
+  // still running and the flag must stay true.
+  useEffect(()=>{onActiveChange&&onActiveChange(!!activeWorkout);},[activeWorkout,onActiveChange]);
+
+  // Only seed ActiveWorkout from the snapshot while activeWorkout IS the
+  // restored one. Reference equality, so starting any other workout afterwards
+  // gets a clean slate rather than someone else's sets.
+  const restorePayload=restored&&activeWorkout===restored.workout?restored:null;
+
+  const cancelWorkout=()=>{clearWorkoutSnapshot(snapKey);setActiveWorkout(null);};
 
   const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   const todayDayName=DAYS[new Date().getDay()];
@@ -3791,7 +3833,7 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory
     onDeletePlan&&onDeletePlan(id);
   };
 
-  const finishWorkout=(sets,elapsed,newPRs=[])=>{
+  const finishWorkout=(sets,elapsed,newPRs=[],startedAt=Date.now())=>{
     const allSets=sets.flatMap(e=>e.sets);
     const doneSets=allSets.filter(s=>s.done).length;
     setPrHistory(prev=>{
@@ -3805,7 +3847,14 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory
     const entry={
       id:"h"+Date.now(),
       workoutName:activeWorkout.name,
-      date:localDate(),
+      // Dated from when the work STARTED, not when Finish was tapped. An 11pm
+      // session finishing at 12:30am belongs to the day it was trained, and a
+      // resumed session must not take the date of whenever the app happened to
+      // remount. Explicit rather than inherited: this used to be localDate(),
+      // which read `today` — computed once per App mount (known issue #8) — so
+      // the stamped day was an accident of mount timing.
+      date:localDate(new Date(startedAt)),
+      startedAt,
       duration:elapsed,
       setsCompleted:doneSets,
       totalSets:allSets.length,
@@ -3816,6 +3865,7 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory
         sets:ex.sets.filter(s=>s.done).map(s=>s.actualReps+"×"+s.actualWeight+"lbs")
       }))
     };
+    clearWorkoutSnapshot(snapKey);
     onSessionComplete&&onSessionComplete(entry);
     setActiveWorkout(null);
     setView("history");
@@ -3830,7 +3880,7 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory
     <div style={{paddingBottom:80}}>
       {createOpen&&<CreateWorkoutModal onSave={saveWorkout} onClose={()=>setCreateOpen(false)}/>}
       {editWorkout&&<CreateWorkoutModal existing={editWorkout} onSave={saveWorkout} onClose={()=>setEditWorkout(null)}/>}
-      {activeWorkout&&<ActiveWorkout workout={activeWorkout} onFinish={finishWorkout} onClose={()=>setActiveWorkout(null)} prHistory={prHistory}/>}
+      {activeWorkout&&<ActiveWorkout workout={activeWorkout} onFinish={finishWorkout} onClose={cancelWorkout} prHistory={prHistory} restore={restorePayload} snapKey={snapKey}/>}
 
       {/* Header */}
       <div style={{background:T.card,padding:"16px 20px 12px",borderBottom:("1px solid "+T.border),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -6152,6 +6202,39 @@ function ProfileMenu({userName,isDark,onClose,onOpenProfile,onOpenSettings,onOpe
 }
 
 
+// ── In-progress workout snapshot ─────────────────────────────────
+// An active workout is the only state in this app that is minutes of user input
+// held purely in memory. Every tab renders as {tab===X && <Component/>}, so
+// tapping Food between sets unmounted WorkoutTab and destroyed the session —
+// per-set done flags, entered reps and weights, elapsed, accumulated PRs — with
+// no warning. Persisting rather than lifting also covers the reload, the crash
+// and the dropped phone, which in a gym are at least as likely as a tab switch.
+//
+// Keyed per user, matching the wifit_chat_<uid> precedent: four accounts exist,
+// and an unkeyed snapshot would restore one person's workout for another on a
+// shared device. handleSignOut clears these alongside the chat.
+const WORKOUT_SNAPSHOT_MAX_AGE_MS=6*60*60*1000;
+const workoutKey=(uid)=>uid?("wifit_workout_"+uid):null;
+
+// No uid means no key, and no key means restore NOTHING. Reading or writing a
+// bare "wifit_workout_undefined" would be a cross-account leak wearing a
+// different name.
+function readWorkoutSnapshot(key){
+  if(!key)return null;
+  try{
+    const s=JSON.parse(localStorage.getItem(key)||"null");
+    if(!s||!s.workout||!s.startedAt||!Array.isArray(s.sets))return null;
+    // Staleness is measured from when the work started, not when it was last
+    // saved: a session left open overnight must not resurrect. 6h is longer
+    // than any real workout, and an age rule beats a calendar-day rule — the
+    // latter would misfire on exactly the 11pm session that `today`-computed-
+    // once already mishandles (known issue #8).
+    if(Date.now()-s.startedAt>WORKOUT_SNAPSHOT_MAX_AGE_MS){localStorage.removeItem(key);return null;}
+    return s;
+  }catch{return null;}
+}
+function clearWorkoutSnapshot(key){if(key){try{localStorage.removeItem(key);}catch{}}}
+
 const NAV_LEFT=[
   ["home","Home",<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8.5L10 2L18 8.5V18H13V13H7V18H2V8.5Z"/></svg>],
   ["food","Food",<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="8"/><path d="M10 6v4l3 3"/></svg>],
@@ -6643,8 +6726,11 @@ export default function App(){
 
   const handleSignOut=async()=>{
     await sb.signOut();
-    // Clear persisted chat
-    try{Object.keys(localStorage).filter(k=>k.startsWith("wifit_chat_")).forEach(k=>localStorage.removeItem(k));}catch{}
+    // Clear persisted chat and any in-progress workout. Both are keyed per user,
+    // and on a shared device leaving either behind would hand the next person
+    // the previous one's data.
+    try{Object.keys(localStorage).filter(k=>k.startsWith("wifit_chat_")||k.startsWith("wifit_workout_")).forEach(k=>localStorage.removeItem(k));}catch{}
+    setWorkoutInProgress(false);
     setAuthState("auth");
     setLog(SEED);
     setCustomFoods([]);
@@ -6768,7 +6854,11 @@ export default function App(){
     });
     if(!uid)return;
     try{
-      const row=await sb.insert("workout_sessions",{user_id:uid,workout_name:wname,completed_date:today,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises||[],prs:session.prs||[]});
+      // completed_date is the day the work STARTED, carried on the session, not
+      // `today` — which is computed once per App mount and would stamp a resumed
+      // or past-midnight session with whatever day the app last mounted on.
+      const completedDate=session.startedAt?localDate(new Date(session.startedAt)):today;
+      const row=await sb.insert("workout_sessions",{user_id:uid,workout_name:wname,completed_date:completedDate,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises||[],prs:session.prs||[]});
       if(!row)throw new Error("insert returned no row");
     }catch{
       setHistory(p=>p.filter(s=>s!==session));
@@ -6778,6 +6868,12 @@ export default function App(){
 
   const [workouts,setWorkouts]=useState(INITIAL_WORKOUTS);
   const [prHistory,setPrHistory]=useState({});
+  // Drives the dot on the Train nav item. WorkoutTab keeps this in sync while
+  // the app is running; this effect covers the case WorkoutTab cannot — after a
+  // reload the user lands on Home, and without it the only tell that a session
+  // is still live would be remembering to look.
+  const [workoutInProgress,setWorkoutInProgress]=useState(false);
+  useEffect(()=>{setWorkoutInProgress(!!readWorkoutSnapshot(workoutKey(uid)));},[uid]);
   const [errorBanner,setErrorBanner]=useState("");
   const errorTimerRef=useRef(null);
   const showError=(msg)=>{setErrorBanner(msg);if(errorTimerRef.current)clearTimeout(errorTimerRef.current);errorTimerRef.current=setTimeout(()=>setErrorBanner(""),3000);};
@@ -6903,7 +6999,7 @@ export default function App(){
       {helpPageOpen&&<HelpPage onBack={()=>setHelpPageOpen(false)}/>}
       {tab==="home"&&<HomeTab setTab={setTab} log={log} suppList={suppList} suppTaken={suppTaken} workoutHistory={history} isDark={isDark} toggleTheme={()=>setIsDark(d=>!d)} userName={userName} goals={goals} onProfileOpen={()=>setProfileMenuOpen(true)} waterOz={waterOz} setWaterOz={setWaterOz} weightLog={weightLog} logWeight={logWeight}/>}
       {tab==="food"&&<FoodTab log={log} setLog={setLog} uid={uid} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/>}
-      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} onSessionComplete={saveWorkoutSession} prHistory={prHistory} setPrHistory={setPrHistory} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB}/>}
+      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} onSessionComplete={saveWorkoutSession} prHistory={prHistory} setPrHistory={setPrHistory} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress}/>}
       {tab==="supps"&&<SuppsTab suppList={suppList} setSuppList={setSuppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} taken={taken} total={total} uid={uid} addSuppToList={addSuppToList}/>}
       {tab==="calendar"&&<CalendarTab uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz}/>}
       {tab==="progress"&&<ProgressPage uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz} weightLog={weightLog} logWeight={logWeight} onProfileOpen={()=>setProfileMenuOpen(true)}/>}
@@ -6911,8 +7007,9 @@ export default function App(){
       <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:T.navBg,borderTop:("1px solid "+T.border),display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 8px 18px",zIndex:99,transition:"background 0.25s"}}>
         <div style={{display:"flex",flex:1,justifyContent:"space-around"}}>
           {NAV_LEFT.map(([t,label,icon])=>(
-            <div key={t} onClick={()=>setTab(t)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,cursor:"pointer",minWidth:44,color:tab===t?T.accent:T.muted}}>
+            <div key={t} onClick={()=>setTab(t)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,cursor:"pointer",minWidth:44,color:tab===t?T.accent:T.muted,position:"relative"}}>
               {icon}<div style={{fontSize:10,fontWeight:500}}>{label}</div>
+              {t==="workout"&&workoutInProgress&&<div style={{position:"absolute",top:-2,right:6,width:8,height:8,borderRadius:"50%",background:T.accent,boxShadow:("0 0 6px "+T.accentGlow)}}/>}
             </div>
           ))}
         </div>
@@ -6924,8 +7021,9 @@ export default function App(){
         </div>
         <div style={{display:"flex",flex:1,justifyContent:"space-around"}}>
           {NAV_RIGHT.map(([t,label,icon])=>(
-            <div key={t} onClick={()=>setTab(t)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,cursor:"pointer",minWidth:44,color:tab===t?T.accent:T.muted}}>
+            <div key={t} onClick={()=>setTab(t)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,cursor:"pointer",minWidth:44,color:tab===t?T.accent:T.muted,position:"relative"}}>
               {icon}<div style={{fontSize:10,fontWeight:500}}>{label}</div>
+              {t==="workout"&&workoutInProgress&&<div style={{position:"absolute",top:-2,right:6,width:8,height:8,borderRadius:"50%",background:T.accent,boxShadow:("0 0 6px "+T.accentGlow)}}/>}
             </div>
           ))}
         </div>
