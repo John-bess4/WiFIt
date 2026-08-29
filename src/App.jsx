@@ -514,6 +514,89 @@ const SUPP_CATS=["All","Protein","Creatine","Pre-Workout","BCAAs","Vitamins","Om
 const DOT_COLORS={"Protein":"#FF6B4A","Creatine":"#5B8DEF","Pre-Workout":"#E24B4A","BCAAs":"#9B6DFF","Vitamins":"#F5A623","Omega-3":"#2ECC8F","Electrolytes":"#5B8DEF","Sleep":"#9B6DFF","Collagen":"#FF6B4A","Probiotic":"#2ECC8F","Multivitamin":"#F5A623","Greens/Multi":"#2ECC8F","Supplement":"#888"};
 
 // ── SIDE RAIL AI PANEL ──────────────────────────────────────────
+// A component, not a branch of renderMsg, because it owns collapsible state.
+// renderMsg runs inside a .map, so a useState there made the panel's hook count
+// depend on how many recipe messages existed: the first recipe card took it
+// from 14 hooks to 15 and React threw "Rendered more hooks than during the
+// previous render". With no error boundary above it the whole app went blank,
+// which means RECIPE — one of the six shipped coach formats — had never once
+// rendered. A component instance owns its own hooks, so the count is stable no
+// matter how many recipe cards a conversation accumulates.
+function RecipeCard({m,idx,onAddFood,setMessages}){
+  const T=useTheme();
+  const r=m.recipe;
+  const [showSteps,setShowSteps]=useState(false);
+  const logRecipe=()=>{
+    if(!onAddFood||m.logged)return;
+    (r.ingredients||[]).forEach(ing=>{
+      onAddFood(r.slot||"snacks",{
+        id:Date.now()+Math.random(),
+        name:ing.name,grams:ing.grams,
+        color:COLORS[Math.floor(Math.random()*COLORS.length)],
+        per100:{
+          cal:Math.round((ing.cal/ing.grams)*100),
+          protein:Math.round((ing.protein/ing.grams)*100),
+          carbs:Math.round((ing.carbs/ing.grams)*100),
+          fat:Math.round((ing.fat/ing.grams)*100),
+          fiber:0,sodium:0,
+        },
+      });
+    });
+    setMessages(prev=>prev.map((x,xi)=>xi===idx?{...x,logged:true}:x));
+  };
+  return(
+    <div style={{alignSelf:"flex-start",maxWidth:"100%",display:"flex",flexDirection:"column",gap:7}}>
+      <div style={{fontSize:13,lineHeight:1.5,color:T.text}}>{m.text}</div>
+      <div style={{background:T.card,border:("1px solid "+T.border),borderRadius:16,overflow:"hidden",boxShadow:T.glowShadow}}>
+        {/* Header */}
+        <div style={{background:("linear-gradient(135deg,"+T.bannerFrom+","+T.bannerTo+")"),padding:"12px 14px"}}>
+          <div style={{fontSize:15,fontWeight:700,color:"#fff"}}>{r.name}</div>
+          <div style={{display:"flex",gap:14,marginTop:6}}>
+            {[["🔥",r.totalCal+" kcal"],["💪",r.totalProtein+"g P"],["🌾",r.totalCarbs+"g C"],["🫐",r.totalFat+"g F"]].map(([ic,val])=>(
+              <div key={val} style={{fontSize:11,color:"rgba(255,255,255,0.65)"}}>{ic} {val}</div>
+            ))}
+          </div>
+        </div>
+
+        {/* Ingredients */}
+        <div style={{padding:"10px 14px",borderBottom:("1px solid "+T.border)}}>
+          <div style={{fontSize:10,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Ingredients</div>
+          {(r.ingredients||[]).map((ing,ii)=>(
+            <div key={ii} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:ii<r.ingredients.length-1?("1px solid "+T.border+"33"):"none"}}>
+              <div style={{fontSize:13,color:T.text}}>{ing.name} <span style={{fontSize:11,color:T.muted}}>{ing.grams}g</span></div>
+              <div style={{fontSize:11,color:T.muted}}>{ing.cal} kcal</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Steps — collapsible */}
+        <div onClick={()=>setShowSteps(s=>!s)} style={{padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",borderBottom:("1px solid "+T.border)}}>
+          <div style={{fontSize:13,fontWeight:600,color:T.text}}>📋 Instructions ({(r.steps||[]).length} steps)</div>
+          <svg width="12" height="12" viewBox="0 0 12 12" style={{transform:showSteps?"rotate(180deg)":"none",transition:"transform 0.2s"}}><polyline points="1,3 6,9 11,3" stroke={T.muted} strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>
+        </div>
+        {showSteps&&(
+          <div style={{padding:"8px 14px 10px"}}>
+            {(r.steps||[]).map((step,si)=>(
+              <div key={si} style={{display:"flex",gap:10,padding:"5px 0",borderBottom:si<r.steps.length-1?("1px solid "+T.border+"22"):"none"}}>
+                <div style={{width:20,height:20,borderRadius:"50%",background:T.accentPill,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:T.accent,flexShrink:0}}>{si+1}</div>
+                <div style={{fontSize:12,color:T.text,lineHeight:1.5}}>{step}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Log button */}
+        {m.logged
+          ?<div style={{padding:"11px 14px",textAlign:"center",fontSize:13,fontWeight:700,color:T.green}}>✓ All ingredients logged to {r.slot||"snacks"}</div>
+          :<div onClick={logRecipe} style={{padding:"11px 14px",textAlign:"center",fontSize:13,fontWeight:700,color:T.accent,cursor:"pointer",background:T.accentPill}}>
+            + Log all ingredients
+          </div>
+        }
+      </div>
+    </div>
+  );
+}
+
 function AISidePanel({open,onClose,onAddFood,onAddSupp,onAddWorkout,onAddWater,liveContext={},userName="",userId=""}){
   const T=useTheme();
   const STORAGE_KEY="wifit_chat_"+(userId||"demo");
@@ -1023,79 +1106,9 @@ RULES:
   const renderMsg=(m,i)=>{
 
     // ── Recipe card ─────────────────────────────────────────────
-    if(m.type==="recipe"){
-      const r=m.recipe;
-      const [showSteps,setShowSteps]=useState(false);
-      const logRecipe=()=>{
-        if(!onAddFood||m.logged)return;
-        (r.ingredients||[]).forEach(ing=>{
-          onAddFood(r.slot||"snacks",{
-            id:Date.now()+Math.random(),
-            name:ing.name,grams:ing.grams,
-            color:COLORS[Math.floor(Math.random()*COLORS.length)],
-            per100:{
-              cal:Math.round((ing.cal/ing.grams)*100),
-              protein:Math.round((ing.protein/ing.grams)*100),
-              carbs:Math.round((ing.carbs/ing.grams)*100),
-              fat:Math.round((ing.fat/ing.grams)*100),
-              fiber:0,sodium:0,
-            },
-          });
-        });
-        setMessages(prev=>prev.map((x,xi)=>xi===i?{...x,logged:true}:x));
-      };
-      return(
-        <div key={i} style={{alignSelf:"flex-start",maxWidth:"100%",display:"flex",flexDirection:"column",gap:7}}>
-          <div style={{fontSize:13,lineHeight:1.5,color:T.text}}>{m.text}</div>
-          <div style={{background:T.card,border:("1px solid "+T.border),borderRadius:16,overflow:"hidden",boxShadow:T.glowShadow}}>
-            {/* Header */}
-            <div style={{background:("linear-gradient(135deg,"+T.bannerFrom+","+T.bannerTo+")"),padding:"12px 14px"}}>
-              <div style={{fontSize:15,fontWeight:700,color:"#fff"}}>{r.name}</div>
-              <div style={{display:"flex",gap:14,marginTop:6}}>
-                {[["🔥",r.totalCal+" kcal"],["💪",r.totalProtein+"g P"],["🌾",r.totalCarbs+"g C"],["🫐",r.totalFat+"g F"]].map(([ic,val])=>(
-                  <div key={val} style={{fontSize:11,color:"rgba(255,255,255,0.65)"}}>{ic} {val}</div>
-                ))}
-              </div>
-            </div>
-
-            {/* Ingredients */}
-            <div style={{padding:"10px 14px",borderBottom:("1px solid "+T.border)}}>
-              <div style={{fontSize:10,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Ingredients</div>
-              {(r.ingredients||[]).map((ing,ii)=>(
-                <div key={ii} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:ii<r.ingredients.length-1?("1px solid "+T.border+"33"):"none"}}>
-                  <div style={{fontSize:13,color:T.text}}>{ing.name} <span style={{fontSize:11,color:T.muted}}>{ing.grams}g</span></div>
-                  <div style={{fontSize:11,color:T.muted}}>{ing.cal} kcal</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Steps — collapsible */}
-            <div onClick={()=>setShowSteps(s=>!s)} style={{padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",borderBottom:("1px solid "+T.border)}}>
-              <div style={{fontSize:13,fontWeight:600,color:T.text}}>📋 Instructions ({(r.steps||[]).length} steps)</div>
-              <svg width="12" height="12" viewBox="0 0 12 12" style={{transform:showSteps?"rotate(180deg)":"none",transition:"transform 0.2s"}}><polyline points="1,3 6,9 11,3" stroke={T.muted} strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>
-            </div>
-            {showSteps&&(
-              <div style={{padding:"8px 14px 10px"}}>
-                {(r.steps||[]).map((step,si)=>(
-                  <div key={si} style={{display:"flex",gap:10,padding:"5px 0",borderBottom:si<r.steps.length-1?("1px solid "+T.border+"22"):"none"}}>
-                    <div style={{width:20,height:20,borderRadius:"50%",background:T.accentPill,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:T.accent,flexShrink:0}}>{si+1}</div>
-                    <div style={{fontSize:12,color:T.text,lineHeight:1.5}}>{step}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Log button */}
-            {m.logged
-              ?<div style={{padding:"11px 14px",textAlign:"center",fontSize:13,fontWeight:700,color:T.green}}>✓ All ingredients logged to {r.slot||"snacks"}</div>
-              :<div onClick={logRecipe} style={{padding:"11px 14px",textAlign:"center",fontSize:13,fontWeight:700,color:T.accent,cursor:"pointer",background:T.accentPill}}>
-                + Log all ingredients
-              </div>
-            }
-          </div>
-        </div>
-      );
-    }
+    // Its own component: it owns collapsible state, and a hook cannot live in
+    // renderMsg (see RecipeCard).
+    if(m.type==="recipe")return <RecipeCard key={i} m={m} idx={i} onAddFood={onAddFood} setMessages={setMessages}/>;
 
     // ── Meal suggestion card ────────────────────────────────────
     if(m.type==="meal_suggestion"){
