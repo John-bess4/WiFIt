@@ -139,12 +139,37 @@ integer default 0, `created_at`.
 `reminder_time` text, `reminder_enabled` boolean default false, `sort_order` integer
 default 0, `created_at`, plus:
 
-- **`category`** text — the AI's taxonomy (e.g. `"Creatine"`), also the key into `DOT_COLORS`
+- **`category`** text — one of **eight lowercase PURPOSE values**: `protein`,
+  `vitamin`, `mineral`, `performance`, `health`, `sleep`, `fat_burner`,
+  `probiotic`. NULL is legal and means Uncategorised.
 - **`note`** text — the AI's usage tip
 
 Before these existed, the ADD_SUPP path flattened `dose`+`timing` into `sub`, consumed
 `category` only to pick a hex color, and dropped `note` entirely. Both the AI path and
 the manual add path now persist `category` and `note`.
+
+**`category` is a PURPOSE, not a product type — and it is not the `DOT_COLORS` key.**
+The column briefly held two vocabularies: the coach wrote the lowercase enum above,
+while the manual add path wrote capitalised product types from `SUPP_DB` and the create
+picker (`"Creatine"`, `"Protein"`). Two different axes in one column — `'Creatine'` and
+`'performance'` would have grouped as unrelated buckets. Normalised on 2026-08-29
+(`20260829_normalize_supplement_stack_category.sql`, one row: `Creatine` →
+`performance`); `toSuppCategory` now maps at write time so the picker's labels are
+unchanged but the stored value is always the enum.
+
+Product type is **not** lost — it lives on `SUPP_DB.category` (`"Creatine"`,
+`"Omega-3"`, …), which is the *catalogue's* own field and still drives browse filtering
+and local search. The two were never the same field; they only shared a name.
+
+Colours come from two separate maps, by design: `DOT_COLORS` is keyed by product type
+and is used when adding from the catalogue; `SUPP_CATEGORY_DOTS` is keyed by the purpose
+enum and is used by the coach cards. The stored `dot_color` column is what renders — the
+category is never consulted at render time.
+
+**No CHECK constraint yet.** The pre-ACTIONS `ADD_SUPP` path is live until C2 retires it
+and does not validate `category`, so a constraint today would turn a bad model response
+into a failed insert surfacing as "couldn't save". Add
+`check (category is null or category in (...))` once C2 has landed.
 
 ### supplement_log
 `id`, `user_id`, `supplement_id` (NOT NULL, FK → `supplement_stack(id)` cascade),
@@ -408,13 +433,19 @@ Anthropic response formats are unchanged and out of scope for security work:
     28-warning baseline for no correctness gain today, so it is a decision, not
     an oversight. Revisit if a stale-closure bug ever shows up.
 
-12. **Two category vocabularies share `supplement_stack.category`.** The manual
-    add path writes capitalised product types (`Protein`, `Creatine`); the coach
-    writes lowercase purpose values (`performance`, `health`). Both are in the
-    live table, plus two nulls. `ACTION_VALID.supplement` now enforces the
-    lowercase enum on the coach path only. The column is currently **write-only**
-    — nothing reads it — so this is harmless today and must be resolved before
-    any Phase 2 grouping depends on it. See §Supplement categories.
+12. ~~**Two category vocabularies share `supplement_stack.category`.**~~
+    **RESOLVED 2026-08-29.** Both paths now write the lowercase purpose enum:
+    `ACTION_VALID.supplement` validates the coach path, `toSuppCategory` maps the
+    manual path at write time, and the one capitalised row was backfilled by
+    `20260829_normalize_supplement_stack_category.sql`. Live table is now
+    `performance` 2, `health` 1, NULL 2 — zero non-conforming. See
+    §supplement_stack. Remaining follow-up: add the CHECK constraint once C2 has
+    retired the unvalidated `ADD_SUPP` path.
+
+13. **`supplement_stack.category` is still write-only.** Written by both paths,
+    read back into `suppList`, and then never used — the dot renders from the
+    separate `dot_color` column. Normalising it now was cheap precisely because
+    nothing depends on it; Phase 2 grouping is the first consumer.
 
 ---
 
