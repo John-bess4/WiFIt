@@ -4800,15 +4800,6 @@ function AuthScreen({onAuth}){
         <div style={{fontSize:13,color:T.muted,marginTop:4}}>Your personal fitness companion</div>
       </div>
 
-      {/* ── DEMO MODE BANNER ── */}
-      <div style={{width:"100%",maxWidth:400,background:(T.accent+"15"),border:("1px solid "+T.accent+"40"),borderRadius:14,padding:"12px 16px",marginBottom:16,display:"flex",gap:10,alignItems:"flex-start"}}>
-        <div style={{fontSize:18,flexShrink:0}}>💡</div>
-        <div>
-          <div style={{fontSize:12,fontWeight:700,color:T.accent,marginBottom:3}}>Running inside Claude's preview</div>
-          <div style={{fontSize:11,color:T.muted,lineHeight:1.5}}>External network calls are blocked here. Use <strong style={{color:T.text}}>Demo mode</strong> to explore the full app, or deploy to Vercel/Netlify for real accounts.</div>
-        </div>
-      </div>
-
       {/* Demo mode button */}
       <div style={{width:"100%",maxWidth:400,marginBottom:16}}>
         <button onClick={()=>onAuth({id:"demo",email:"demo@fittrack.app"},true)}
