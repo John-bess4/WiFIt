@@ -1818,13 +1818,26 @@ function WeightLogWidget({weightLog=[],onLog}){
   const T=useTheme();
   const [input,setInput]=useState("");
   const [logged,setLogged]=useState(false);
+  const [editing,setEditing]=useState(false);
+  const [saving,setSaving]=useState(false);
   const todayEntry=weightLog.find(w=>w.date===localDate());
+  // The input branch used to be gated on todayEntry alone, so once today had a
+  // row the only affordance left was an "update" link that set `logged` — a
+  // value this ternary never reads. Today's weight could be logged once and
+  // never corrected. `editing` is what reopens it.
+  const showInput=!todayEntry||editing;
 
-  const handleLog=()=>{
-    const lbs=parseFloat(input);
-    if(!lbs||lbs<50||lbs>700)return;
-    onLog(lbs);
-    setInput("");setLogged(true);setTimeout(()=>setLogged(false),2000);
+  // No local range check: logWeight owns validation (finite, 0<w<=1500) and is
+  // the only thing that can explain a rejection to the user. A second, narrower
+  // guard here returned silently — 45 or 800 lbs did nothing with no message.
+  const handleLog=async()=>{
+    if(saving)return;
+    setSaving(true);
+    const ok=await onLog(input);
+    setSaving(false);
+    if(!ok)return; // logWeight already surfaced the reason and rolled back
+    setInput("");setEditing(false);
+    setLogged(true);setTimeout(()=>setLogged(false),2000);
   };
 
   // Trend: difference between first and last entry
@@ -1843,15 +1856,15 @@ function WeightLogWidget({weightLog=[],onLog}){
             </div>
           )}
         </div>
-        {todayEntry
-          ?<div style={{fontSize:12,color:T.muted}}>Today: <span style={{color:T.accent,fontWeight:700}}>{todayEntry.lbs} lbs</span> — <span style={{cursor:"pointer",textDecoration:"underline"}} onClick={()=>setLogged(false)}>update</span></div>
+        {!showInput
+          ?<div style={{fontSize:12,color:T.muted}}>Today: <span style={{color:T.accent,fontWeight:700}}>{todayEntry.lbs} lbs</span> — <span style={{cursor:"pointer",textDecoration:"underline"}} onClick={()=>{setInput(String(todayEntry.lbs));setEditing(true);}}>update</span></div>
           :<div style={{display:"flex",gap:6,alignItems:"center"}}>
             <input type="number" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLog()}
               placeholder="Log today's weight"
               style={{flex:1,background:T.surface,color:T.text,border:("1px solid "+T.border),borderRadius:10,padding:"7px 10px",fontSize:13,outline:"none"}}/>
             <div style={{fontSize:11,color:T.muted,flexShrink:0}}>lbs</div>
-            <div onClick={handleLog} style={{background:logged?"#22C55E":T.accent,border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,color:"#fff",cursor:"pointer",flexShrink:0,transition:"background 0.2s"}}>
-              {logged?"✓":"Log"}
+            <div onClick={handleLog} style={{background:logged?"#22C55E":T.accent,border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,color:"#fff",cursor:saving?"default":"pointer",opacity:saving?0.6:1,flexShrink:0,transition:"background 0.2s"}}>
+              {saving?"…":logged?"✓":"Log"}
             </div>
           </div>
         }
@@ -6523,17 +6536,19 @@ export default function App(){
     // weight_lbs is NOT NULL; parseFloat garbage becomes NaN, which JSON
     // serializes as null → swallowed 400. Reject before touching state.
     const w=Number(lbs);
-    if(!Number.isFinite(w)||w<=0||w>1500){showError("Couldn't log weight — enter your weight in lbs.");return;}
+    if(!Number.isFinite(w)||w<=0||w>1500){showError("Couldn't log weight — enter your weight in lbs.");return false;}
     const prevEntry=weightLog.find(e=>e.date===today);
     const entry={date:today,lbs:w};
     setWeightLog(prev=>{const filtered=prev.filter(e=>e.date!==today);return[...filtered,entry].sort((a,b)=>a.date.localeCompare(b.date));});
-    if(!uid)return;
+    if(!uid)return true;
     try{
       const row=await sb.upsert("body_weight_log",{user_id:uid,log_date:today,weight_lbs:w},{onConflict:"user_id,log_date"});
       if(!row)throw new Error("upsert returned no row");
+      return true;
     }catch{
       setWeightLog(prev=>{const filtered=prev.filter(e=>e.date!==today);return prevEntry?[...filtered,prevEntry].sort((a,b)=>a.date.localeCompare(b.date)):filtered;});
       showError("Weight couldn't be saved. Check your connection.");
+      return false;
     }
   };
   const saveWorkoutSession=async(session)=>{
