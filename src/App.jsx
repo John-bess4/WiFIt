@@ -514,6 +514,70 @@ const SUPP_CATS=["All","Protein","Creatine","Pre-Workout","BCAAs","Vitamins","Om
 const DOT_COLORS={"Protein":"#FF6B4A","Creatine":"#5B8DEF","Pre-Workout":"#E24B4A","BCAAs":"#9B6DFF","Vitamins":"#F5A623","Omega-3":"#2ECC8F","Electrolytes":"#5B8DEF","Sleep":"#9B6DFF","Collagen":"#FF6B4A","Probiotic":"#2ECC8F","Multivitamin":"#F5A623","Greens/Multi":"#2ECC8F","Supplement":"#888"};
 
 // ── SIDE RAIL AI PANEL ──────────────────────────────────────────
+// ── ACTIONS contract ────────────────────────────────────────────
+// One block per reply, multiplicity inside the array rather than across blocks:
+// ACTIONS:[{...},{...}]|message. The old contract could express only one intent
+// per reply, so "log 8oz of water and add creatine" had no representation.
+//
+// Module scope, not inside AISidePanel: parseActions closes over nothing, and at
+// component scope it was unreachable from a test.
+export const MAX_ACTIONS=10;
+
+// Required fields per type. Optional fields are never checked — a missing
+// `timing` degrades the card, a missing `name` makes it meaningless.
+export const ACTION_VALID={
+  water:a=>Number.isFinite(Number(a.oz))&&Number(a.oz)>0,
+  // grams>0 is load-bearing: per100 divides by it, and 0 would write Infinity.
+  food:a=>Array.isArray(a.items)&&a.items.length>0&&a.items.every(i=>i&&i.name&&Number(i.grams)>0&&Number.isFinite(Number(i.cal))),
+  meal_suggestion:a=>Array.isArray(a.items)&&a.items.length>0&&a.items.every(i=>i&&i.name),
+  recipe:a=>!!a.name&&Array.isArray(a.ingredients)&&a.ingredients.length>0,
+  workout_plan:a=>!!a.name&&Array.isArray(a.exercises)&&a.exercises.length>0,
+  supplement:a=>Array.isArray(a.items)&&a.items.length>0&&a.items.every(i=>i&&i.name&&i.category),
+};
+
+// Returns null when this is not an ACTIONS reply OR when the JSON is corrupt.
+// Corrupt fails CLOSED — a half-parsed array must never be half-executed.
+// Individual actions inside a well-formed array fail OPEN: valid siblings commit
+// and the dropped ones are named, because the multi-intent case is the whole
+// point and an all-or-nothing drop is the silent-swallow pattern again.
+export const parseActions=(reply)=>{
+  if(!reply.startsWith("ACTIONS:"))return null;
+  const rest=reply.slice("ACTIONS:".length);
+  const pipeIdx=rest.indexOf("|");
+  const jsonStr=pipeIdx>-1?rest.slice(0,pipeIdx):rest;
+  const msg=pipeIdx>-1?rest.slice(pipeIdx+1).trim():"";
+  let raw;
+  try{raw=JSON.parse(jsonStr);}catch{return null;}
+  if(!Array.isArray(raw))return null;
+  const capped=raw.slice(0,MAX_ACTIONS);
+  const overflow=raw.length-capped.length;
+  const valid=[],dropped=[];
+  capped.forEach(a=>{
+    const rule=a&&ACTION_VALID[a.type];
+    if(rule&&rule(a))valid.push(a);
+    else dropped.push(a&&a.type?String(a.type):"unknown");
+  });
+  return{valid,dropped,overflow,msg,total:raw.length};
+};
+
+// Prefixes of the pre-ACTIONS contract. Still parsed (see send) so a model that
+// regresses mid-rollout keeps working; the warn is the countable signal that
+// says when removing the six parsers is safe.
+export const LEGACY_PREFIXES=["MULTI_FOOD:","MEAL_SUGGESTION:","RECIPE:","WATER_LOG:","ADD_SUPP:","WORKOUT_PLAN:"];
+export const legacyFormatOf=(reply)=>LEGACY_PREFIXES.find(p=>reply.startsWith(p))||null;
+
+// food_log stores macros per 100g; the coach and the recipe card both hand over
+// absolute macros for a specific gram weight. This scaling was written out by
+// hand in five places, which is exactly how a rounding or field-name slip ships
+// unnoticed. Callers must guarantee grams>0 (ACTION_VALID.food does).
+export const per100From=(item)=>({
+  cal:Math.round((item.cal/item.grams)*100),
+  protein:Math.round((item.protein/item.grams)*100),
+  carbs:Math.round((item.carbs/item.grams)*100),
+  fat:Math.round((item.fat/item.grams)*100),
+  fiber:0,sodium:0,
+});
+
 // A component, not a branch of renderMsg, because it owns collapsible state.
 // renderMsg runs inside a .map, so a useState there made the panel's hook count
 // depend on how many recipe messages existed: the first recipe card took it
@@ -533,13 +597,7 @@ function RecipeCard({m,idx,onAddFood,setMessages}){
         id:Date.now()+Math.random(),
         name:ing.name,grams:ing.grams,
         color:COLORS[Math.floor(Math.random()*COLORS.length)],
-        per100:{
-          cal:Math.round((ing.cal/ing.grams)*100),
-          protein:Math.round((ing.protein/ing.grams)*100),
-          carbs:Math.round((ing.carbs/ing.grams)*100),
-          fat:Math.round((ing.fat/ing.grams)*100),
-          fiber:0,sodium:0,
-        },
+        per100:per100From(ing),
       });
     });
     setMessages(prev=>prev.map((x,xi)=>xi===idx?{...x,logged:true}:x));
@@ -903,50 +961,6 @@ RULES:
     }catch{return null;}
   };
 
-  // ── ACTIONS contract ──────────────────────────────────────────
-  // One block per reply, multiplicity inside the array rather than across
-  // blocks: ACTIONS:[{...},{...}]|message. The old contract could express only
-  // one intent per reply, so "log 8oz of water and add creatine" had no
-  // representation at all.
-  const MAX_ACTIONS=10;
-
-  // Required fields per type. Optional fields are never checked — a missing
-  // `timing` degrades the card, a missing `name` makes it meaningless.
-  const ACTION_VALID={
-    water:a=>Number.isFinite(Number(a.oz))&&Number(a.oz)>0,
-    // grams>0 is load-bearing: per100 divides by it, and 0 would write Infinity.
-    food:a=>Array.isArray(a.items)&&a.items.length>0&&a.items.every(i=>i&&i.name&&Number(i.grams)>0&&Number.isFinite(Number(i.cal))),
-    meal_suggestion:a=>Array.isArray(a.items)&&a.items.length>0&&a.items.every(i=>i&&i.name),
-    recipe:a=>!!a.name&&Array.isArray(a.ingredients)&&a.ingredients.length>0,
-    workout_plan:a=>!!a.name&&Array.isArray(a.exercises)&&a.exercises.length>0,
-    supplement:a=>Array.isArray(a.items)&&a.items.length>0&&a.items.every(i=>i&&i.name&&i.category),
-  };
-
-  // Returns null when this is not an ACTIONS reply OR when the JSON is corrupt.
-  // Corrupt fails CLOSED — a half-parsed array must never be half-executed.
-  // Individual actions inside a well-formed array fail OPEN: valid siblings
-  // commit and the dropped ones are named, because the multi-intent case is the
-  // whole point and an all-or-nothing drop is the silent-swallow pattern again.
-  const parseActions=(reply)=>{
-    if(!reply.startsWith("ACTIONS:"))return null;
-    const rest=reply.slice("ACTIONS:".length);
-    const pipeIdx=rest.indexOf("|");
-    const jsonStr=pipeIdx>-1?rest.slice(0,pipeIdx):rest;
-    const msg=pipeIdx>-1?rest.slice(pipeIdx+1).trim():"";
-    let raw;
-    try{raw=JSON.parse(jsonStr);}catch{return null;}
-    if(!Array.isArray(raw))return null;
-    const capped=raw.slice(0,MAX_ACTIONS);
-    const overflow=raw.length-capped.length;
-    const valid=[],dropped=[];
-    capped.forEach(a=>{
-      const rule=a&&ACTION_VALID[a.type];
-      if(rule&&rule(a))valid.push(a);
-      else dropped.push(a&&a.type?String(a.type):"unknown");
-    });
-    return{valid,dropped,overflow,msg,total:raw.length};
-  };
-
   // Emits exactly the message objects the six card renderers already consume —
   // no renderer changes. Auto-commit is limited to water and food, both of which
   // have a one-tap undo elsewhere in the app; supplement, workout_plan, recipe
@@ -972,13 +986,7 @@ RULES:
             name:item.name,
             grams:item.grams,
             color:COLORS[Math.floor(Math.random()*COLORS.length)],
-            per100:{
-              cal:Math.round((item.cal/item.grams)*100),
-              protein:Math.round((item.protein/item.grams)*100),
-              carbs:Math.round((item.carbs/item.grams)*100),
-              fat:Math.round((item.fat/item.grams)*100),
-              fiber:0,sodium:0,
-            },
+            per100:per100From(item),
           });
           logged.push(item);
         });
@@ -1006,11 +1014,6 @@ RULES:
     setMessages(prev=>[...prev,...out]);
     if(hasSupp&&msg)generateSuggestions(msg);
   };
-
-  // Prefixes of the pre-ACTIONS contract. Still parsed (see send) so a model
-  // that regresses mid-rollout keeps working; the warn is the countable signal
-  // that says when removing the six parsers is safe.
-  const LEGACY_PREFIXES=["MULTI_FOOD:","MEAL_SUGGESTION:","RECIPE:","WATER_LOG:","ADD_SUPP:","WORKOUT_PLAN:"];
 
   const send=async(text)=>{
     const msg=text||input.trim();
@@ -1054,13 +1057,7 @@ RULES:
             name:item.name,
             grams:item.grams,
             color:COLORS[Math.floor(Math.random()*COLORS.length)],
-            per100:{
-              cal:Math.round((item.cal/item.grams)*100),
-              protein:Math.round((item.protein/item.grams)*100),
-              carbs:Math.round((item.carbs/item.grams)*100),
-              fat:Math.round((item.fat/item.grams)*100),
-              fiber:0,sodium:0,
-            },
+            per100:per100From(item),
           };
           onAddFood(item.slot||"snacks",foodObj);
           loggedItems.push(item);
@@ -1226,7 +1223,7 @@ RULES:
           const items=[];
           parsed.items.forEach(item=>{
             onAddFood(item.slot||slotHint,{id:Date.now()+Math.random(),name:item.name,grams:item.grams,color:COLORS[Math.floor(Math.random()*COLORS.length)],
-              per100:{cal:Math.round((item.cal/item.grams)*100),protein:Math.round((item.protein/item.grams)*100),carbs:Math.round((item.carbs/item.grams)*100),fat:Math.round((item.fat/item.grams)*100),fiber:0,sodium:0}});
+              per100:per100From(item)});
             items.push(item);
           });
           const msg={bot:true,type:"multi_food_logged",items,text:parsed.msg};
@@ -1261,13 +1258,7 @@ RULES:
             id:Date.now()+Math.random(),
             name:item.name,grams:item.grams,
             color:COLORS[Math.floor(Math.random()*COLORS.length)],
-            per100:{
-              cal:Math.round((item.cal/item.grams)*100),
-              protein:Math.round((item.protein/item.grams)*100),
-              carbs:Math.round((item.carbs/item.grams)*100),
-              fat:Math.round((item.fat/item.grams)*100),
-              fiber:0,sodium:0,
-            },
+            per100:per100From(item),
           });
         });
         setMessages(prev=>prev.map((x,xi)=>xi===i?{...x,logged:true}:x));
@@ -4649,9 +4640,9 @@ const SUPABASE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 // returns the UTC day, which is already tomorrow for anyone west of UTC logging
 // in the evening. "en-CA" formats local time as YYYY-MM-DD. Writes, read
 // filters and comparisons all go through this so they cannot drift apart.
-const localDate=(d=new Date())=>d.toLocaleDateString("en-CA");
+export const localDate=(d=new Date())=>d.toLocaleDateString("en-CA");
 
-const sb={
+export const sb={
   _url:SUPABASE_URL,_key:SUPABASE_ANON,_session:null,
   headers(extra={}){
     return{"Content-Type":"application/json","apikey":this._key,"Authorization":"Bearer "+(this._session?.access_token||this._key),...extra};
@@ -4793,7 +4784,7 @@ function clearSession(){
 // Coalesce concurrent refreshes (StrictMode double-mount, component remount) onto
 // ONE network call so the single-use refresh_token is rotated exactly once.
 let _refreshInFlight=null;
-async function refreshSession(refresh_token){
+export async function refreshSession(refresh_token){
   if(_refreshInFlight)return _refreshInFlight;
   _refreshInFlight=(async()=>{
     try{
@@ -4813,7 +4804,7 @@ async function refreshSession(refresh_token){
 // routing rule in PROJECT_CONTEXT: onboarding as a fallback overwrites a real
 // profile.
 let _onAuthLost=null;
-function setAuthLostHandler(fn){_onAuthLost=fn;}
+export function setAuthLostHandler(fn){_onAuthLost=fn;}
 function authLost(){
   clearSession();
   if(_onAuthLost)_onAuthLost();
@@ -4846,7 +4837,7 @@ async function reauth(sent){
 // Single auth-resolution gate: turn the stored session into a definite state
 // BEFORE any data load runs. Refreshes at most once. Returns
 // {status:"valid"|"refreshed"|"logged-out", session?}.
-async function resolveSession(){
+export async function resolveSession(){
   let s;
   try{s=JSON.parse(localStorage.getItem("sb_session")||"null");}catch{s=null;}
   if(!s?.access_token)return{status:"logged-out"};
