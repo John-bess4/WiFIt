@@ -6039,6 +6039,7 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
   const [dailyData,setDailyData]=useState([]);
   const [loading,setLoading]=useState(true);
   const [newWeight,setNewWeight]=useState("");
+  const [savingWeight,setSavingWeight]=useState(false);
 
   const dayCount=range==="7d"?7:range==="30d"?30:90;
 
@@ -6155,12 +6156,17 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
   const wMin=weights.length>0?Math.min(...weights)-2:0;
   const wMax=weights.length>0?Math.max(...weights)+2:1;
 
-  const handleLogWeight=()=>{
-    const v=parseFloat(newWeight);
-    if(!isNaN(v)&&v>0&&v<700){
-      logWeight(v);
-      setNewWeight("");
-    }
+  // No local range check: logWeight owns validation (finite, 0<w<=1500) and is
+  // the only thing that can explain a rejection to the user. The guard here was
+  // both silent and narrower than the owner's — 800 lbs did nothing at all, with
+  // no message — and it cleared the input even when the save then failed.
+  const handleLogWeight=async()=>{
+    if(savingWeight)return;
+    setSavingWeight(true);
+    const ok=await logWeight(newWeight);
+    setSavingWeight(false);
+    if(!ok)return; // logWeight already surfaced the reason and rolled back
+    setNewWeight("");
   };
 
   return(
@@ -6196,7 +6202,7 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
             </div>
             <input type="number" inputMode="decimal" placeholder="lbs" value={newWeight} onChange={e=>setNewWeight(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogWeight()}
               style={{width:70,padding:"8px 10px",background:T.surface,border:("1px solid "+T.border),borderRadius:10,color:T.text,fontSize:13,outline:"none",textAlign:"center"}}/>
-            <button onClick={handleLogWeight} disabled={!newWeight} style={{padding:"8px 14px",background:newWeight?"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")":T.surface,border:"none",borderRadius:10,color:newWeight?"#fff":T.muted,fontSize:12,fontWeight:700,cursor:newWeight?"pointer":"not-allowed"}}>Log</button>
+            <button onClick={handleLogWeight} disabled={!newWeight||savingWeight} style={{padding:"8px 14px",background:newWeight?"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")":T.surface,border:"none",borderRadius:10,color:newWeight?"#fff":T.muted,fontSize:12,fontWeight:700,cursor:newWeight&&!savingWeight?"pointer":"not-allowed"}}>{savingWeight?"…":"Log"}</button>
           </div>
         </div>
 
