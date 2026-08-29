@@ -510,7 +510,18 @@ function GoalDots({dd,size=6}){
   );
 }
 
-const SUPP_CATS=["All","Protein","Creatine","Pre-Workout","BCAAs","Vitamins","Omega-3","Electrolytes","Sleep","Collagen","Probiotic","Multivitamin","Greens/Multi"];
+// Derived from SUPP_DB, not hand-maintained. The browse filter used its own
+// hardcoded list of 8 while SUPP_DB carries 12 distinct categories, so BCAAs,
+// Multivitamin, Collagen, Probiotic and Greens/Multi were unreachable: products
+// existed that no filter could show. This constant had drifted out of use
+// entirely — three different lists, none of them agreeing. Deriving it means
+// adding a product with a new category can never strand it again.
+//
+// Ordered by how many products carry each category so the busiest filters come
+// first; ties break alphabetically to keep the chip order stable.
+const SUPP_CATS=["All",...Object.entries(
+  SUPP_DB.reduce((m,s)=>{if(s.category)m[s.category]=(m[s.category]||0)+1;return m;},{})
+).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).map(([c])=>c)];
 const DOT_COLORS={"Protein":"#FF6B4A","Creatine":"#5B8DEF","Pre-Workout":"#E24B4A","BCAAs":"#9B6DFF","Vitamins":"#F5A623","Omega-3":"#2ECC8F","Electrolytes":"#5B8DEF","Sleep":"#9B6DFF","Collagen":"#FF6B4A","Probiotic":"#2ECC8F","Multivitamin":"#F5A623","Greens/Multi":"#2ECC8F","Supplement":"#888"};
 
 // ── SIDE RAIL AI PANEL ──────────────────────────────────────────
@@ -1647,7 +1658,7 @@ function SuppSearchPanel({suppList,suppTaken,setSuppTaken,addSuppToList}){
       {/* Category chips — browsing only */}
       {browsing&&(
         <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:2}}>
-          {["All","Protein","Creatine","Vitamins","Omega-3","Pre-Workout","Electrolytes","Sleep"].map(c=>(
+          {SUPP_CATS.map(c=>(
             <div key={c} onClick={()=>setCat(c)} style={{padding:"5px 12px",borderRadius:20,fontSize:12,fontWeight:500,cursor:"pointer",border:("1px solid "+T.border),background:cat===c?T.accent:T.card,color:cat===c?"#fff":T.muted,whiteSpace:"nowrap",flexShrink:0}}>{c}</div>
           ))}
         </div>

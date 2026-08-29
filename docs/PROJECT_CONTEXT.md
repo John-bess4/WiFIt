@@ -400,7 +400,15 @@ Anthropic response formats are unchanged and out of scope for security work:
 
 8. **`today` is computed once per mount** (see Dates above).
 
-9. **ESLint reports 28 `no-unused-vars` warnings**, 0 errors. Untriaged.
+9. **ESLint reports 27 `no-unused-vars` warnings**, 0 errors. Mostly untriaged —
+   but worth knowing they are not all noise. One of them, `SUPP_CATS`, was a dead
+   13-entry category list sitting next to a hardcoded 8-entry copy in the browse
+   filter; the warning was pointing at a real UX bug (five categories no filter
+   could reach) for as long as it went unread. Count dropped 28 → 27 when that
+   constant was given its purpose back on 2026-08-29.
+
+   Note `AGENTS.md` still says 28; it is untracked in git, so it was not updated
+   with this.
 
 10. **The pinned model ID in `api/coach.js` is a maintenance liability — and it is
     the first thing to check when the coach breaks.** `MODEL` is pinned
