@@ -398,6 +398,24 @@ Anthropic response formats are unchanged and out of scope for security work:
     `coach_usage` gains a row per attempt, because usage is recorded on entry,
     just before the Anthropic call.
 
+11. **`react-hooks/exhaustive-deps` is deliberately OFF.** `rules-of-hooks` is on
+    and set to `error` — it is what would have caught the `RecipeCard` crash, where
+    a `useState` inside `renderMsg` (called from a `.map`) made the hook count
+    depend on how many recipe messages existed and blank-screened the app.
+    `exhaustive-deps` reports **7 advisory warnings** in `App.jsx` (lines ~675,
+    890, 1794, 4345, 4350, 5692, 6458 — missing deps such as `loadUserData`,
+    `callClaude`, `fetchMonthData`). Turning it on would move the documented
+    28-warning baseline for no correctness gain today, so it is a decision, not
+    an oversight. Revisit if a stale-closure bug ever shows up.
+
+12. **Two category vocabularies share `supplement_stack.category`.** The manual
+    add path writes capitalised product types (`Protein`, `Creatine`); the coach
+    writes lowercase purpose values (`performance`, `health`). Both are in the
+    live table, plus two nulls. `ACTION_VALID.supplement` now enforces the
+    lowercase enum on the coach path only. The column is currently **write-only**
+    — nothing reads it — so this is harmless today and must be resolved before
+    any Phase 2 grouping depends on it. See §Supplement categories.
+
 ---
 
 ## Current data state (2026-08-13)
