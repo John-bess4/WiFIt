@@ -3409,10 +3409,22 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={}}){
         if(nowDone){
           setRestSecs(restDuration);
           setRestTotal(restDuration);
-          // Check PR: compare actualWeight to historical best
+          // Check PR: beat a recorded best, not merely exist.
+          //
+          // best===0 means this exercise has no history to beat, and a first-ever
+          // lift is a baseline, not a record. Without the best>0 test an empty
+          // prHistory made every weighted set a "PR" — that is what put 4 phantom
+          // PRs on a 13-second artifact session, and it would fire on every
+          // exercise of the first real session too, since prHistory is seeded
+          // only when workout_sessions already has rows.
+          //
+          // Every writer of prHistory stores positive weights only (see the
+          // loader and both setPrHistory updaters), so best>0 is exactly "has a
+          // baseline". This also fails safe if a workout starts before the
+          // history load finishes: no PRs claimed rather than all of them.
           const w=parseInt(s.actualWeight)||0;
           const best=prHistory[ex.name]||0;
-          if(w>0&&w>best)setNewPRs(p=>p.includes(ex.name)?p:[...p,ex.name]);
+          if(w>0&&best>0&&w>best)setNewPRs(p=>p.includes(ex.name)?p:[...p,ex.name]);
         }else{
           setRestSecs(null);
         }
