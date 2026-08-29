@@ -3473,6 +3473,27 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={}}){
   const [newPRs,setNewPRs]=useState([]);         // ["Bench Press","Squat",…]
   const timerRef=useRef();
   const audioCtx=useRef(null);
+  // Both timers are derived from wall-clock timestamps, not from counting ticks.
+  // setInterval is throttled hard in a backgrounded tab (Chrome drops to roughly
+  // once a minute) and can stop entirely while a phone is locked — which is the
+  // normal case for a PWA sitting in a pocket between sets, not an edge case.
+  // Counting ticks meant a real session was silently under-reported, in the same
+  // direction as the 3-13 second click-through artifacts, so the two would have
+  // been indistinguishable. Deriving from timestamps means a throttled or
+  // suspended tab simply catches up on its next tick.
+  const startedAtRef=useRef(Date.now());
+  const restEndsAtRef=useRef(null);
+
+  // Rest is a deadline, not a countdown, for the same reason.
+  const startRest=(secs)=>{restEndsAtRef.current=Date.now()+secs*1000;setRestSecs(secs);setRestTotal(secs);};
+  const clearRest=()=>{restEndsAtRef.current=null;setRestSecs(null);};
+
+  // The number that gets STORED is read from the clock at the moment Finish is
+  // tapped, not from `elapsed`. Deriving elapsed from timestamps fixes the rate
+  // it accumulates, but the state is still only as fresh as the last tick — and
+  // a throttled tab may not have ticked for a minute. `elapsed` drives the
+  // display; this drives the row in workout_sessions.
+  const finalElapsed=()=>Math.floor((Date.now()-startedAtRef.current)/1000);
 
   // Play a short beep using Web Audio API
   const beep=()=>{
@@ -3490,14 +3511,20 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={}}){
   };
 
   useEffect(()=>{
-    timerRef.current=setInterval(()=>{
-      setElapsed(e=>e+1);
-      setRestSecs(r=>{
-        if(r===null)return null;
-        if(r<=1){beep();return null;}
-        return r-1;
-      });
-    },1000);
+    const tick=()=>{
+      setElapsed(Math.floor((Date.now()-startedAtRef.current)/1000));
+      const endsAt=restEndsAtRef.current;
+      if(endsAt===null)return;
+      const msLeft=endsAt-Date.now();
+      if(msLeft>0){setRestSecs(Math.ceil(msLeft/1000));return;}
+      restEndsAtRef.current=null;
+      setRestSecs(null);
+      // Only sound if rest ended just now. Coming back to the tab ten minutes
+      // later, the user does not need to be told their rest is over.
+      if(msLeft>-2000)beep();
+    };
+    tick();
+    timerRef.current=setInterval(tick,1000);
     return()=>clearInterval(timerRef.current);
   },[]);
 
@@ -3512,8 +3539,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={}}){
         if(si!==setIdx)return s;
         const nowDone=!s.done;
         if(nowDone){
-          setRestSecs(restDuration);
-          setRestTotal(restDuration);
+          startRest(restDuration);
           // Check PR: beat a recorded best, not merely exist.
           //
           // best===0 means this exercise has no history to beat, and a first-ever
@@ -3531,7 +3557,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={}}){
           const best=prHistory[ex.name]||0;
           if(w>0&&best>0&&w>best)setNewPRs(p=>p.includes(ex.name)?p:[...p,ex.name]);
         }else{
-          setRestSecs(null);
+          clearRest();
         }
         return{...s,done:nowDone};
       })
@@ -3559,7 +3585,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={}}){
           <div style={{fontSize:14,fontWeight:700,color:T.text}}>{workout.name}</div>
           <div style={{fontSize:12,color:T.accent,fontWeight:600}}>{fmt(elapsed)}</div>
         </div>
-        <div onClick={()=>onFinish(sets,elapsed,newPRs)} style={{fontSize:13,color:T.accent,fontWeight:700,cursor:"pointer"}}>Finish</div>
+        <div onClick={()=>onFinish(sets,finalElapsed(),newPRs)} style={{fontSize:13,color:T.accent,fontWeight:700,cursor:"pointer"}}>Finish</div>
       </div>
 
       {/* Progress bar */}
@@ -3574,7 +3600,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={}}){
             <div style={{fontSize:13,fontWeight:700,color:T.accent,marginBottom:4}}>⏱ Rest</div>
             <div style={{display:"flex",gap:6}}>
               {[60,90,120,180].map(d=>(
-                <div key={d} onClick={()=>{setRestDuration(d);setRestSecs(d);setRestTotal(d);}}
+                <div key={d} onClick={()=>{setRestDuration(d);startRest(d);}}
                   style={{padding:"4px 8px",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",
                     background:restDuration===d?T.accent:T.surface,
                     color:restDuration===d?"#fff":T.muted,border:("1px solid "+restDuration===d?T.accent:T.border)}}>
@@ -3595,7 +3621,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={}}){
               <div style={{fontSize:17,fontWeight:800,color:T.accent,fontFamily:"monospace",lineHeight:1}}>{fmt(restSecs)}</div>
             </div>
           </div>
-          <div onClick={()=>setRestSecs(null)} style={{fontSize:12,color:T.muted,cursor:"pointer",textAlign:"center"}}>Skip</div>
+          <div onClick={clearRest} style={{fontSize:12,color:T.muted,cursor:"pointer",textAlign:"center"}}>Skip</div>
         </div>
       )}
 
@@ -3647,7 +3673,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={}}){
 
       {/* Finish button */}
       <div style={{padding:"20px 16px 0"}}>
-        <button onClick={()=>onFinish(sets,elapsed,newPRs)} style={{width:"100%",background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:14,padding:"16px",color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",boxShadow:("0 4px 20px "+T.accentGlow)}}>
+        <button onClick={()=>onFinish(sets,finalElapsed(),newPRs)} style={{width:"100%",background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:14,padding:"16px",color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",boxShadow:("0 4px 20px "+T.accentGlow)}}>
           🏁 Finish workout
         </button>
       </div>
