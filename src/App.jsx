@@ -532,6 +532,37 @@ export const SUPP_CATEGORY_DOTS={
 };
 export const isSuppCategory=(c)=>typeof c==="string"&&Object.hasOwn(SUPP_CATEGORY_DOTS,c);
 
+// supplement_stack.category held two vocabularies: the coach wrote these
+// lowercase PURPOSE values, while the manual add path wrote capitalised PRODUCT
+// TYPES ("Protein", "Creatine") taken from SUPP_DB and the create picker. Same
+// column, different axes — Phase 2 grouping would have treated them as distinct.
+//
+// Purpose wins for the stack: it is the closed set the model already emits, and
+// "what am I taking this for" is the useful question about a personal stack.
+// Product type stays on SUPP_DB, where it belongs — that is the catalogue's own
+// field, driving browse and search, and it is untouched.
+//
+// Mapped at WRITE time, so the picker's labels do not change. Covers every value
+// in SUPP_DB and in the create picker.
+export const SUPP_TYPE_TO_CATEGORY={
+  "Protein":"protein",
+  "Vitamins":"vitamin",
+  "Multivitamin":"vitamin",
+  "Creatine":"performance",
+  "Pre-Workout":"performance",
+  "BCAAs":"performance",
+  "Electrolytes":"mineral",
+  "Omega-3":"health",
+  "Collagen":"health",
+  "Greens/Multi":"health",
+  "Sleep":"sleep",
+  "Probiotic":"probiotic",
+  // "Supplement" is the picker's I-don't-know option. It asserts no purpose, so
+  // it maps to null and lands in the Uncategorised bucket rather than a guess.
+};
+// null, never a passthrough: storing an unmapped type would recreate the split.
+export const toSuppCategory=(t)=>SUPP_TYPE_TO_CATEGORY[t]||null;
+
 // Required fields per type. Optional fields are never checked — a missing
 // `timing` degrades the card, a missing `name` makes it meaningless.
 export const ACTION_VALID={
@@ -1569,13 +1600,15 @@ function SuppSearchPanel({suppList,suppTaken,setSuppTaken,addSuppToList}){
   const clearSearch=()=>{setQuery("");setResults([]);setSearched(false);setShowCreate(false);};
 
   const addFromSearch=(s)=>{
-    addSuppToList({k:"s"+Date.now(),name:s.name,sub:(s.servingG?s.servingG+"g · ":"")+(s.brand||s.category||"Supplement"),dot:DOT_COLORS[s.category]||"#888",category:s.category||null});
+    // s.category is SUPP_DB's product type; the column stores purpose. The dot
+    // still comes from DOT_COLORS by type, so nothing changes visually.
+    addSuppToList({k:"s"+Date.now(),name:s.name,sub:(s.servingG?s.servingG+"g · ":"")+(s.brand||s.category||"Supplement"),dot:DOT_COLORS[s.category]||"#888",category:toSuppCategory(s.category)});
     clearSearch();
   };
 
   const saveCustom=()=>{
     if(!newName.trim())return;
-    addSuppToList({k:"m"+Date.now(),name:newName.trim(),sub:newDose.trim()||newCat,dot:DOT_COLORS[newCat]||"#888",category:newCat||null});
+    addSuppToList({k:"m"+Date.now(),name:newName.trim(),sub:newDose.trim()||newCat,dot:DOT_COLORS[newCat]||"#888",category:toSuppCategory(newCat)});
     setCreateSaved(true);
     setTimeout(()=>{
       setCreateSaved(false);setNewName("");setNewDose("");setNewCat("Supplement");

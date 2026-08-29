@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseActions, legacyFormatOf, MAX_ACTIONS, SUPP_CATEGORY_DOTS, isSuppCategory } from "../App.jsx";
+import { parseActions, legacyFormatOf, MAX_ACTIONS, SUPP_CATEGORY_DOTS, isSuppCategory, toSuppCategory } from "../App.jsx";
 
 const water = (oz = 8) => ({ type: "water", oz });
 const supp = () => ({ type: "supplement", items: [{ name: "Creatine", category: "performance" }] });
@@ -149,5 +149,42 @@ describe("legacyFormatOf — the C2 gate", () => {
   it("returns null for ACTIONS and for plain text", () => {
     expect(legacyFormatOf(wrap([water()]))).toBeNull();
     expect(legacyFormatOf("Drink more water.")).toBeNull();
+  });
+});
+
+describe("toSuppCategory — the manual path's product types map to purpose", () => {
+  it("maps every category present in SUPP_DB", () => {
+    const inSuppDb = ["Vitamins", "Protein", "Pre-Workout", "Omega-3", "Multivitamin",
+                      "Electrolytes", "Creatine", "Sleep", "Probiotic", "Collagen",
+                      "BCAAs", "Greens/Multi"];
+    for (const t of inSuppDb) {
+      const mapped = toSuppCategory(t);
+      expect(mapped, t + " must map").not.toBeNull();
+      // Whatever it maps to must be a category the coach path would also accept.
+      expect(isSuppCategory(mapped), t + " -> " + mapped).toBe(true);
+    }
+  });
+
+  it("maps every value in the create picker", () => {
+    for (const t of ["Protein", "Vitamins", "Creatine", "Omega-3", "Pre-Workout", "Sleep"]) {
+      expect(isSuppCategory(toSuppCategory(t))).toBe(true);
+    }
+  });
+
+  it("sends the I-don't-know option to null rather than guessing a purpose", () => {
+    expect(toSuppCategory("Supplement")).toBeNull();
+  });
+
+  it("returns null for anything unmapped — never a passthrough", () => {
+    // A passthrough would recreate the two-vocabulary split this fixes.
+    for (const t of ["Nootropic", "", null, undefined, "protein"]) {
+      expect(toSuppCategory(t)).toBeNull();
+    }
+  });
+
+  it("collapses the performance family onto one value", () => {
+    expect(toSuppCategory("Creatine")).toBe("performance");
+    expect(toSuppCategory("Pre-Workout")).toBe("performance");
+    expect(toSuppCategory("BCAAs")).toBe("performance");
   });
 });
