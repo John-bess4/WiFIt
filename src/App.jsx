@@ -4587,6 +4587,29 @@ const sb={
   headers(extra={}){
     return{"Content-Type":"application/json","apikey":this._key,"Authorization":"Bearer "+(this._session?.access_token||this._key),...extra};
   },
+  // Single chokepoint for every /rest/v1 call, so mid-session token expiry is
+  // handled in one place instead of six. Before this, an access_token that died
+  // while the app sat open (a workout runs well past the token's life) made every
+  // subsequent write 401 until the user reloaded — the write was rejected and the
+  // session was lost.
+  //
+  // 401 is the ONLY status retried. A 403 is an RLS denial, which refreshing
+  // cannot fix, and a 409/400 is a real request problem.
+  //
+  // The body is deliberately not read here: a Response body can be read only
+  // once, and every caller reads it itself. On a failed refresh the original 401
+  // Response is handed back untouched, so each method's failure contract
+  // (select -> [], insert/upsert -> null, delete/update -> false) is unchanged.
+  //
+  // Retries exactly once — this never calls itself, so no loop is possible.
+  async _fetch(path,init={},extra={}){
+    const sent=this._session?.access_token||null;
+    const r=await fetch(this._url+path,{...init,headers:this.headers(extra)});
+    if(r.status!==401)return r;
+    if(!(await reauth(sent)))return r;
+    console.warn("[sb] access_token expired mid-session — refreshed, retrying",path.split("?")[0]);
+    return fetch(this._url+path,{...init,headers:this.headers(extra)});
+  },
   async signUp(email,password){
     const r=await fetch(this._url+"/auth/v1/signup",{method:"POST",headers:{"Content-Type":"application/json","apikey":this._key},body:JSON.stringify({email,password})});
     return r.json();
@@ -4604,7 +4627,7 @@ const sb={
   getUser(){return this._session?.user||null;},
   async select(table,filters="",opts={}){
     const q=[filters,opts.order?"order="+opts.order:"",opts.limit?"limit="+opts.limit:""].filter(Boolean).join("&");
-    const r=await fetch(this._url+"/rest/v1/"+table+"?"+q,{headers:this.headers()});
+    const r=await this._fetch("/rest/v1/"+table+"?"+q);
     if(!r.ok){console.error("[sb.select]",table,r.status,await r.text().catch(()=>""));return[];}
     return r.json();
   },
@@ -4617,7 +4640,7 @@ const sb={
   async selectAuth(table,filters="",opts={}){
     try{
       const q=[filters,opts.order?"order="+opts.order:"",opts.limit?"limit="+opts.limit:""].filter(Boolean).join("&");
-      const r=await fetch(this._url+"/rest/v1/"+table+"?"+q,{headers:this.headers()});
+      const r=await this._fetch("/rest/v1/"+table+"?"+q);
       if(!r.ok){
         console.error("[sb.selectAuth]",table,r.status,await r.text().catch(()=>""));
         return{authError:r.status===401||r.status===403,rows:[]};
@@ -4630,7 +4653,7 @@ const sb={
     }
   },
   async insert(table,row){
-    const r=await fetch(this._url+"/rest/v1/"+table,{method:"POST",headers:this.headers({"Prefer":"return=representation"}),body:JSON.stringify(Array.isArray(row)?row:[row])});
+    const r=await this._fetch("/rest/v1/"+table,{method:"POST",body:JSON.stringify(Array.isArray(row)?row:[row])},{"Prefer":"return=representation"});
     if(!r.ok){console.error("[sb.insert]",table,r.status,await r.text().catch(()=>""));return null;}
     const d=await r.json();return Array.isArray(row)?d:d[0];
   },
@@ -4643,16 +4666,16 @@ const sb={
   // Callers that upsert on the PK itself (profiles.id) can omit it.
   async upsert(table,row,{onConflict=""}={}){
     const q=onConflict?"?on_conflict="+onConflict.split(",").map(c=>encodeURIComponent(c.trim())).join(","):"";
-    const r=await fetch(this._url+"/rest/v1/"+table+q,{method:"POST",headers:this.headers({"Prefer":"resolution=merge-duplicates,return=representation"}),body:JSON.stringify(Array.isArray(row)?row:[row])});
+    const r=await this._fetch("/rest/v1/"+table+q,{method:"POST",body:JSON.stringify(Array.isArray(row)?row:[row])},{"Prefer":"resolution=merge-duplicates,return=representation"});
     if(!r.ok){console.error("[sb.upsert]",table,r.status,await r.text().catch(()=>""));return null;}
     const d=await r.json();return Array.isArray(row)?d:d[0];
   },
   async delete(table,filter){
-    const r=await fetch(this._url+"/rest/v1/"+table+"?"+filter,{method:"DELETE",headers:this.headers()});
+    const r=await this._fetch("/rest/v1/"+table+"?"+filter,{method:"DELETE"});
     return r.ok;
   },
   async update(table,changes,{filter=""}={}){
-    const r=await fetch(this._url+"/rest/v1/"+table+"?"+filter,{method:"PATCH",headers:this.headers({"Prefer":"return=representation"}),body:JSON.stringify(changes)});
+    const r=await this._fetch("/rest/v1/"+table+"?"+filter,{method:"PATCH",body:JSON.stringify(changes)},{"Prefer":"return=representation"});
     return r.ok;
   },
 };
@@ -4713,6 +4736,42 @@ async function refreshSession(refresh_token){
     finally{_refreshInFlight=null;}
   })();
   return _refreshInFlight;
+}
+
+// sb is a module-level object; authState is React state. A refresh that fails
+// deep inside a write has no way to route on its own, so App registers one
+// handler at mount. Routing target is "auth" and never "onboarding" — see the
+// routing rule in PROJECT_CONTEXT: onboarding as a fallback overwrites a real
+// profile.
+let _onAuthLost=null;
+function setAuthLostHandler(fn){_onAuthLost=fn;}
+function authLost(){
+  clearSession();
+  if(_onAuthLost)_onAuthLost();
+}
+
+// Recover from a 401 on a data request. Returns true if the caller should retry.
+//
+// `sent` is the access_token the failed request actually used. The in-flight
+// guard inside refreshSession only coalesces requests that overlap in time;
+// finishing a workout fires several writes that 401 in sequence, microseconds
+// apart. Without this comparison the second one would redeem a refresh_token the
+// first had already rotated — Supabase rejects the reused single-use token, and
+// the user is signed out mid-workout, which is worse than the bug being fixed.
+//
+// So: if the live session already carries a different access_token, someone else
+// refreshed while this request was in flight. Retry on theirs, do not refresh.
+async function reauth(sent){
+  const cur=sb._session?.access_token||null;
+  if(cur&&cur!==sent)return true;
+  const rt=sb._session?.refresh_token;
+  if(!rt){authLost();return false;}
+  const fresh=await refreshSession(rt);
+  if(!fresh){authLost();return false;}
+  // Refresh responses may omit the user; loadUserData and getUser need it.
+  if(!fresh.user&&sb._session?.user)fresh.user=sb._session.user;
+  persistSession(fresh);
+  return true;
 }
 
 // Single auth-resolution gate: turn the stored session into a definite state
@@ -6317,6 +6376,8 @@ export default function App(){
 
   // Resolve the session to a definite state before any data load runs.
   useEffect(()=>{
+    // Lets a mid-session refresh failure inside any sb.* call route to sign-in.
+    setAuthLostHandler(()=>setAuthState("auth"));
     (async()=>{
       try{
         const res=await resolveSession();
