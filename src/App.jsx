@@ -4670,13 +4670,19 @@ const sb={
     if(!r.ok){console.error("[sb.upsert]",table,r.status,await r.text().catch(()=>""));return null;}
     const d=await r.json();return Array.isArray(row)?d:d[0];
   },
+  // delete and update log like the other four: "[sb.<method>] <table> <status>"
+  // is the grep the browser-side verification depends on, and without it a
+  // genuine failure here left no trace anywhere. Return contract is unchanged —
+  // still the boolean r.ok was returning.
   async delete(table,filter){
     const r=await this._fetch("/rest/v1/"+table+"?"+filter,{method:"DELETE"});
-    return r.ok;
+    if(!r.ok){console.error("[sb.delete]",table,r.status,await r.text().catch(()=>""));return false;}
+    return true;
   },
   async update(table,changes,{filter=""}={}){
     const r=await this._fetch("/rest/v1/"+table+"?"+filter,{method:"PATCH",body:JSON.stringify(changes)},{"Prefer":"return=representation"});
-    return r.ok;
+    if(!r.ok){console.error("[sb.update]",table,r.status,await r.text().catch(()=>""));return false;}
+    return true;
   },
 };
 
