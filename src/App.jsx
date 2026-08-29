@@ -512,70 +512,6 @@ function GoalDots({dd,size=6}){
 
 const SUPP_CATS=["All","Protein","Creatine","Pre-Workout","BCAAs","Vitamins","Omega-3","Electrolytes","Sleep","Collagen","Probiotic","Multivitamin","Greens/Multi"];
 const DOT_COLORS={"Protein":"#FF6B4A","Creatine":"#5B8DEF","Pre-Workout":"#E24B4A","BCAAs":"#9B6DFF","Vitamins":"#F5A623","Omega-3":"#2ECC8F","Electrolytes":"#5B8DEF","Sleep":"#9B6DFF","Collagen":"#FF6B4A","Probiotic":"#2ECC8F","Multivitamin":"#F5A623","Greens/Multi":"#2ECC8F","Supplement":"#888"};
-// ── AI INTENT PARSER ───────────────────────────────────────────
-// Parses a message for food/supplement add intent and returns a match or null
-function parseIntent(text){
-  const t=text.toLowerCase();
-
-  const addWords=["add","log","ate","had","just had","track","eaten","eating","drank","drink","took","take","logged","drinking","having","finished","just drank","just ate"];
-  const waterWords=["water","h2o","glass of water","bottle of water","cup of water","oz of water","ml of water","water bottle","hydration"];
-  const suppWords=["supplement","supp","vitamin","protein","creatine","omega","magnesium","zinc","probiotic","melatonin","bcaa","pre-workout","collagen","fish oil","b12","d3","multivitamin","ashwagandha"];
-  const hasAdd=addWords.some(w=>t.includes(w));
-  if(!hasAdd)return null;
-
-  // ── Water intent ─────────────────────────────────────────────
-  const isWaterIntent=waterWords.some(w=>t.includes(w));
-  if(isWaterIntent){
-    const qtyMatch=t.match(/(\d+\.?\d*)\s*(oz|ounces?|ml|millilitres?|litre?s?|cups?|glasses?|bottle?s?)/i);
-    let oz=8; // default 1 glass
-    if(qtyMatch){
-      const amt=parseFloat(qtyMatch[1]);
-      const unit=qtyMatch[2].toLowerCase();
-      if(unit.startsWith("oz")||unit.startsWith("ounce"))oz=amt;
-      else if(unit.startsWith("ml")||unit.startsWith("milli"))oz=amt/29.574;
-      else if(unit.startsWith("l")||unit.startsWith("litre"))oz=amt*33.814;
-      else if(unit.startsWith("cup")||unit.startsWith("glass"))oz=amt*8;
-      else if(unit.startsWith("bottle"))oz=amt*16;
-    }
-    return{type:"water",oz:Math.round(oz)};
-  }
-
-  // Extract quantity
-  const qtyMatch=t.match(/(\d+\.?\d*)\s*(g|grams?|oz|ounces?|ml|cups?|tbsp|tablespoons?|tsp|teaspoons?|servings?|scoops?|tablets?|pills?|capsules?|mg|iu)/i);
-  const numOnly=t.match(/\b(\d+\.?\d*)\b/);
-  const qty=qtyMatch?{amount:parseFloat(qtyMatch[1]),unit:qtyMatch[2].toLowerCase()}
-    :numOnly?{amount:parseFloat(numOnly[1]),unit:"g"}
-    :{amount:100,unit:"g"};
-
-  // Check supplement
-  const isSuppIntent=suppWords.some(w=>t.includes(w));
-
-  // Match food
-  if(!isSuppIntent){
-    const match=LOCAL_FOOD_DB.find(f=>{
-      const fname=f.name.toLowerCase();
-      return fname.split(/[\s()]+/).some(kw=>kw.length>3&&t.includes(kw));
-    });
-    if(match){
-      let grams=qty.amount;
-      if(qty.unit.startsWith("cup"))grams=match.servingG?match.servingG*qty.amount:qty.amount*240;
-      else if(qty.unit.startsWith("oz"))grams=qty.amount*28.35;
-      else if(qty.unit.startsWith("ml"))grams=qty.amount;
-      else if(qty.unit.startsWith("serving")||qty.unit.startsWith("scoop"))grams=match.servingG?match.servingG*qty.amount:qty.amount*30;
-      else if(qty.unit==="g"||qty.unit.startsWith("gram"))grams=qty.amount;
-      return{type:"food",item:match,grams:Math.round(grams),slot:"snacks"};
-    }
-  }
-
-  // Match supplement
-  const suppMatch=SUPP_DB.find(s=>{
-    const sname=s.name.toLowerCase();
-    return sname.split(/[\s()]+/).some(kw=>kw.length>3&&t.includes(kw));
-  });
-  if(suppMatch)return{type:"supp",item:suppMatch};
-
-  return null;
-}
 
 // ── SIDE RAIL AI PANEL ──────────────────────────────────────────
 function AISidePanel({open,onClose,onAddFood,onAddSupp,onAddWorkout,onAddWater,liveContext={},userName="",userId=""}){
@@ -876,42 +812,13 @@ RULES:
     const userMsg={bot:false,text:msg};
     setMessages(prev=>[...prev,userMsg]);
 
-    // Quick local intent check first
-    const intent=parseIntent(msg);
-
-    // Water intent — local detection
-    if(intent?.type==="water"&&onAddWater){
-      onAddWater(intent.oz);
-      setThinking(true);
-      try{
-        const insight=await callClaude("WATER_LOG:{\"oz\":"+intent.oz+"}|Give one hydration tip.",[]);
-        const parsed=parseWaterReply(insight);
-        setMessages(prev=>[...prev,{bot:true,type:"water_logged",oz:intent.oz,text:parsed?.msg||(intent.oz+" oz logged! Great hydration habit.")}]);
-      }catch(e){
-        // The water IS logged (onAddWater already ran) — only the coach tip
-        // failed. Confirm the log, but don't pretend the coach answered.
-        setMessages(prev=>[...prev,{bot:true,type:"water_logged",oz:intent.oz,
-          text:intent.oz+" oz logged 💧 "+coachTipNote(e)}]);
-      }
-      setThinking(false);return;
-    }
-
-    // Supp intent — local detection
-    if(intent?.type==="supp"&&onAddSupp){
-      onAddSupp(intent.item);
-      setThinking(true);
-      try{
-        const insight=await callClaude("I just took "+intent.item.name+". Give one short sentence tip.",[]);
-        setMessages(prev=>[...prev,{bot:true,type:"supp_logged",suppName:intent.item.name,text:insight}]);
-      }catch(e){
-        // Same as water: the supplement was added; only the tip failed.
-        setMessages(prev=>[...prev,{bot:true,type:"supp_logged",suppName:intent.item.name,
-          text:intent.item.name+" added and marked taken ✓ "+coachTipNote(e)}]);
-      }
-      setThinking(false);return;
-    }
-
-    // Everything else — call Claude
+    // Every message goes to the model. There is no local pre-classification:
+    // the old parseIntent matched substrings against 81 hardcoded product names
+    // and committed a write before the model was ever asked. "ate" is a
+    // substring of "water", so "how much water should I drink" logged 8 oz; and
+    // "protein" in the supplement word list meant "I had 30g of protein" added a
+    // whey product to the stack instead of logging food. The model already
+    // returns a format prefix — it is the only thing that should choose.
     setThinking(true);
     try{
       const reply=await callClaude(msg,[...messages,userMsg]);
@@ -964,14 +871,13 @@ RULES:
 
       // Supplement add (from Claude structured response)
       const suppParsed=parseAddSupp(reply);
+      // Proposed, not committed. The stack is persistent and there is no undo
+      // in the chat, so a supplement gets the same confirmation card
+      // WORKOUT_PLAN and RECIPE already use. This is what turns a misrouted
+      // reply — "please remove my push day workout" answered with a B12 block —
+      // into a card the user can ignore instead of a write they have to undo.
       if(suppParsed&&onAddSupp){
-        const addedNames=[];
-        suppParsed.items.forEach(s=>{
-          const dot={protein:"#F472B6",vitamin:"#FBBF24",mineral:"#34D399",performance:"#06B6D4",health:"#A78BFA",sleep:"#818CF8",fat_burner:"#F97316",probiotic:"#6EE7B7"}[s.category]||"#888";
-          onAddSupp({k:"ai"+Date.now()+Math.random(),name:s.name,sub:(s.dose||"")+(s.timing?" · "+s.timing:""),dot,category:s.category,note:s.note});
-          addedNames.push(s.name);
-        });
-        setMessages(prev=>[...prev,{bot:true,type:"supp_added",items:suppParsed.items,text:suppParsed.msg}]);
+        setMessages(prev=>[...prev,{bot:true,type:"supp_added",items:suppParsed.items,text:suppParsed.msg,added:false}]);
         generateSuggestions(suppParsed.msg);
         setThinking(false);return;
       }
@@ -993,6 +899,16 @@ RULES:
 
   const addPlanToWorkouts=(msgIdx,plan)=>{
     onAddWorkout&&onAddWorkout(plan);
+    setMessages(prev=>prev.map((m,i)=>i===msgIdx?{...m,added:true}:m));
+  };
+
+  // Commits the supplements a reply proposed. Mirrors addPlanToWorkouts: the
+  // write happens here, on an explicit tap, not on the reply arriving.
+  const addSuppsToStack=(msgIdx,items)=>{
+    (items||[]).forEach(s=>{
+      const dot={protein:"#F472B6",vitamin:"#FBBF24",mineral:"#34D399",performance:"#06B6D4",health:"#A78BFA",sleep:"#818CF8",fat_burner:"#F97316",probiotic:"#6EE7B7"}[s.category]||"#888";
+      onAddSupp&&onAddSupp({k:"ai"+Date.now()+Math.random(),name:s.name,sub:(s.dose||"")+(s.timing?" · "+s.timing:""),dot,category:s.category,note:s.note});
+    });
     setMessages(prev=>prev.map((m,i)=>i===msgIdx?{...m,added:true}:m));
   };
 
@@ -1296,7 +1212,7 @@ RULES:
           <div style={{background:T.card,border:("1px solid "+T.border),borderRadius:14,overflow:"hidden",boxShadow:T.glowShadow}}>
             <div style={{padding:"8px 14px",borderBottom:("1px solid "+T.border),display:"flex",alignItems:"center",gap:8}}>
               <div style={{fontSize:14}}>💊</div>
-              <div style={{fontSize:11,fontWeight:700,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>Added to your stack</div>
+              <div style={{fontSize:11,fontWeight:700,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>{m.added?"Added to your stack":"Suggested supplements"}</div>
             </div>
             {m.items.map((s,si)=>{
               const dot={protein:"#F472B6",vitamin:"#FBBF24",mineral:"#34D399",performance:"#06B6D4",health:"#A78BFA",sleep:"#818CF8",fat_burner:"#F97316",probiotic:"#6EE7B7"}[s.category]||"#888";
@@ -1308,27 +1224,17 @@ RULES:
                       <div style={{fontSize:13,fontWeight:700,color:T.text}}>{s.name}</div>
                       <div style={{fontSize:11,color:T.muted,marginTop:1}}>{s.dose}{s.timing?" · "+s.timing:""}</div>
                     </div>
-                    <div style={{background:"rgba(34,197,94,0.15)",border:"1px solid rgba(34,197,94,0.3)",borderRadius:20,padding:"3px 10px",fontSize:10,fontWeight:700,color:"#22C55E"}}>✓ Added</div>
+                    {m.added&&<div style={{background:"rgba(34,197,94,0.15)",border:"1px solid rgba(34,197,94,0.3)",borderRadius:20,padding:"3px 10px",fontSize:10,fontWeight:700,color:"#22C55E"}}>✓ Added</div>}
                   </div>
                   {s.note&&<div style={{fontSize:11,color:T.muted,marginTop:6,paddingLeft:20,lineHeight:1.5,fontStyle:"italic"}}>{s.note}</div>}
                 </div>
               );
             })}
-          </div>
-        </div>
-      );
-    }
-
-    // ── Single supplement logged card (legacy) ──────────────────
-    if(m.type==="supp_logged"){
-      return(
-        <div key={i} style={{alignSelf:"flex-start",maxWidth:"95%",display:"flex",flexDirection:"column",gap:6}}>
-          <div style={{fontSize:13,lineHeight:1.5,color:T.text}}>{m.text}</div>
-          <div style={{background:T.accentPill,border:("1px solid "+T.accent),borderRadius:12,padding:"10px 12px",display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:28,height:28,borderRadius:"50%",background:T.accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>💊</div>
-            <div>
-              <div style={{fontSize:13,fontWeight:600,color:T.accent}}>{m.suppName}</div>
-              <div style={{fontSize:11,color:T.muted,marginTop:1}}>Added to stack &amp; marked taken ✓</div>
+            <div style={{padding:"10px 14px",borderTop:("1px solid "+T.border)}}>
+              {m.added
+                ?<div style={{background:"rgba(34,197,94,0.15)",border:"1px solid rgba(34,197,94,0.35)",borderRadius:10,padding:"10px",textAlign:"center",color:"#22C55E",fontSize:13,fontWeight:700}}>✓ Added to your stack</div>
+                :<button onClick={()=>addSuppsToStack(i,m.items)} style={{width:"100%",background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:10,padding:"10px",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>💊 Add to my stack</button>
+              }
             </div>
           </div>
         </div>
@@ -4714,12 +4620,6 @@ function coachErrorText(e,fallback){
   if(e?.status===401)return "Your session expired. Sign out and sign back in to keep using the coach.";
   if(e?.status===429)return e.userMessage||"You've reached the coach's usage limit. Try again later.";
   return fallback;
-}
-// Short suffix for paths where the log itself succeeded and only the tip failed.
-function coachTipNote(e){
-  if(e?.status===401)return "(Sign in again for coach tips.)";
-  if(e?.status===429)return "(Coach tip limit reached — the log was saved.)";
-  return "(Coach tip unavailable right now.)";
 }
 
 // Treat a token expiring within this window as needing refresh (clock skew buffer).
