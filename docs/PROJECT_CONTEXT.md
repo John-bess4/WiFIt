@@ -455,6 +455,24 @@ Anthropic response formats are unchanged and out of scope for security work:
     separate `dot_color` column. Normalising it now was cheap precisely because
     nothing depends on it; Phase 2 grouping is the first consumer.
 
+14. **The CHECK constraint on `supplement_stack.category` is deliberately
+    deferred, not forgotten.** The obvious guard —
+    `check (category is null or category in ('protein','vitamin','mineral',
+    'performance','health','sleep','fat_burner','probiotic'))` — is the thing
+    that would make the normalisation permanent. It is **not** applied yet for
+    one reason: the pre-ACTIONS `ADD_SUPP` path is still live until C2 retires
+    it, and that path does **not** validate `category` (only `ACTION_VALID.
+    supplement` on the ACTIONS path does). With the constraint in place, a model
+    that emitted an out-of-enum category on the legacy path would produce a
+    constraint violation, `sb.insert` would return `null`, and the user would
+    see "Supplement couldn't be saved. Check your connection." — a database
+    error surfacing as a network error, on a response that is the model's fault.
+
+    **Apply it as the first commit after C2 lands.** At that point every write
+    goes through `ACTION_VALID.supplement` or `toSuppCategory`, both of which
+    already guarantee the enum-or-null invariant, so the constraint becomes a
+    belt-and-braces guard rather than a live failure mode.
+
 ---
 
 ## Current data state (2026-08-13)
