@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseActions, legacyFormatOf, MAX_ACTIONS } from "../App.jsx";
+import { parseActions, legacyFormatOf, MAX_ACTIONS, SUPP_CATEGORY_DOTS, isSuppCategory } from "../App.jsx";
 
 const water = (oz = 8) => ({ type: "water", oz });
 const supp = () => ({ type: "supplement", items: [{ name: "Creatine", category: "performance" }] });
@@ -93,6 +93,49 @@ describe("parseActions — corrupt input fails CLOSED", () => {
     expect(r).not.toBeNull();
     expect(r.valid).toEqual([]);
     expect(r.msg).toBe("Nothing to do.");
+  });
+});
+
+describe("supplement category is checked against the enum", () => {
+  const withCat = (category) => ({ type: "supplement", items: [{ name: "Creatine", category }] });
+
+  it("accepts each of the eight documented categories", () => {
+    for (const c of Object.keys(SUPP_CATEGORY_DOTS)) {
+      expect(parseActions(wrap([withCat(c)])).valid).toHaveLength(1);
+    }
+    expect(Object.keys(SUPP_CATEGORY_DOTS)).toHaveLength(8);
+  });
+
+  it("drops a category outside the enum instead of storing it", () => {
+    // Previously this passed validation, was written, and rendered as an
+    // anonymous grey dot — a bad value stored as though it were real.
+    const r = parseActions(wrap([withCat("nootropic")]));
+    expect(r.valid).toEqual([]);
+    expect(r.dropped).toEqual(["supplement"]);
+  });
+
+  it("is case-sensitive — the manual path's capitalised vocabulary is not valid here", () => {
+    expect(parseActions(wrap([withCat("Protein")])).dropped).toEqual(["supplement"]);
+    expect(parseActions(wrap([withCat("Creatine")])).dropped).toEqual(["supplement"]);
+  });
+
+  it("drops a missing, null or non-string category", () => {
+    for (const c of [undefined, null, "", 7, {}]) {
+      expect(parseActions(wrap([withCat(c)])).dropped).toEqual(["supplement"]);
+    }
+  });
+
+  it("drops the supplement but keeps valid siblings", () => {
+    const r = parseActions(wrap([water(8), withCat("bogus"), food()]));
+    expect(r.valid.map(a => a.type)).toEqual(["water", "food"]);
+    expect(r.dropped).toEqual(["supplement"]);
+  });
+
+  it("every valid category has a dot colour — the two cannot drift", () => {
+    for (const c of Object.keys(SUPP_CATEGORY_DOTS)) {
+      expect(isSuppCategory(c)).toBe(true);
+      expect(SUPP_CATEGORY_DOTS[c]).toMatch(/^#[0-9A-F]{6}$/i);
+    }
   });
 });
 

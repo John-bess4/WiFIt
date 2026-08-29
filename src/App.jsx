@@ -523,6 +523,15 @@ const DOT_COLORS={"Protein":"#FF6B4A","Creatine":"#5B8DEF","Pre-Workout":"#E24B4
 // component scope it was unreachable from a test.
 export const MAX_ACTIONS=10;
 
+// The eight categories the system prompt tells the model to use, and the dot
+// colour each one renders as. One object rather than a list plus a lookup, so a
+// category is valid IFF it has a colour — the two cannot drift apart.
+export const SUPP_CATEGORY_DOTS={
+  protein:"#F472B6",vitamin:"#FBBF24",mineral:"#34D399",performance:"#06B6D4",
+  health:"#A78BFA",sleep:"#818CF8",fat_burner:"#F97316",probiotic:"#6EE7B7",
+};
+export const isSuppCategory=(c)=>typeof c==="string"&&Object.hasOwn(SUPP_CATEGORY_DOTS,c);
+
 // Required fields per type. Optional fields are never checked — a missing
 // `timing` degrades the card, a missing `name` makes it meaningless.
 export const ACTION_VALID={
@@ -532,7 +541,11 @@ export const ACTION_VALID={
   meal_suggestion:a=>Array.isArray(a.items)&&a.items.length>0&&a.items.every(i=>i&&i.name),
   recipe:a=>!!a.name&&Array.isArray(a.ingredients)&&a.ingredients.length>0,
   workout_plan:a=>!!a.name&&Array.isArray(a.exercises)&&a.exercises.length>0,
-  supplement:a=>Array.isArray(a.items)&&a.items.length>0&&a.items.every(i=>i&&i.name&&i.category),
+  // category is checked against the enum, not merely for presence. A category
+  // outside the eight used to pass, get written, and render as an anonymous
+  // grey dot — a bad value stored as though it were real. It is now a drop, and
+  // the footer names it like any other failed action.
+  supplement:a=>Array.isArray(a.items)&&a.items.length>0&&a.items.every(i=>i&&i.name&&isSuppCategory(i.category)),
 };
 
 // Returns null when this is not an ACTIONS reply OR when the JSON is corrupt.
@@ -1124,7 +1137,7 @@ RULES:
   // write happens here, on an explicit tap, not on the reply arriving.
   const addSuppsToStack=(msgIdx,items)=>{
     (items||[]).forEach(s=>{
-      const dot={protein:"#F472B6",vitamin:"#FBBF24",mineral:"#34D399",performance:"#06B6D4",health:"#A78BFA",sleep:"#818CF8",fat_burner:"#F97316",probiotic:"#6EE7B7"}[s.category]||"#888";
+      const dot=SUPP_CATEGORY_DOTS[s.category]||"#888";
       onAddSupp&&onAddSupp({k:"ai"+Date.now()+Math.random(),name:s.name,sub:(s.dose||"")+(s.timing?" · "+s.timing:""),dot,category:s.category,note:s.note});
     });
     setMessages(prev=>prev.map((m,i)=>i===msgIdx?{...m,added:true}:m));
@@ -1357,7 +1370,7 @@ RULES:
               <div style={{fontSize:11,fontWeight:700,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>{m.added?"Added to your stack":"Suggested supplements"}</div>
             </div>
             {m.items.map((s,si)=>{
-              const dot={protein:"#F472B6",vitamin:"#FBBF24",mineral:"#34D399",performance:"#06B6D4",health:"#A78BFA",sleep:"#818CF8",fat_burner:"#F97316",probiotic:"#6EE7B7"}[s.category]||"#888";
+              const dot=SUPP_CATEGORY_DOTS[s.category]||"#888";
               return(
                 <div key={si} style={{padding:"10px 14px",borderBottom:si<m.items.length-1?"1px solid "+T.border:"none"}}>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
