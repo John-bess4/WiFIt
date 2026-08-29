@@ -690,7 +690,22 @@ function AISidePanel({open,onClose,onAddFood,onAddSupp,onAddWorkout,onAddWater,l
 
 Keep responses concise — mobile chat panel, 3-4 sentences max unless asked for detail. Be direct, specific, and reference the user's actual data when relevant.
 
-CRITICAL: Output EXACTLY ONE structured format block per response. Never combine multiple format blocks (e.g. do not output WORKOUT_PLAN and ADD_SUPP together). If a workout request makes you think of supplement recommendations, put that as plain text in the message after the | — do not append a second format block. One format, one pipe, done.
+CRITICAL — OUTPUT CONTRACT: Output EXACTLY ONE block per response, and it is always an ACTIONS block:
+
+ACTIONS:[{"type":"...", ...}, {"type":"...", ...}]|Your coaching message here.
+
+One block, one pipe, done. Never emit two blocks. When a message contains more than one intent ("log 8oz of water and add creatine to my stack"), that is TWO ENTRIES IN THE ONE ARRAY — not two blocks, and not a choice between them. If a request has no actionable intent, reply in plain text with no ACTIONS block at all.
+
+The sections below say WHEN each action applies and WHAT fields it needs. Their field names are unchanged; only the wrapper differs. Map them to these type values:
+
+- {"type":"food","items":[{name,grams,slot,cal,protein,carbs,fat}]}     — the FOOD LOGGING section
+- {"type":"meal_suggestion","items":[{...,description}]}                — the MEAL SUGGESTIONS section
+- {"type":"water","oz":16}                                              — the WATER LOGGING section
+- {"type":"supplement","items":[{name,dose,timing,category,note}]}      — the SUPPLEMENT section
+- {"type":"recipe","name":...,"ingredients":[...],"steps":[...],...}    — the RECIPE section
+- {"type":"workout_plan","name":...,"exercises":[...],...}              — the WORKOUT PLAN section
+
+Ignore the literal MULTI_FOOD:/WATER_LOG:/ADD_SUPP:/RECIPE:/WORKOUT_PLAN:/MEAL_SUGGESTION: prefixes shown in the examples below — those are the previous contract. Emit the same data as ACTIONS entries. Maximum 10 actions per response.
 ${buildContextBlock()}
 
 ══════════════════════════════════════
@@ -888,6 +903,115 @@ RULES:
     }catch{return null;}
   };
 
+  // ── ACTIONS contract ──────────────────────────────────────────
+  // One block per reply, multiplicity inside the array rather than across
+  // blocks: ACTIONS:[{...},{...}]|message. The old contract could express only
+  // one intent per reply, so "log 8oz of water and add creatine" had no
+  // representation at all.
+  const MAX_ACTIONS=10;
+
+  // Required fields per type. Optional fields are never checked — a missing
+  // `timing` degrades the card, a missing `name` makes it meaningless.
+  const ACTION_VALID={
+    water:a=>Number.isFinite(Number(a.oz))&&Number(a.oz)>0,
+    // grams>0 is load-bearing: per100 divides by it, and 0 would write Infinity.
+    food:a=>Array.isArray(a.items)&&a.items.length>0&&a.items.every(i=>i&&i.name&&Number(i.grams)>0&&Number.isFinite(Number(i.cal))),
+    meal_suggestion:a=>Array.isArray(a.items)&&a.items.length>0&&a.items.every(i=>i&&i.name),
+    recipe:a=>!!a.name&&Array.isArray(a.ingredients)&&a.ingredients.length>0,
+    workout_plan:a=>!!a.name&&Array.isArray(a.exercises)&&a.exercises.length>0,
+    supplement:a=>Array.isArray(a.items)&&a.items.length>0&&a.items.every(i=>i&&i.name&&i.category),
+  };
+
+  // Returns null when this is not an ACTIONS reply OR when the JSON is corrupt.
+  // Corrupt fails CLOSED — a half-parsed array must never be half-executed.
+  // Individual actions inside a well-formed array fail OPEN: valid siblings
+  // commit and the dropped ones are named, because the multi-intent case is the
+  // whole point and an all-or-nothing drop is the silent-swallow pattern again.
+  const parseActions=(reply)=>{
+    if(!reply.startsWith("ACTIONS:"))return null;
+    const rest=reply.slice("ACTIONS:".length);
+    const pipeIdx=rest.indexOf("|");
+    const jsonStr=pipeIdx>-1?rest.slice(0,pipeIdx):rest;
+    const msg=pipeIdx>-1?rest.slice(pipeIdx+1).trim():"";
+    let raw;
+    try{raw=JSON.parse(jsonStr);}catch{return null;}
+    if(!Array.isArray(raw))return null;
+    const capped=raw.slice(0,MAX_ACTIONS);
+    const overflow=raw.length-capped.length;
+    const valid=[],dropped=[];
+    capped.forEach(a=>{
+      const rule=a&&ACTION_VALID[a.type];
+      if(rule&&rule(a))valid.push(a);
+      else dropped.push(a&&a.type?String(a.type):"unknown");
+    });
+    return{valid,dropped,overflow,msg,total:raw.length};
+  };
+
+  // Emits exactly the message objects the six card renderers already consume —
+  // no renderer changes. Auto-commit is limited to water and food, both of which
+  // have a one-tap undo elsewhere in the app; supplement, workout_plan, recipe
+  // and meal_suggestion all render as proposals.
+  // recipe and workout_plan carry their payload flat on the action; the card
+  // renderers want it nested under .recipe / .plan without the discriminator.
+  const withoutType=(a)=>{const o={...a};delete o.type;return o;};
+
+  const applyActions=({valid,dropped,overflow,msg,total})=>{
+    const out=[];
+    let hasSupp=false;
+    valid.forEach(a=>{
+      const text=out.length===0?msg:"";
+      if(a.type==="water"&&onAddWater){
+        const oz=Number(a.oz);
+        onAddWater(oz);
+        out.push({bot:true,type:"water_logged",oz,text:text||"Water logged!"});
+      }else if(a.type==="food"&&onAddFood){
+        const logged=[];
+        a.items.forEach(item=>{
+          onAddFood(item.slot||"snacks",{
+            id:Date.now()+Math.random(),
+            name:item.name,
+            grams:item.grams,
+            color:COLORS[Math.floor(Math.random()*COLORS.length)],
+            per100:{
+              cal:Math.round((item.cal/item.grams)*100),
+              protein:Math.round((item.protein/item.grams)*100),
+              carbs:Math.round((item.carbs/item.grams)*100),
+              fat:Math.round((item.fat/item.grams)*100),
+              fiber:0,sodium:0,
+            },
+          });
+          logged.push(item);
+        });
+        out.push({bot:true,type:"multi_food_logged",items:logged,text});
+      }else if(a.type==="meal_suggestion"){
+        out.push({bot:true,type:"meal_suggestion",items:a.items,text,logged:false});
+      }else if(a.type==="recipe"){
+        out.push({bot:true,type:"recipe",recipe:withoutType(a),text,logged:false});
+      }else if(a.type==="workout_plan"){
+        out.push({bot:true,type:"workout_plan",plan:withoutType(a),text,added:false});
+      }else if(a.type==="supplement"&&onAddSupp){
+        hasSupp=true;
+        out.push({bot:true,type:"supp_added",items:a.items,text,added:false});
+      }
+    });
+    // Nothing rendered a card, but the model still said something.
+    if(out.length===0&&msg)out.push({bot:true,text:msg});
+    // Name what was dropped. Silence here would recreate the failure mode this
+    // whole contract exists to avoid.
+    const skipped=dropped.length+overflow;
+    if(skipped>0){
+      const names=dropped.length?dropped.join(", "):"";
+      out.push({bot:true,text:"Couldn't apply "+skipped+" of "+total+" actions"+(names?" ("+names+")":"")+(overflow>0?" — over the "+MAX_ACTIONS+"-action limit":"")+"."});
+    }
+    setMessages(prev=>[...prev,...out]);
+    if(hasSupp&&msg)generateSuggestions(msg);
+  };
+
+  // Prefixes of the pre-ACTIONS contract. Still parsed (see send) so a model
+  // that regresses mid-rollout keeps working; the warn is the countable signal
+  // that says when removing the six parsers is safe.
+  const LEGACY_PREFIXES=["MULTI_FOOD:","MEAL_SUGGESTION:","RECIPE:","WATER_LOG:","ADD_SUPP:","WORKOUT_PLAN:"];
+
   const send=async(text)=>{
     const msg=text||input.trim();
     if(!msg||thinking)return;
@@ -905,6 +1029,20 @@ RULES:
     setThinking(true);
     try{
       const reply=await callClaude(msg,[...messages,userMsg]);
+
+      // ── Current contract ──
+      const actions=parseActions(reply);
+      if(actions){
+        applyActions(actions);
+        setThinking(false);return;
+      }
+
+      // ── Legacy contract, still honoured (C1) ──
+      // Both contracts are live so a mid-rollout regression to a single-format
+      // reply routes correctly instead of falling through to raw text. Removing
+      // the six parsers is safe only once this warn stops appearing in real use.
+      const legacy=LEGACY_PREFIXES.find(p=>reply.startsWith(p));
+      if(legacy)console.warn("[coach] legacy format:",legacy,"— still in use; parser removal (C2) not yet safe.");
 
       // Multi-food
       const foodParsed=parseMultiFoodReply(reply);
