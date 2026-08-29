@@ -31,3 +31,6 @@ pnpm-debug.log*
 
 # Vercel
 .vercel
+
+# Playwright MCP session output
+.playwright-mcp/
