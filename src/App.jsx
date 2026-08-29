@@ -4621,8 +4621,16 @@ const sb={
     if(!r.ok){console.error("[sb.insert]",table,r.status,await r.text().catch(()=>""));return null;}
     const d=await r.json();return Array.isArray(row)?d:d[0];
   },
-  async upsert(table,row){
-    const r=await fetch(this._url+"/rest/v1/"+table,{method:"POST",headers:this.headers({"Prefer":"resolution=merge-duplicates,return=representation"}),body:JSON.stringify(Array.isArray(row)?row:[row])});
+  // resolution=merge-duplicates alone is not enough: PostgREST infers the
+  // ON CONFLICT target from the PRIMARY KEY unless on_conflict says otherwise.
+  // Tables with a surrogate id PK plus a separate composite UNIQUE (water_log,
+  // supplement_log, body_weight_log) therefore fall through to a plain INSERT
+  // and 409 on the second same-day write. Pass onConflict with the exact
+  // columns of the UNIQUE constraint — order does not matter, membership does.
+  // Callers that upsert on the PK itself (profiles.id) can omit it.
+  async upsert(table,row,{onConflict=""}={}){
+    const q=onConflict?"?on_conflict="+onConflict.split(",").map(c=>encodeURIComponent(c.trim())).join(","):"";
+    const r=await fetch(this._url+"/rest/v1/"+table+q,{method:"POST",headers:this.headers({"Prefer":"resolution=merge-duplicates,return=representation"}),body:JSON.stringify(Array.isArray(row)?row:[row])});
     if(!r.ok){console.error("[sb.upsert]",table,r.status,await r.text().catch(()=>""));return null;}
     const d=await r.json();return Array.isArray(row)?d:d[0];
   },
@@ -6283,7 +6291,7 @@ export default function App(){
     setWaterOzState(clamped);
     if(!uid)return;
     try{
-      const row=await sb.upsert("water_log",{user_id:uid,log_date:today,oz:clamped});
+      const row=await sb.upsert("water_log",{user_id:uid,log_date:today,oz:clamped},{onConflict:"user_id,log_date"});
       if(!row)throw new Error("upsert returned no row");
     }catch{
       setWaterOzState(prevOz);
@@ -6501,7 +6509,9 @@ export default function App(){
     setSuppTaken(p=>({...p,[k]:val}));
     if(!uid)return;
     try{
-      const row=await sb.upsert("supplement_log",{user_id:uid,supplement_id:k,log_date:today,taken:val});
+      // UNIQUE is (supplement_id, log_date) — no user_id. Naming user_id here
+      // would 42P10, since no unique constraint matches that column set.
+      const row=await sb.upsert("supplement_log",{user_id:uid,supplement_id:k,log_date:today,taken:val},{onConflict:"supplement_id,log_date"});
       if(!row)throw new Error("upsert returned no row");
     }catch{
       setSuppTaken(p=>({...p,[k]:!val}));
@@ -6519,7 +6529,7 @@ export default function App(){
     setWeightLog(prev=>{const filtered=prev.filter(e=>e.date!==today);return[...filtered,entry].sort((a,b)=>a.date.localeCompare(b.date));});
     if(!uid)return;
     try{
-      const row=await sb.upsert("body_weight_log",{user_id:uid,log_date:today,weight_lbs:w});
+      const row=await sb.upsert("body_weight_log",{user_id:uid,log_date:today,weight_lbs:w},{onConflict:"user_id,log_date"});
       if(!row)throw new Error("upsert returned no row");
     }catch{
       setWeightLog(prev=>{const filtered=prev.filter(e=>e.date!==today);return prevEntry?[...filtered,prevEntry].sort((a,b)=>a.date.localeCompare(b.date)):filtered;});
