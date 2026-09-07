@@ -3162,8 +3162,8 @@ function CreateWorkoutModal({onSave,onClose,existing}){
                 {ex.sets.map((s,si)=>(
                   <div key={si} style={{display:"grid",gridTemplateColumns:"28px 1fr 1fr 24px",gap:6,marginBottom:6,alignItems:"center"}}>
                     <div style={{fontSize:12,fontWeight:600,color:T.muted,textAlign:"center"}}>{si+1}</div>
-                    <input type="number" value={s.reps} onChange={e=>updateSet(ex.id,si,"reps",parseInt(e.target.value)||0)} style={{background:T.card,color:T.text,border:("1px solid "+T.border),borderRadius:8,padding:"7px 6px",fontSize:13,fontWeight:500,textAlign:"center",outline:"none",width:"100%"}}/>
-                    <input type="number" value={s.weight} onChange={e=>updateSet(ex.id,si,"weight",parseInt(e.target.value)||0)} style={{background:T.card,color:T.text,border:("1px solid "+T.border),borderRadius:8,padding:"7px 6px",fontSize:13,fontWeight:500,textAlign:"center",outline:"none",width:"100%"}}/>
+                    <input type="number" value={s.reps} onChange={e=>updateSet(ex.id,si,"reps",parseFloat(e.target.value)||0)} style={{background:T.card,color:T.text,border:("1px solid "+T.border),borderRadius:8,padding:"7px 6px",fontSize:13,fontWeight:500,textAlign:"center",outline:"none",width:"100%"}}/>
+                    <input type="number" value={s.weight} onChange={e=>updateSet(ex.id,si,"weight",parseFloat(e.target.value)||0)} style={{background:T.card,color:T.text,border:("1px solid "+T.border),borderRadius:8,padding:"7px 6px",fontSize:13,fontWeight:500,textAlign:"center",outline:"none",width:"100%"}}/>
                     <div onClick={()=>removeSet(ex.id,si)} style={{width:22,height:22,borderRadius:"50%",background:"rgba(248,113,113,0.1)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
                       <svg width="8" height="8" viewBox="0 0 8 8"><line x1="1" y1="1" x2="7" y2="7" stroke="#F87171" strokeWidth="1.5" strokeLinecap="round"/><line x1="7" y1="1" x2="1" y2="7" stroke="#F87171" strokeWidth="1.5" strokeLinecap="round"/></svg>
                     </div>
@@ -3236,7 +3236,6 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapK
   const [restSecs,setRestSecs]=useState(null);   // null = not resting
   const [restTotal,setRestTotal]=useState(90);   // configured duration
   const [restDuration,setRestDuration]=useState(90); // picker value
-  const [newPRs,setNewPRs]=useState(()=>restore?.newPRs||[]); // ["Bench Press",…]
   const [confirmCancel,setConfirmCancel]=useState(false);
   // Only meaningful on a restored session, and only until dismissed. A resumed
   // workout is otherwise indistinguishable from a fresh one that inexplicably
@@ -3279,7 +3278,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapK
     const t=setTimeout(()=>{
       try{
         localStorage.setItem(snapKey,JSON.stringify({
-          v:1,workout,sets,newPRs,
+          v:1,workout,sets,
           startedAt:startedAtRef.current,
           restEndsAt:restEndsAtRef.current,
           savedAt:Date.now(),
@@ -3287,7 +3286,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapK
       }catch{}
     },500);
     return()=>clearTimeout(t);
-  },[snapKey,workout,sets,newPRs]);
+  },[snapKey,workout,sets]);
 
   // Play a short beep using Web Audio API
   const beep=()=>{
@@ -3325,6 +3324,8 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapK
   const allSets=sets.flatMap(e=>e.sets);
   const doneSets=allSets.filter(s=>s.done).length;
   const totalSets=allSets.length;
+  // Derived, not accumulated: reflects the sets as they are right now.
+  const newPRs=useMemo(()=>computePRs(sets,prHistory),[sets,prHistory]);
   const pct=totalSets>0?Math.round((doneSets/totalSets)*100):0;
 
   const toggleSet=(exIdx,setIdx)=>{
@@ -3347,9 +3348,6 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapK
           // loader and both setPrHistory updaters), so best>0 is exactly "has a
           // baseline". This also fails safe if a workout starts before the
           // history load finishes: no PRs claimed rather than all of them.
-          const w=parseInt(s.actualWeight)||0;
-          const best=prHistory[ex.name]||0;
-          if(w>0&&best>0&&w>best)setNewPRs(p=>p.includes(ex.name)?p:[...p,ex.name]);
         }else{
           clearRest();
         }
@@ -3406,7 +3404,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapK
           <div style={{fontSize:14,fontWeight:700,color:T.text}}>{workout.name}</div>
           <div style={{fontSize:12,color:T.accent,fontWeight:600}}>{fmt(elapsed)}</div>
         </div>
-        <div onClick={()=>onFinish(sets,finalElapsed(),newPRs,startedAtRef.current)} style={{fontSize:13,color:T.accent,fontWeight:700,cursor:"pointer"}}>Finish</div>
+        <div onClick={()=>onFinish(sets,finalElapsed(),startedAtRef.current)} style={{fontSize:13,color:T.accent,fontWeight:700,cursor:"pointer"}}>Finish</div>
       </div>
 
       {/* Progress bar */}
@@ -3494,8 +3492,8 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapK
             {ex.sets.map((s,si)=>(
               <div key={si} style={{display:"grid",gridTemplateColumns:"32px 1fr 1fr 44px",gap:8,padding:"10px 12px",borderBottom:si<ex.sets.length-1?"1px solid "+T.border:"none",alignItems:"center",background:s.done?"rgba(6,182,212,0.05)":"transparent",transition:"background 0.2s"}}>
                 <div style={{fontSize:13,fontWeight:700,color:T.muted,textAlign:"center"}}>{si+1}</div>
-                <input type="number" value={s.actualReps} onChange={e=>updateSet(ei,si,"actualReps",parseInt(e.target.value)||0)} style={{background:T.inputBg,color:T.text,border:("1px solid "+T.border),borderRadius:8,padding:"7px 4px",fontSize:14,fontWeight:600,textAlign:"center",outline:"none",width:"100%"}}/>
-                <input type="number" value={s.actualWeight} onChange={e=>updateSet(ei,si,"actualWeight",parseInt(e.target.value)||0)} style={{background:T.inputBg,color:T.text,border:("1px solid "+T.border),borderRadius:8,padding:"7px 4px",fontSize:14,fontWeight:600,textAlign:"center",outline:"none",width:"100%"}}/>
+                <input type="number" value={s.actualReps} onChange={e=>updateSet(ei,si,"actualReps",parseFloat(e.target.value)||0)} style={{background:T.inputBg,color:T.text,border:("1px solid "+T.border),borderRadius:8,padding:"7px 4px",fontSize:14,fontWeight:600,textAlign:"center",outline:"none",width:"100%"}}/>
+                <input type="number" value={s.actualWeight} onChange={e=>updateSet(ei,si,"actualWeight",parseFloat(e.target.value)||0)} style={{background:T.inputBg,color:T.text,border:("1px solid "+T.border),borderRadius:8,padding:"7px 4px",fontSize:14,fontWeight:600,textAlign:"center",outline:"none",width:"100%"}}/>
                 <div onClick={()=>toggleSet(ei,si)} style={{width:36,height:36,borderRadius:10,background:s.done?T.accent:T.border,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"background 0.2s",margin:"0 auto"}}>
                   {s.done?<svg width="14" height="14" viewBox="0 0 14 14"><polyline points="2,7 6,11 12,3" stroke="#fff" strokeWidth="2.2" fill="none" strokeLinecap="round"/></svg>:<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1,5 4,8 9,2" stroke={T.muted} strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>}
                 </div>
@@ -3507,7 +3505,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapK
 
       {/* Finish button */}
       <div style={{padding:"20px 16px 0"}}>
-        <button onClick={()=>onFinish(sets,finalElapsed(),newPRs,startedAtRef.current)} style={{width:"100%",background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:14,padding:"16px",color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",boxShadow:("0 4px 20px "+T.accentGlow)}}>
+        <button onClick={()=>onFinish(sets,finalElapsed(),startedAtRef.current)} style={{width:"100%",background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:14,padding:"16px",color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",boxShadow:("0 4px 20px "+T.accentGlow)}}>
           🏁 Finish workout
         </button>
       </div>
@@ -3599,7 +3597,7 @@ function ExercisePreviewList({exercises}){
 }
 
 // ── WORKOUT TAB ──────────────────────────────────────────────────
-function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory,setPrHistory,onSavePlan,onDeletePlan,uid,onActiveChange,pendingStartPlanId=null,onPendingConsumed}){
+function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory,setPrHistory,onSavePlan,onDeletePlan,uid,onActiveChange,historyStatus="ready",onRetryHistory,pendingStartPlanId=null,onPendingConsumed}){
   const T=useTheme();
   const [createOpen,setCreateOpen]=useState(false);
   const [editWorkout,setEditWorkout]=useState(null);
@@ -3619,6 +3617,10 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory
   // restored one. Reference equality, so starting any other workout afterwards
   // gets a clean slate rather than someone else's sets.
   const restorePayload=restored&&activeWorkout===restored.workout?restored:null;
+  // No session may start against an unloaded history: its PRs would persist
+  // as false. Retry re-reads; the banner is the only thing that unblocks Start.
+  const canStart=historyStatus!=="failed";
+  const startPlan=(plan)=>{if(canStart)setActiveWorkout(plan);};
 
   const cancelWorkout=()=>{clearWorkoutSnapshot(snapKey);setActiveWorkout(null);};
 
@@ -3627,6 +3629,7 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory
   // the first open and the second call finds a session already live.
   useEffect(()=>{
     if(!pendingStartPlanId)return;
+    if(historyStatus==="failed"){onPendingConsumed&&onPendingConsumed();return;} // Start is blocked until history loads
     const plan=workouts.find(w=>w.id===pendingStartPlanId);
     if(plan)setActiveWorkout(prev=>prev||plan);
     onPendingConsumed&&onPendingConsumed();
@@ -3645,18 +3648,23 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory
     setCreateOpen(false);setEditWorkout(null);
   };
 
-  const deleteWorkout=(id)=>{
+  const deleteWorkout=async(id)=>{
+    const removed=workouts.find(w=>w.id===id);
     setWorkouts(prev=>prev.filter(w=>w.id!==id));
-    onDeletePlan&&onDeletePlan(id);
+    const ok=onDeletePlan?await onDeletePlan(id):true;
+    if(!ok&&removed)setWorkouts(prev=>[removed,...prev]); // restore; App already said why
   };
 
-  const finishWorkout=(sets,elapsed,newPRs=[],startedAt=Date.now())=>{
+  const finishWorkout=(sets,elapsed,startedAt=Date.now())=>{
     const allSets=sets.flatMap(e=>e.sets);
     const doneSets=allSets.filter(s=>s.done).length;
+    // The persisted value is decided HERE, from the final sets, against the
+    // history as loaded. Whatever the live banner showed is not consulted.
+    const newPRs=computePRs(sets,prHistory);
     setPrHistory(prev=>{
       const updated={...prev};
       sets.forEach(ex=>{
-        const best=Math.max(0,...ex.sets.filter(s=>s.done).map(s=>parseInt(s.actualWeight)||0));
+        const best=bestDoneWeight(ex);
         if(best>0&&best>(updated[ex.name]||0))updated[ex.name]=best;
       });
       return updated;
@@ -3708,6 +3716,13 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory
         </div>
       </div>
 
+      {historyStatus==="failed"&&(
+        <div data-testid="history-failed" style={{margin:"12px 16px 0",padding:"10px 14px",borderRadius:12,background:T.accentPill,border:("1px solid "+T.border),display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+          <div style={{fontSize:12,color:T.text}}>Couldn't load your history — PRs can't be checked, so starting is paused.</div>
+          <div onClick={onRetryHistory} style={{fontSize:12,fontWeight:700,color:T.accent,cursor:"pointer",flexShrink:0}}>Retry</div>
+        </div>
+      )}
+
       {/* View toggle */}
       <div style={{display:"flex",gap:0,background:T.surface,margin:"12px 16px 0",borderRadius:12,padding:3,border:("1px solid "+T.border)}}>
         {views.map(([v,l])=>(
@@ -3724,7 +3739,7 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory
             <div style={{display:"inline-block",background:"rgba(6,182,212,0.3)",color:"#A855F7",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:20,marginBottom:10,letterSpacing:"0.5px"}}>TODAY · {todayWorkout.tag.toUpperCase()}</div>
             <div style={{fontSize:20,fontWeight:700,color:"#fff",marginBottom:4}}>{todayWorkout.name}</div>
             <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",marginBottom:14}}>{todayWorkout.exercises.length} exercises · ~{todayWorkout.estMin} min · {todayWorkout.level}</div>
-            <button onClick={()=>setActiveWorkout(todayWorkout)} style={{background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:12,padding:"12px 24px",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:("0 4px 16px "+T.accentGlow)}}>
+            <button onClick={()=>startPlan(todayWorkout)} disabled={!canStart} style={{background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:12,padding:"12px 24px",color:"#fff",fontSize:14,fontWeight:700,cursor:canStart?"pointer":"not-allowed",opacity:canStart?1:0.5,boxShadow:("0 4px 16px "+T.accentGlow)}}>
               🏋️ Start workout
             </button>
           </div>
@@ -3778,7 +3793,7 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory
                 ))}
                 {w.exercises.length>4&&<span style={{background:T.surface,color:T.muted,fontSize:11,padding:"3px 9px",borderRadius:20}}>+{w.exercises.length-4} more</span>}
               </div>
-              <button onClick={()=>setActiveWorkout(w)} style={{width:"100%",background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:10,padding:"10px",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+              <button onClick={()=>startPlan(w)} disabled={!canStart} style={{width:"100%",background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:10,padding:"10px",color:"#fff",fontSize:13,fontWeight:700,cursor:canStart?"pointer":"not-allowed",opacity:canStart?1:0.5}}>
                 🏋️ Start this workout
               </button>
             </div>
@@ -4602,6 +4617,19 @@ const UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const hasDbId=(item)=>typeof item?.id==="string"&&UUID_RE.test(item.id);
 // Replace the local item with one carrying the database id, by reference.
 export const withDbId=(items,item,row)=>items.map(i=>i===item?{...i,id:row.id}:i);
+// Personal records. Both readers of a stored set string ("8×27.5lbs") and the
+// live comparison go through these, so 2.5 lb increments survive (parseInt
+// truncated 27.5 to 27 everywhere) and there is ONE definition of "a PR".
+//
+// A PR beats a RECORDED best (best>0): a first-ever lift is a baseline, not a
+// record. PRs are computed from the FINAL state of a session, never
+// incrementally at tick time — editing a weight after ticking, or un-ticking,
+// used to leave a stale entry in an append-only list that then persisted.
+export const setWeightOf=(setStr)=>parseFloat(String(setStr).split("×")[1])||0;
+export const bestDoneWeight=(ex)=>Math.max(0,...(ex.sets||[]).filter(s=>s.done).map(s=>parseFloat(s.actualWeight)||0));
+export const computePRs=(sets,prHistory={})=>(sets||[]).filter(ex=>{const w=bestDoneWeight(ex);const best=prHistory[ex.name]||0;return w>0&&best>0&&w>best;}).map(ex=>ex.name);
+export const bestsFromSessions=(sessions)=>{const ph={};(sessions||[]).forEach(s=>(s.exercises||[]).forEach(ex=>(ex.sets||[]).forEach(setStr=>{const w=setWeightOf(setStr);if(w>0&&w>(ph[ex.name]||0))ph[ex.name]=w;})));return ph;};
+
 export const foodDeleteFilter=(item,uid)=>hasDbId(item)&&uid?"id=eq."+item.id+"&user_id=eq."+uid:null;
 
 export const sb={
@@ -6558,14 +6586,14 @@ export default function App(){
           setSuppTaken(taken);
         }
         // Workout history
-        const sessions=await sb.select("workout_sessions","user_id=eq."+uid,{order:"created_at.desc",limit:20});
+        // selectAuth, not select: a failed read must NOT become an empty
+        // history. Empty prHistory means every lift is "a first" and a genuine
+        // PR is persisted as isPR:false — worse than no value. On failure the
+        // status is "failed" and WorkoutTab blocks Start behind a Retry.
+        const {authError:histErr,rows:sessions}=await sb.selectAuth("workout_sessions","user_id=eq."+uid,{order:"created_at.desc",limit:20});
+        setHistoryStatus(histErr?"failed":"ready");
         if(sessions?.length>0){
-          const ph={};
-          sessions.forEach(s=>(s.exercises||[]).forEach(ex=>(ex.sets||[]).forEach(setStr=>{
-            const w=parseInt(String(setStr).split("×")[1])||0;
-            if(w>0&&w>(ph[ex.name]||0))ph[ex.name]=w;
-          })));
-          setPrHistory(ph);
+          setPrHistory(bestsFromSessions(sessions));
           setHistory(sessions.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[],prs:s.prs||[]})));
         }
         // Water intake today
@@ -6740,7 +6768,7 @@ export default function App(){
     setPrHistory(prev=>{
       const updated={...prev};
       (session.exercises||[]).forEach(ex=>(ex.sets||[]).forEach(setStr=>{
-        const w=parseInt(String(setStr).split("×")[1])||0;
+        const w=setWeightOf(setStr);
         if(w>0&&w>(updated[ex.name]||0))updated[ex.name]=w;
       }));
       return updated;
@@ -6761,6 +6789,16 @@ export default function App(){
 
   const [workouts,setWorkouts]=useState(INITIAL_WORKOUTS);
   const [prHistory,setPrHistory]=useState({});
+  const [historyStatus,setHistoryStatus]=useState("loading"); // loading | ready | failed
+  const retryHistory=async()=>{
+    const u=sb.getUser()?.id; if(!u)return;
+    setHistoryStatus("loading");
+    const {authError,rows}=await sb.selectAuth("workout_sessions","user_id=eq."+u,{order:"created_at.desc",limit:20});
+    if(authError){setHistoryStatus("failed");return;}
+    setPrHistory(bestsFromSessions(rows));
+    setHistory(rows.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[],prs:s.prs||[]})));
+    setHistoryStatus("ready");
+  };
   // Drives the dot on the Train nav item. WorkoutTab keeps this in sync while
   // the app is running; this effect covers the case WorkoutTab cannot — after a
   // reload the user lands on Home, and without it the only tell that a session
@@ -6849,11 +6887,14 @@ export default function App(){
     }
   };
 
+  // Returns whether the row went. sb.delete never throws — the old try/catch{}
+  // was unreachable and a failed delete left the plan gone from the UI and
+  // back on reload (the food-delete shape).
   const deleteWorkoutPlanDB=async(id)=>{
-    if(!uid)return;
-    try{
-      await sb.delete("workout_plans","id=eq."+id+"&user_id=eq."+uid);
-    }catch{}
+    if(!uid)return true;
+    const ok=await sb.delete("workout_plans","id=eq."+id+"&user_id=eq."+uid);
+    if(!ok)showError("Couldn't delete that plan. Check your connection.");
+    return ok;
   };
 
   const taken=suppList.filter(s=>suppTaken[s.k]).length;
@@ -6895,7 +6936,7 @@ export default function App(){
         todayPlan={todayPlanFor(workouts)} todayPlanSeeded={workouts===INITIAL_WORKOUTS} onStartPlan={(id)=>{setPendingStartPlanId(id);setTab("workout");}}
         toggleSuppTaken={toggleSuppTaken} weekHistory={weekHistory} onRetryWeek={()=>loadWeekHistory()} profileCreatedAt={profileCreatedAt}/>}
       {tab==="food"&&<FoodTab log={log} setLog={setLog} uid={uid} onDeleteFailed={showError} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/>}
-      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} onSessionComplete={saveWorkoutSession} prHistory={prHistory} setPrHistory={setPrHistory} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress} pendingStartPlanId={pendingStartPlanId} onPendingConsumed={()=>setPendingStartPlanId(null)}/>}
+      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} onSessionComplete={saveWorkoutSession} prHistory={prHistory} setPrHistory={setPrHistory} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress} historyStatus={historyStatus} onRetryHistory={retryHistory} pendingStartPlanId={pendingStartPlanId} onPendingConsumed={()=>setPendingStartPlanId(null)}/>}
       {tab==="supps"&&<SuppsTab suppList={suppList} setSuppList={setSuppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} taken={taken} total={total} uid={uid} addSuppToList={addSuppToList}/>}
       {tab==="calendar"&&<CalendarTab uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz}/>}
       {tab==="progress"&&<ProgressPage uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz} weightLog={weightLog} logWeight={logWeight} onProfileOpen={()=>setProfileMenuOpen(true)}/>}

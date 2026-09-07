@@ -195,6 +195,32 @@ is part of the value. Dropping it is not simplification.
 
 ---
 
+## 2026-09-07 — A stored derived value is only as right as the moment it was derived
+
+`workout_sessions.prs` is the app's one computed-and-stored value, and nothing
+ever recomputes it. The Train audit found it wrong in four independent ways,
+each a different way of getting the *moment* wrong: decided at set-tick time
+(before the user finished editing), from a truncated number (`parseInt`), against
+an incomplete baseline (last 20 sessions), or against a baseline that was
+silently empty (a 401 laundered to `[]`). Two sessions existed; zero were
+corrupted; the fix went in before the third.
+
+**What structurally prevents it.** Derive at the *commit boundary* from the
+*final* state through *one* function (`computePRs`), against a baseline that is
+either complete or explicitly unavailable — never silently partial. When the
+baseline is unavailable, refuse to commit (Start is paused behind Retry) rather
+than commit a value that looks decided. In Swift the same shape: the PR is a
+pure function of (final session, complete history), evaluated once when the
+session is saved, and history is `Result<[Exercise: Weight], Error>` — a
+failure is a case, not an empty dictionary.
+
+**How to apply.** For any value that is both computed and stored, ask three
+questions before trusting it: when was it computed, from what, and what did
+"unknown" look like at that moment? If the third answer is "the same as
+empty", it is already wrong somewhere.
+
+---
+
 ## 2026-09-07 — "The model did it twice" was the client asking twice
 
 Two identical `food_log` rows 6 ms apart, `water_log` at 32 for "16 oz". The

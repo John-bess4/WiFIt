@@ -522,7 +522,7 @@ Anthropic response formats are unchanged and out of scope for security work:
    | 5887 | `sb.upsert` profiles | name/gender/age edit is lost |
    | 6623 | `sb.upsert` profiles | theme choice is lost |
    | ~~6835~~ | ~~`sb.insert` custom_foods~~ | **fixed 2026-09-07** — returns whether the row landed; the toast waits for it |
-   | 7017 | `sb.delete` workout_plans | a deleted plan comes back |
+   | ~~7017~~ | ~~`sb.delete` workout_plans~~ | **fixed 2026-09-07** — result checked, plan restored + `showError` on failure |
 
    Line 4337 is worse than the rest: it is `sb.update(...)` with **no `await`**, so
    it is fire-and-forget — not even a rejected promise would be observed. The
@@ -745,6 +745,43 @@ Anthropic response formats are unchanged and out of scope for security work:
     FatSecret (broad, free tier, attribution); coach-as-lookup (the model
     estimates per-100 g and the app labels it as an estimate). The redesign's
     search surface should be planned against whichever is chosen.
+
+23. **`workout_sessions.prs` — the app's only computed-and-stored value — was
+    computed wrong in four ways (Train audit 2026-09-07).** Fixed the same day,
+    all four; the mechanism is recorded in `DECISIONS.md` §"A stored derived
+    value is only as right as the moment it was derived".
+    - `parseInt` on every weight and rep read truncated 27.5 to 27 in the set
+      inputs, the PR comparison and the history rebuild → `parseFloat`, one
+      shared reader (`setWeightOf`).
+    - PRs were decided at set-tick time into an append-only list, so editing
+      the weight afterwards or un-ticking left a stale entry that persisted →
+      `computePRs` runs once in `finishWorkout` from the final sets; the live
+      banner is derived from the same function.
+    - The history read was `sb.select`, so a 401 became an empty `prHistory`
+      and every genuine PR in that session persisted as `isPR:false` →
+      `selectAuth`; on failure Train shows "Couldn't load your history — PRs
+      can't be checked, so starting is paused" with Retry, and every Start
+      (Today card, plan cards, Home's Start) is blocked until it loads. Note:
+      the *timing* variant — a session starting before the read lands — is
+      unreachable: `loadUserData` awaits every read before showing the app.
+    - `prHistory` was rebuilt from the last **20** sessions only, so an older
+      best was forgotten and a lower lift later was stamped a PR — reproduced
+      live against a seeded 23-session history (true best 80, app showed
+      "Best: 30", 40 persisted as a PR). See #24 for the fix decision.
+
+24. **`prHistory` completeness (F4) — decision pending.** Options: raise the
+    rebuild's limit (simple, still a ceiling); or a server-side per-exercise
+    max via a SQL view over `workout_sessions.exercises` jsonb (correct by
+    construction, one migration, RLS-scoped). Recommendation in the session
+    report; not implemented until signed off.
+
+    Logged, not fixed, from the same audit: `workout_plans.sort_order` is
+    written as `0` by the coach path and `workouts.length` by the manual path
+    (two conventions); every stored plan exercise set carries a runtime
+    `done:false`; sessions keep a local `"h"+Date.now()` id with no uuid
+    write-back — harmless today because there is no session edit/delete, and
+    the Food delete bug the moment one exists (in `HANDOFF.md`); a plan
+    restored after a failed delete reappears at the top of the list.
 
 ---
 

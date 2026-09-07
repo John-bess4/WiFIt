@@ -122,6 +122,9 @@ Every one of these was **silent**: wrong data or no data, no error shown. Food l
 - **Fire-and-forget async** — `sb.update(...)` with no `await`, inside a `setState` updater. StrictMode double-invokes updaters, so N supplements fire **2N** un-awaited writes per reorder. Not "ignores the return value" — *doesn't wait to learn there was one.*
 - **`try{await sb.delete(…)}catch{}` around a function that never throws** — reads as handled, structurally unreachable. **Worse than no handling**, because omissions get found by grep and false assurances don't; nobody greps for what already looks handled.
 
+### Stored derived values (Train audit, 2026-09-07)
+`workout_sessions.prs` is the only computed-and-stored value in the app and every way it could be wrong, was — decided at tick time from an append-only list, `parseInt` truncating 27.5, a history rebuilt from the last 20 sessions, and a failed read laundered into "no history". Nothing recomputes it. For Swift: compute at commit time from final state, from a **complete** per-exercise max (server-side), and never let a missing history read as an empty one. And: sessions carry a local id with no uuid write-back — harmless while there is no session edit/delete, and the Food delete bug the moment there is.
+
 ### The reachability lesson
 A tab-switch data-loss bug was diagnosed, approved, fixed, and committed — then found to be **unreachable at any point in the project's history**. `ActiveWorkout` renders `position:fixed, zIndex:190` with an opaque background over a nav at `zIndex:99`. The nav was never clickable during a workout. The check was one tap in the running app; nobody ran it.
 
