@@ -4648,6 +4648,9 @@ const UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const hasDbId=(item)=>typeof item?.id==="string"&&UUID_RE.test(item.id);
 // Replace the local item with one carrying the database id, by reference.
 export const withDbId=(items,item,row)=>items.map(i=>i===item?{...i,id:row.id}:i);
+// custom_foods row → in-memory food. Keeps the uuid; the loader used to drop
+// it, so every custom food loaded from the database was un-deletable in place.
+export const customFoodFromRow=(f)=>({id:f.id,name:f.name,brand:f.brand||null,servingG:f.serving_g,servingQty:f.serving_qty,servingUnit:f.serving_unit||"g",isCustom:true,per100:{cal:f.per100_cal,protein:f.per100_protein,carbs:f.per100_carbs,fat:f.per100_fat,fiber:f.per100_fiber||0,sugar:f.per100_sugar||0,sodium:f.per100_sodium||0}});
 // Personal records. Both readers of a stored set string ("8×27.5lbs") and the
 // live comparison go through these, so 2.5 lb increments survive (parseInt
 // truncated 27.5 to 27 everywhere) and there is ONE definition of "a PR".
@@ -6670,7 +6673,7 @@ export default function App(){
         }
         // Custom foods
         const cf=await read("custom foods","custom_foods","user_id=eq."+uid,{order:"created_at.desc"});
-        if(cf?.length>0)setCustomFoods(cf.map(f=>({name:f.name,brand:f.brand||null,servingG:f.serving_g,servingQty:f.serving_qty,servingUnit:f.serving_unit||"g",isCustom:true,per100:{cal:f.per100_cal,protein:f.per100_protein,carbs:f.per100_carbs,fat:f.per100_fat,fiber:f.per100_fiber||0,sugar:f.per100_sugar||0,sodium:f.per100_sodium||0}})));
+        if(cf?.length>0)setCustomFoods(cf.map(customFoodFromRow));
         // Supplement stack
         const suppRows=await read("supplements","supplement_stack","user_id=eq."+uid,{order:"sort_order.asc"});
         if(suppRows?.length>0){
@@ -6802,6 +6805,7 @@ export default function App(){
     try{
       const row=await sb.insert("custom_foods",{user_id:uid,name:food.name,brand:food.brand||null,serving_g:food.servingG,serving_qty:food.servingQty??null,serving_unit:food.servingUnit||"g",per100_cal:food.per100.cal,per100_protein:food.per100.protein,per100_carbs:food.per100.carbs,per100_fat:food.per100.fat,per100_fiber:food.per100.fiber||0,per100_sugar:food.per100.sugar||0,per100_sodium:food.per100.sodium||0});
       if(!row)throw new Error("insert returned no row");
+      setCustomFoods(p=>withDbId(p,food,row)); // keep the uuid: edit/delete need it
       return true;
     }catch{
       setCustomFoods(p=>p.filter(f=>f!==food));
