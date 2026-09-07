@@ -2120,7 +2120,7 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
     const s=cfGrams;
     const food={
       name:cf.name.trim(),
-      brand:cf.brand.trim()||"My foods",
+      brand:cf.brand.trim()||null, // a placeholder is rendered, never stored
       servingG:s,
       servingQty:parseFloat(cf.servingSize)||null,
       servingUnit:cf.servingUnit,
@@ -2314,7 +2314,7 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
                   <div style={{width:9,height:9,borderRadius:"50%",background:r.isCustom?T.accent:COLORS[i%COLORS.length],flexShrink:0}}/>
                   <div style={{flex:1}}>
                     <div style={{fontSize:13,fontWeight:500,lineHeight:1.3}}>{r.name}{r.isCustom&&<span style={{fontSize:10,color:T.accent,marginLeft:6,fontWeight:600}}>MY FOOD</span>}</div>
-                    {r.brand&&<div style={{fontSize:11,color:T.muted,marginTop:1}}>{r.brand}</div>}
+                    {(r.brand||r.isCustom)&&<div style={{fontSize:11,color:T.muted,marginTop:1}}>{r.brand||"My foods"}</div>}
                   </div>
                   <div style={{textAlign:"right",flexShrink:0}}><div style={{fontSize:13,fontWeight:600}}>{r.per100.cal}</div><div style={{fontSize:10,color:T.muted}}>kcal/100g</div></div>
                 </div>
@@ -6521,7 +6521,7 @@ export default function App(){
         }
         // Custom foods
         const cf=await sb.select("custom_foods","user_id=eq."+uid,{order:"created_at.desc"});
-        if(cf?.length>0)setCustomFoods(cf.map(f=>({name:f.name,brand:f.brand||"My foods",servingG:f.serving_g,servingQty:f.serving_qty,servingUnit:f.serving_unit||"g",isCustom:true,per100:{cal:f.per100_cal,protein:f.per100_protein,carbs:f.per100_carbs,fat:f.per100_fat,fiber:f.per100_fiber||0,sugar:f.per100_sugar||0,sodium:f.per100_sodium||0}})));
+        if(cf?.length>0)setCustomFoods(cf.map(f=>({name:f.name,brand:f.brand||null,servingG:f.serving_g,servingQty:f.serving_qty,servingUnit:f.serving_unit||"g",isCustom:true,per100:{cal:f.per100_cal,protein:f.per100_protein,carbs:f.per100_carbs,fat:f.per100_fat,fiber:f.per100_fiber||0,sugar:f.per100_sugar||0,sodium:f.per100_sodium||0}})));
         // Supplement stack
         const suppRows=await sb.select("supplement_stack","user_id=eq."+uid,{order:"sort_order.asc"});
         if(suppRows?.length>0){
@@ -6642,7 +6642,7 @@ export default function App(){
     setCustomFoods(p=>[food,...p]);
     if(!uid)return true;
     try{
-      const row=await sb.insert("custom_foods",{user_id:uid,name:food.name,brand:food.brand||"",serving_g:food.servingG,serving_qty:food.servingQty??null,serving_unit:food.servingUnit||"g",per100_cal:food.per100.cal,per100_protein:food.per100.protein,per100_carbs:food.per100.carbs,per100_fat:food.per100.fat,per100_fiber:food.per100.fiber||0,per100_sugar:food.per100.sugar||0,per100_sodium:food.per100.sodium||0});
+      const row=await sb.insert("custom_foods",{user_id:uid,name:food.name,brand:food.brand||null,serving_g:food.servingG,serving_qty:food.servingQty??null,serving_unit:food.servingUnit||"g",per100_cal:food.per100.cal,per100_protein:food.per100.protein,per100_carbs:food.per100.carbs,per100_fat:food.per100.fat,per100_fiber:food.per100.fiber||0,per100_sugar:food.per100.sugar||0,per100_sodium:food.per100.sodium||0});
       if(!row)throw new Error("insert returned no row");
       return true;
     }catch{
