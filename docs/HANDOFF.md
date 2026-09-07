@@ -125,6 +125,9 @@ Every one of these was **silent**: wrong data or no data, no error shown. Food l
 ### Stored derived values (Train audit, 2026-09-07)
 `workout_sessions.prs` is the only computed-and-stored value in the app and every way it could be wrong, was — decided at tick time from an append-only list, `parseInt` truncating 27.5, a history rebuilt from the last 20 sessions, and a failed read laundered into "no history". Nothing recomputes it. For Swift: compute at commit time from final state, from a **complete** per-exercise max (server-side), and never let a missing history read as an empty one. And: sessions carry a local id with no uuid write-back — harmless while there is no session edit/delete, and the Food delete bug the moment there is.
 
+### Claimed capabilities (Supps audit, 2026-09-07)
+Reminders were `setTimeout` in the open tab, labelled "daily push notification". A toggle wired to `()=>{}` is the purest lie: it exists only to be believed. The web UI now says what it does; `supplement_stack.reminder_time` / `reminder_enabled` is the schedule the iOS app registers with `UNUserNotificationCenter` — required pre-launch (#26). Also from that audit: every mount read fails loud (#27), and the conflict target for `supplement_log` is `(supplement_id, log_date)` — no `user_id`.
+
 ### The reachability lesson
 A tab-switch data-loss bug was diagnosed, approved, fixed, and committed — then found to be **unreachable at any point in the project's history**. `ActiveWorkout` renders `position:fixed, zIndex:190` with an opaque background over a nav at `zIndex:99`. The nav was never clickable during a workout. The check was one tap in the running app; nobody ran it.
 

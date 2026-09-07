@@ -195,6 +195,34 @@ is part of the value. Dropping it is not simplification.
 
 ---
 
+## 2026-09-07 — A claimed capability is the feature-level case of the lying class
+
+Supplement reminders were a `setTimeout` in the current tab wrapped in
+"Daily reminder — Notify me to take this supplement", a Settings section
+offering "Daily push notification to train" and "Alerts for each supplement",
+and two toggles wired to `()=>{}`. Nothing fired when the tab was closed,
+backgrounded on iOS, or the phone was locked; what did fire fired once and
+never re-armed; timers were never cleared. The UI was not showing a wrong
+value — it was asserting a capability the platform does not have.
+
+**Why it is the same class as "saved" on an unchecked insert.** Both are the
+UI reporting an outcome it never observed. The value case lies about one row;
+the capability case lies about every future event. A toggle that does nothing
+is the purest form: it exists only to be believed.
+
+**Decision.** Don't build web notifications. Make the UI say what the code
+does: a time label plus an in-app nudge while the tab is open; no "notify",
+no "push", no "alert" where none exists; dead toggles removed. What exists is
+made correct (timers cancelled on unmount, re-armed daily). The real feature
+is `UNUserNotificationCenter` in the iOS app — pre-launch, `PROJECT_CONTEXT`
+#26 — which is one of the four reasons the rewrite exists at all.
+
+**How to apply.** Read every toggle, banner and label as a promise and ask
+what code keeps it. A promise with no keeper is removed or reworded before
+launch, not after.
+
+---
+
 ## 2026-09-07 — Derived values belong in the database, not in client state
 
 **Decision.** When a value can be computed from rows we already store, compute

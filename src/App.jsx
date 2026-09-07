@@ -3874,7 +3874,7 @@ function ReminderModal({supp,onSave,onClose}){
         {/* Header */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
-            <div style={{fontSize:17,fontWeight:700,color:T.text}}>Set reminder</div>
+            <div style={{fontSize:17,fontWeight:700,color:T.text}}>Set a time</div>
             <div style={{fontSize:12,color:T.subtext,marginTop:2}}>{supp.name}</div>
           </div>
           <div onClick={onClose} style={{width:32,height:32,borderRadius:"50%",background:T.accentPill,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
@@ -3885,8 +3885,8 @@ function ReminderModal({supp,onSave,onClose}){
         {/* Enable toggle */}
         <div style={{background:T.surface,border:("1px solid "+T.border),boxShadow:T.glowShadow,borderRadius:14,padding:"14px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
-            <div style={{fontSize:14,fontWeight:600,color:T.text}}>Daily reminder</div>
-            <div style={{fontSize:12,color:T.subtext,marginTop:2}}>Notify me to take this supplement</div>
+            <div style={{fontSize:14,fontWeight:600,color:T.text}}>Show a time on this supplement</div>
+            <div style={{fontSize:12,color:T.subtext,marginTop:2}}>A nudge appears while the app is open. Background alerts need the iOS app.</div>
           </div>
           <div onClick={()=>setEnabled(e=>!e)} style={{width:48,height:28,borderRadius:14,background:enabled?T.accent:T.border,position:"relative",cursor:"pointer",transition:"background 0.2s",flexShrink:0,boxShadow:enabled?("0 0 10px "+T.accentGlow):"none"}}>
             <div style={{position:"absolute",top:3,left:enabled?23:3,width:22,height:22,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 4px rgba(0,0,0,0.25)"}}/>
@@ -3936,7 +3936,7 @@ function ReminderModal({supp,onSave,onClose}){
 
         {permDenied&&(
           <div style={{background:"rgba(248,113,113,0.1)",border:"1px solid rgba(248,113,113,0.3)",borderRadius:12,padding:"10px 14px",fontSize:12,color:T.red}}>
-            Notification permission was denied. Please enable it in your browser settings to receive reminders.
+            Browser notifications are blocked, so the in-app nudge can't show. The time label still works.
           </div>
         )}
 
@@ -3950,29 +3950,35 @@ function ReminderModal({supp,onSave,onClose}){
 }
 
 // ── BROWSER NOTIFICATION SCHEDULER ──────────────────────────────
+// An IN-APP nudge while the tab is open. That is all this is: a setTimeout in
+// the current tab. It does not fire when the tab is closed, backgrounded on
+// iOS, or the device is locked — there is no service worker, no Push, no
+// persisted schedule. The UI says exactly that (P1, 2026-09-07); the real
+// feature is UNUserNotificationCenter in the iOS app (PROJECT_CONTEXT #26).
+// Returns a cancel function; re-arms itself for the next day after firing.
 function scheduleNotification(supp){
-  if(!("Notification" in window)||Notification.permission!=="granted")return;
-  const [h,m]=supp.reminderTime.split(":").map(Number);
-  const now=new Date();
-  const target=new Date();
-  target.setHours(h,m,0,0);
-  if(target<=now)target.setDate(target.getDate()+1);
-  const ms=target-now;
-  setTimeout(()=>{
-    if(Notification.permission==="granted"){
-      new Notification("💊 Time for your "+supp.name,{
-        body:supp.sub||"Don't forget your daily supplement!",
-        icon:"/favicon.ico",
-        badge:"/favicon.ico",
-        tag:"supp-"+supp.k,
-        renotify:true,
-      });
-    }
-  },ms);
+  if(!("Notification" in window)||Notification.permission!=="granted")return()=>{};
+  if(!supp.reminderTime)return()=>{};
+  let timer=null;
+  const arm=()=>{
+    const [h,m]=supp.reminderTime.split(":").map(Number);
+    const now=new Date();
+    const target=new Date();
+    target.setHours(h,m,0,0);
+    if(target<=now)target.setDate(target.getDate()+1);
+    timer=setTimeout(()=>{
+      if(Notification.permission==="granted"){
+        try{new Notification("💊 Time for your "+supp.name,{body:supp.sub||"Your daily supplement",icon:"/favicon.ico",tag:"supp-"+supp.k,renotify:true});}catch{}
+      }
+      arm(); // tomorrow, while this tab lives
+    },target-now);
+  };
+  arm();
+  return()=>clearTimeout(timer);
 }
 
 // ── SUPPS TAB ────────────────────────────────────────────────────
-function SuppsTab({suppList,setSuppList,suppTaken,setSuppTaken,taken,total,uid,addSuppToList}){
+function SuppsTab({suppList,setSuppList,suppTaken,setSuppTaken,taken,total,uid,addSuppToList,onWriteFailed}){
   const T=useTheme();
   const [manageOpen,setManageOpen]=useState(false);
   const [reminderSupp,setReminderSupp]=useState(null);
@@ -3982,10 +3988,12 @@ function SuppsTab({suppList,setSuppList,suppTaken,setSuppTaken,taken,total,uid,a
   const [newReminderEnabled,setNewReminderEnabled]=useState(false);
   const [newReminderTime,setNewReminderTime]=useState("08:00");
 
-  // Schedule notifications on mount and when reminders change
+  // In-app nudges while this tab is open. Cancelled on unmount and re-armed
+  // when the stack changes, so timers never accumulate.
   useEffect(()=>{
     if(!("Notification" in window))return;
-    suppList.forEach(s=>{if(s.reminderEnabled&&s.reminderTime)scheduleNotification(s);});
+    const cancels=suppList.filter(s=>s.reminderEnabled&&s.reminderTime).map(scheduleNotification);
+    return()=>cancels.forEach(c=>c());
   },[suppList]);
 
   const morning=suppList.filter(s=>/(morning|breakfast|workout|am\b)/i.test(s.sub||""));
@@ -3993,34 +4001,49 @@ function SuppsTab({suppList,setSuppList,suppTaken,setSuppTaken,taken,total,uid,a
   const other=suppList.filter(s=>!morning.includes(s)&&!evening.includes(s));
 
   const removeSupp=async(k)=>{
+    const removed=suppList.find(s=>s.k===k); const idx=suppList.findIndex(s=>s.k===k);
     setSuppList(p=>p.filter(s=>s.k!==k));
-    setSuppTaken(p=>{const n={...p};delete n[k];return n;});
     if(!uid)return;
-    try{await sb.delete("supplement_stack","id=eq."+k+"&user_id=eq."+uid);}catch{}
+    // sb.delete never throws; it returns false. Restore and say why.
+    const ok=await sb.delete("supplement_stack","id=eq."+k+"&user_id=eq."+uid);
+    if(!ok){
+      setSuppList(p=>{const n=[...p];n.splice(Math.min(idx,n.length),0,removed);return n;});
+      onWriteFailed&&onWriteFailed("Couldn't remove "+removed.name+". Check your connection.");
+    }
   };
 
   const saveEdit=async()=>{
     if(!editItem||!newName.trim())return;
-    setSuppList(p=>p.map(s=>s.k===editItem.k?{...s,name:newName,sub:newSub}:s));
+    const before=suppList.find(s=>s.k===editItem.k);
+    const name=newName.trim(),sub=newSub.trim()||"";
+    setSuppList(p=>p.map(s=>s.k===editItem.k?{...s,name,sub}:s));
     setEditItem(null);setNewName("");setNewSub("");
     if(!uid)return;
-    try{await sb.update("supplement_stack",{name:newName,sub:newSub},{filter:"id=eq."+editItem.k+"&user_id=eq."+uid});}catch{}
+    const ok=await sb.update("supplement_stack",{name,sub:sub||null},{filter:"id=eq."+editItem.k+"&user_id=eq."+uid});
+    if(!ok){
+      setSuppList(p=>p.map(s=>s.k===before.k?before:s));
+      onWriteFailed&&onWriteFailed("Couldn't save the edit to "+name+". Check your connection.");
+    }
   };
 
   const addCustom=()=>{
     if(!newName.trim())return;
     const item={k:"m"+Date.now(),name:newName,sub:newSub||"",dot:"#888",reminderEnabled:newReminderEnabled,reminderTime:newReminderTime};
     if(addSuppToList){addSuppToList(item);}
-    else{setSuppList(p=>[...p,item]);setSuppTaken(item.k,false);}
-    if(newReminderEnabled)scheduleNotification(item);
+    else{setSuppList(p=>[...p,item]);}
     setNewName("");setNewSub("");setNewReminderEnabled(false);setNewReminderTime("08:00");
   };
 
   const saveReminder=async({reminderEnabled,reminderTime})=>{
+    const before=suppList.find(s=>s.k===reminderSupp.k);
     setSuppList(p=>p.map(s=>s.k===reminderSupp.k?{...s,reminderEnabled,reminderTime}:s));
-    if(reminderEnabled)scheduleNotification({...reminderSupp,reminderEnabled,reminderTime});
-    if(uid)try{await sb.update("supplement_stack",{reminder_enabled:reminderEnabled,reminder_time:reminderTime},{filter:"id=eq."+reminderSupp.k+"&user_id=eq."+uid});}catch{}
     setReminderSupp(null);
+    if(!uid)return;
+    const ok=await sb.update("supplement_stack",{reminder_enabled:reminderEnabled,reminder_time:reminderTime},{filter:"id=eq."+before.k+"&user_id=eq."+uid});
+    if(!ok){
+      setSuppList(p=>p.map(s=>s.k===before.k?before:s));
+      onWriteFailed&&onWriteFailed("Couldn't save that time for "+before.name+". Check your connection.");
+    }
   };
 
   const fmtTime=(t)=>{
@@ -4098,18 +4121,21 @@ function SuppsTab({suppList,setSuppList,suppTaken,setSuppTaken,taken,total,uid,a
                       e.preventDefault();e.currentTarget.style.background="transparent";
                       const from=parseInt(e.dataTransfer.getData("text/plain"));
                       if(from===i||isNaN(from))return;
-                      setSuppList(prev=>{
-                        const arr=[...prev];
-                        const [moved]=arr.splice(from,1);
-                        arr.splice(i,0,moved);
-                        // Persist new sort_order to Supabase
-                        if(uid){
-                          arr.forEach((s,idx)=>{
-                            try{sb.update("supplement_stack",{sort_order:idx},{filter:"id=eq."+s.k+"&user_id=eq."+uid});}catch{}
-                          });
-                        }
-                        return arr;
-                      });
+                      // The writes used to live INSIDE the state updater, un-awaited: a
+                      // state updater must be pure (StrictMode runs it twice), and a
+                      // fire-and-forget write is never observed. Compute the order,
+                      // set it, then await every PATCH and roll back on any failure.
+                      const before=suppList;
+                      const arr=[...before];
+                      const [moved]=arr.splice(from,1);
+                      arr.splice(i,0,moved);
+                      setSuppList(arr);
+                      if(!uid)return;
+                      const results=await Promise.all(arr.map((s,idx)=>sb.update("supplement_stack",{sort_order:idx},{filter:"id=eq."+s.k+"&user_id=eq."+uid})));
+                      if(results.some(ok=>!ok)){
+                        setSuppList(before);
+                        onWriteFailed&&onWriteFailed("Couldn't save the new order. Check your connection.");
+                      }
                     }}
                   >
                     {editItem?.k===s.k?(
@@ -4308,17 +4334,22 @@ function CalendarTab({uid,goals,suppList,userName,log,suppTaken,workoutHistory,w
     setCalData(prev=>({...prev,[todayStr]:liveTodayEntry()}));
   },[log,suppTaken,suppList,workoutHistory]);
 
+  const [loadError,setLoadError]=useState(false);
   const fetchMonthData=async()=>{
     if(!uid)return;
     setLoading(true);
     const firstDay=fmt(year,month,1);
     const lastDay=fmt(year,month,new Date(year,month+1,0).getDate());
     try{
-      const [foodRows,workoutRows,suppLogRows]=await Promise.all([
-        sb.select("food_log","user_id=eq."+uid+"&logged_date=gte."+firstDay+"&logged_date=lte."+lastDay),
-        sb.select("workout_sessions","user_id=eq."+uid+"&completed_date=gte."+firstDay+"&completed_date=lte."+lastDay),
-        sb.select("supplement_log","user_id=eq."+uid+"&log_date=gte."+firstDay+"&log_date=lte."+lastDay+"&taken=eq.true"),
+      const [fr,wr,sr]=await Promise.all([
+        sb.selectAuth("food_log","user_id=eq."+uid+"&logged_date=gte."+firstDay+"&logged_date=lte."+lastDay,{limit:2000}),
+        sb.selectAuth("workout_sessions","user_id=eq."+uid+"&completed_date=gte."+firstDay+"&completed_date=lte."+lastDay,{limit:200}),
+        sb.selectAuth("supplement_log","user_id=eq."+uid+"&log_date=gte."+firstDay+"&log_date=lte."+lastDay+"&taken=eq.true",{limit:1000}),
       ]);
+      // A failed month must not render as an empty month.
+      if(!fr.ok||!wr.ok||!sr.ok){setLoadError(true);setLoading(false);return;}
+      setLoadError(false);
+      const foodRows=fr.rows,workoutRows=wr.rows,suppLogRows=sr.rows;
       const data={};
       const stackSize=suppList?.length||0;
       const ensure=ds=>{if(!data[ds])data[ds]={cal:0,food:false,workout:false,suppTaken:0,suppTotal:stackSize,workoutName:""};};
@@ -4411,6 +4442,12 @@ function CalendarTab({uid,goals,suppList,userName,log,suppTaken,workoutHistory,w
         ))}
       </div>
 
+      {loadError&&(
+        <div data-testid="calendar-failed" style={{margin:"12px 16px 0",padding:"10px 14px",borderRadius:12,background:T.accentPill,border:("1px solid "+T.border),display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+          <div style={{fontSize:12,color:T.text}}>Couldn't load this month.</div>
+          <div onClick={fetchMonthData} style={{fontSize:12,fontWeight:700,color:T.accent,cursor:"pointer"}}>Retry</div>
+        </div>
+      )}
       {/* Month nav */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 10px"}}>
         <div onClick={()=>{let m=month-1,y=year;if(m<0){m=11;y--;}setMonth(m);setYear(y);}} style={{width:32,height:32,borderRadius:"50%",background:T.card,border:("1px solid "+T.border),boxShadow:T.glowShadow,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><svg width="14" height="14" viewBox="0 0 14 14"><polyline points="9,2 4,7 9,12" stroke={T.text} strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg></div>
@@ -5528,15 +5565,10 @@ function SettingsPage({onBack,isDark,setIsDark,onSignOut,userName}){
         </div>
       )}
       <SectionHeader label="Workout reminders"/>
-      <SettingRow label="Workout reminders" sub="Daily push notification to train" right={<Toggle value={notifWorkout} onChange={v=>requestAndToggleNotif("workout",v,setNotifWorkout)}/>}/>
-      <SettingRow label="Rest day reminder" sub="Remind me to recover on off-days" right={<Toggle value={false} onChange={()=>{}}/>}/>
+      <SettingRow label="Workout nudge" sub="While the app is open — background alerts need the iOS app" right={<Toggle value={notifWorkout} onChange={v=>requestAndToggleNotif("workout",v,setNotifWorkout)}/>}/>
       <SectionHeader label="Nutrition"/>
-      <SettingRow label="Supplement reminders" sub="Alerts for each supplement in your stack" right={<Toggle value={notifSupps} onChange={v=>requestAndToggleNotif("supps",v,setNotifSupps)}/>}/>
-      <SettingRow label="Calorie goal alerts" sub="Notify when near daily limit" right={<Toggle value={notifGoals} onChange={v=>requestAndToggleNotif("goals",v,setNotifGoals)}/>}/>
-      <SettingRow label="Meal logging reminders" sub="Prompt to log breakfast, lunch, dinner" right={<Toggle value={false} onChange={()=>{}}/>}/>
-      <SectionHeader label="App"/>
-      <SettingRow label="Weekly summary" sub="Sunday digest of your progress" right={<Toggle value={true} onChange={()=>{}}/>}/>
-      <SettingRow label="AI Coach suggestions" sub="Proactive tips from your coach" right={<Toggle value={true} onChange={()=>{}}/>}/>
+      <SettingRow label="Supplement nudges" sub="While the app is open — background alerts need the iOS app" right={<Toggle value={notifSupps} onChange={v=>requestAndToggleNotif("supps",v,setNotifSupps)}/>}/>
+      <SettingRow label="Calorie goal nudge" sub="While the app is open" right={<Toggle value={notifGoals} onChange={v=>requestAndToggleNotif("goals",v,setNotifGoals)}/>}/>
     </>);
     if(section==="appearance")return(<>
       <SectionHeader label="Theme"/>
@@ -5616,6 +5648,7 @@ function ProfilePage({goals,setGoals,userName,setUserName,isDark,setIsDark,theme
   const [carbGoal,setCarbGoal]=useState(String(goals?.carbs||180));
   const [fatGoal,setFatGoal]=useState(String(goals?.fat||78));
   // Body stats — loaded from Supabase on mount
+  const [loadError,setLoadError]=useState(false);
   const [gender,setGender]=useState("male");
   const [age,setAge]=useState("");
   const [weightLbs,setWeightLbs]=useState("");
@@ -5637,7 +5670,11 @@ function ProfilePage({goals,setGoals,userName,setUserName,isDark,setIsDark,theme
     const load=async()=>{
       const uid=sb.getUser()?.id;
       if(!uid)return;
-      const rows=await sb.select("profiles","id=eq."+uid);
+      // selectAuth: a failed read must not render an EMPTY form — Save
+      // upserts the whole profile, so a blank form saved is data loss.
+      const {ok,rows}=await sb.selectAuth("profiles","id=eq."+uid);
+      if(!ok){setLoadError(true);return;}
+      setLoadError(false);
       if(rows?.length>0){
         const p=rows[0];
         if(p.gender)setGender(p.gender);
@@ -5702,8 +5739,13 @@ function ProfilePage({goals,setGoals,userName,setUserName,isDark,setIsDark,theme
 
   return(
     <PageShell title="Profile" onBack={onClose} footer={
-      <button onClick={save} disabled={saving} style={{width:"100%",background:saved?"#22C55E":saving?T.muted:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:14,padding:"14px",color:"#fff",fontSize:15,fontWeight:700,cursor:saving?"not-allowed":"pointer",transition:"background 0.2s"}}>{saved?"Saved ✓":saving?"Saving...":"Save changes"}</button>
+      <button onClick={save} disabled={saving||loadError} style={{width:"100%",background:saved?"#22C55E":(saving||loadError)?T.muted:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:14,padding:"14px",color:"#fff",fontSize:15,fontWeight:700,cursor:saving?"not-allowed":"pointer",transition:"background 0.2s"}}>{saved?"Saved ✓":saving?"Saving...":"Save changes"}</button>
     }>
+      {loadError&&(
+        <div data-testid="profile-failed" style={{margin:"12px 16px 0",padding:"10px 14px",borderRadius:12,background:T.accentPill,border:("1px solid "+T.border),fontSize:12,color:T.text}}>
+          Couldn't load your profile. The fields below are NOT your saved values — reopen this page before saving.
+        </div>
+      )}
       {/* Banner */}
       <div style={{background:("linear-gradient(135deg,"+T.bannerFrom+","+T.bannerTo+")"),padding:"28px 20px 24px",display:"flex",alignItems:"center",gap:16}}>
         <div style={{width:68,height:68,borderRadius:"50%",background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:22,fontWeight:700,boxShadow:("0 4px 16px "+T.accentGlow),flexShrink:0}}>{initials}</div>
@@ -6134,6 +6176,7 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
   const [range,setRange]=useState("30d");
   const [dailyData,setDailyData]=useState([]);
   const [loading,setLoading]=useState(true);
+  const [loadError,setLoadError]=useState(false);
   const [newWeight,setNewWeight]=useState("");
   const [savingWeight,setSavingWeight]=useState(false);
 
@@ -6150,12 +6193,17 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
       const startStr=fmt(start);
       const endStr=fmt(today);
       try{
-        const [foodRows,workoutRows,suppRows]=await Promise.all([
-          uid?sb.select("food_log","user_id=eq."+uid+"&logged_date=gte."+startStr+"&logged_date=lte."+endStr,{limit:1000}):[],
-          uid?sb.select("workout_sessions","user_id=eq."+uid+"&completed_date=gte."+startStr+"&completed_date=lte."+endStr,{limit:200}):[],
-          uid?sb.select("supplement_log","user_id=eq."+uid+"&log_date=gte."+startStr+"&log_date=lte."+endStr+"&taken=eq.true",{limit:500}):[],
+        const okEmpty={ok:true,rows:[]};
+        const [fr,wr,sr]=await Promise.all([
+          uid?sb.selectAuth("food_log","user_id=eq."+uid+"&logged_date=gte."+startStr+"&logged_date=lte."+endStr,{limit:1000}):okEmpty,
+          uid?sb.selectAuth("workout_sessions","user_id=eq."+uid+"&completed_date=gte."+startStr+"&completed_date=lte."+endStr,{limit:200}):okEmpty,
+          uid?sb.selectAuth("supplement_log","user_id=eq."+uid+"&log_date=gte."+startStr+"&log_date=lte."+endStr+"&taken=eq.true",{limit:500}):okEmpty,
         ]);
         if(cancel)return;
+        // Failed reads must not render as "0 avg calories, 0% adherence".
+        if(!fr.ok||!wr.ok||!sr.ok){setLoadError(true);setLoading(false);return;}
+        setLoadError(false);
+        const foodRows=fr.rows,workoutRows=wr.rows,suppRows=sr.rows;
         // Build per-day buckets
         const days=[];
         for(let i=dayCount-1;i>=0;i--){
@@ -6267,6 +6315,12 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
 
   return(
     <div style={{paddingBottom:80,minHeight:"100vh",fontFamily:"-apple-system,sans-serif"}}>
+      {loadError&&(
+        <div data-testid="progress-failed" style={{margin:"12px 16px 0",padding:"10px 14px",borderRadius:12,background:T.accentPill,border:("1px solid "+T.border),display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+          <div style={{fontSize:12,color:T.text}}>Couldn't load this range — the numbers below are not yours.</div>
+          <div onClick={()=>setRange(r=>r)} style={{fontSize:12,fontWeight:700,color:T.accent,cursor:"pointer"}}>Retry</div>
+        </div>
+      )}
       {/* Sticky header */}
       <div style={{position:"sticky",top:0,zIndex:50,background:T.bg+"e8",backdropFilter:"blur(20px)",borderBottom:("1px solid "+T.border),padding:"16px 16px 12px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -6466,6 +6520,11 @@ export default function App(){
   const [weekHistory,setWeekHistory]=useState({});
   const [profileCreatedAt,setProfileCreatedAt]=useState(null);
   const [pendingStartPlanId,setPendingStartPlanId]=useState(null);
+  // Sections whose mount read failed (see loadUserData's read()). Non-empty
+  // shows the top banner; writes that would be destructive against an empty
+  // state check it. Retry re-runs the full load.
+  const [loadFailures,setLoadFailures]=useState([]);
+  const sectionFailed=(label)=>loadFailures.includes(label);
   const loadWeekHistory=async(forUid)=>{
     const u=forUid||sb.getUser()?.id; if(!u)return;
     const days=weekDays(new Date()); const mon=days[0].ds;
@@ -6495,6 +6554,9 @@ export default function App(){
   const [waterOz,setWaterOzState]=useState(0);
   const [weightLog,setWeightLog]=useState([]); // [{date:"2026-05-08",lbs:175}]
   const setWaterOz=async(valOrFn)=>{
+    // The upsert REPLACES the day's oz. Against an unloaded 0 it would
+    // overwrite a real 48 with 8.
+    if(sectionFailed("water")){showError("Today's water didn't load — tap Retry at the top first.");return;}
     const next=typeof valOrFn==="function"?valOrFn(waterOz):valOrFn;
     const clamped=Math.min(GOAL_OZ,Math.max(0,next));
     const prevOz=waterOz;
@@ -6552,6 +6614,12 @@ export default function App(){
       if(authError){setAuthState("auth");return;}
       if(profiles&&profiles.length>0){
         profileLoaded=true;
+        // Every read below goes through selectAuth and keys on ok. null means
+        // the read FAILED (any non-2xx or network) and the section is listed
+        // in loadFailures — the banner offers Retry and the writes that would
+        // be destructive against an empty state are guarded. [] means empty.
+        const failed=[];
+        const read=async(label,table,filter,opts)=>{const r=await sb.selectAuth(table,filter,opts);if(!r.ok){failed.push(label);return null;}return r.rows;};
         const p=profiles[0];
         setUserName(p.name||"");
         setProfileCreatedAt(p.created_at||null);
@@ -6563,7 +6631,7 @@ export default function App(){
           setIsDarkState(r.dark);
         }
         // Food log for today
-        const foodRows=await sb.select("food_log","user_id=eq."+uid+"&logged_date=eq."+today);
+        const foodRows=await read("food","food_log","user_id=eq."+uid+"&logged_date=eq."+today);
         if(foodRows?.length>0){
           const nl={breakfast:[],lunch:[],dinner:[],snacks:[]};
           foodRows.forEach(r=>{
@@ -6573,17 +6641,21 @@ export default function App(){
           setLog(nl);
         }
         // Custom foods
-        const cf=await sb.select("custom_foods","user_id=eq."+uid,{order:"created_at.desc"});
+        const cf=await read("custom foods","custom_foods","user_id=eq."+uid,{order:"created_at.desc"});
         if(cf?.length>0)setCustomFoods(cf.map(f=>({name:f.name,brand:f.brand||null,servingG:f.serving_g,servingQty:f.serving_qty,servingUnit:f.serving_unit||"g",isCustom:true,per100:{cal:f.per100_cal,protein:f.per100_protein,carbs:f.per100_carbs,fat:f.per100_fat,fiber:f.per100_fiber||0,sugar:f.per100_sugar||0,sodium:f.per100_sodium||0}})));
         // Supplement stack
-        const suppRows=await sb.select("supplement_stack","user_id=eq."+uid,{order:"sort_order.asc"});
+        const suppRows=await read("supplements","supplement_stack","user_id=eq."+uid,{order:"sort_order.asc"});
         if(suppRows?.length>0){
-          setSuppList(suppRows.map(s=>({k:s.id,name:s.name,sub:s.sub||"",dot:s.dot_color||"#888",category:s.category||null,note:s.note||null,reminderTime:s.reminder_time,reminderEnabled:s.reminder_enabled})));
-          const suppLog=await sb.select("supplement_log","user_id=eq."+uid+"&log_date=eq."+today);
-          const taken={};
-          suppRows.forEach(s=>{taken[s.id]=false;});
-          if(suppLog?.length>0)suppLog.forEach(l=>{taken[l.supplement_id]=l.taken;});
-          setSuppTaken(taken);
+          // Today's log must load with the stack: without it every capsule
+          // shows untaken and a tap upserts taken:false over a true row.
+          const suppLog=await read("supplements","supplement_log","user_id=eq."+uid+"&log_date=eq."+today);
+          if(suppLog!==null){
+            setSuppList(suppRows.map(s=>({k:s.id,name:s.name,sub:s.sub||"",dot:s.dot_color||"#888",category:s.category||null,note:s.note||null,reminderTime:s.reminder_time,reminderEnabled:s.reminder_enabled})));
+            const taken={};
+            suppRows.forEach(s=>{taken[s.id]=false;});
+            suppLog.forEach(l=>{taken[l.supplement_id]=l.taken;});
+            setSuppTaken(taken);
+          }
         }
         // Workout history
         // selectAuth, not select: a failed read must NOT become an empty
@@ -6597,13 +6669,17 @@ export default function App(){
           setHistory(sessions.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[],prs:s.prs||[]})));
         }
         // Water intake today
-        const waterRows=await sb.select("water_log","user_id=eq."+uid+"&log_date=eq."+today);
+        const waterRows=await read("water","water_log","user_id=eq."+uid+"&log_date=eq."+today);
         if(waterRows?.length>0)setWaterOzState(waterRows[0].oz||0);
         // Weight log (last 30 days)
-        const weightRows=await sb.select("body_weight_log","user_id=eq."+uid,{order:"log_date.asc",limit:30});
+        const weightRows=await read("weight","body_weight_log","user_id=eq."+uid,{order:"log_date.asc",limit:30});
         if(weightRows?.length>0)setWeightLog(weightRows.map(w=>({date:w.log_date,lbs:w.weight_lbs})));
         // Workout plans
-        const planRows=await sb.select("workout_plans","user_id=eq."+uid,{order:"sort_order.asc"});
+        const planRows=await read("plans","workout_plans","user_id=eq."+uid,{order:"sort_order.asc"});
+        // A failed plans read must NOT leave the INITIAL_WORKOUTS seed on screen
+        // as if the user were new: editing a seed would PATCH id=eq.w1 at a
+        // uuid, and the Home card would present starter content as theirs.
+        if(planRows===null)setWorkouts([]);
         if(planRows?.length>0){
           setWorkouts(planRows.map(p=>({
             id:p.id,
@@ -6615,6 +6691,7 @@ export default function App(){
             exercises:p.exercises||[],
           })));
         }
+        setLoadFailures(failed);
         setAuthState("app");
       }else{
         setAuthState("onboarding");
@@ -6712,7 +6789,7 @@ export default function App(){
     setSuppTaken(prev=>prev[tempK]!==undefined?prev:{...prev,[tempK]:false});
     if(!uid)return;
     try{
-      const row=await sb.insert("supplement_stack",{user_id:uid,name:item.name,sub:item.sub||"",dot_color:item.dot||"#888",category:item.category||null,note:item.note||null,sort_order:suppList.length,reminder_enabled:item.reminderEnabled||false,reminder_time:item.reminderTime||null});
+      const row=await sb.insert("supplement_stack",{user_id:uid,name:item.name,sub:(item.sub||"").trim()||null,dot_color:item.dot||"#888",category:item.category||null,note:item.note||null,sort_order:suppList.length,reminder_enabled:item.reminderEnabled||false,reminder_time:item.reminderTime||null}); // sub: blank is null, not ""
       if(!row)throw new Error("insert returned no row");
       if(row.id&&row.id!==tempK){
         // Replace temp key with real DB id
@@ -6727,6 +6804,10 @@ export default function App(){
   };
 
   const toggleSuppTaken=async(k,val)=>{
+    if(sectionFailed("supplements")){showError("Your supplements didn't load — tap Retry at the top first.");return;}
+    // A supplement still saving has a local key ("m…"/"s…"/"ai…"); supplement_id
+    // is a uuid, so the upsert would 400. Refuse rather than launder (S1).
+    if(!hasDbId({id:k})){showError("That supplement is still saving — try again in a moment.");return;}
     setSuppTaken(p=>({...p,[k]:val}));
     if(!uid)return;
     try{
@@ -6862,6 +6943,7 @@ export default function App(){
 
   const saveWorkoutPlanDB=async(plan,isNew)=>{
     if(!uid)return;
+    if(sectionFailed("plans")){showError("Your plans didn't load — tap Retry at the top before editing.");return;}
     const pname=(plan?.name||"").trim();
     if(!pname||!Array.isArray(plan?.exercises)){
       showError("Couldn't save that workout plan — it's missing a name or exercises.");
@@ -6932,6 +7014,12 @@ export default function App(){
     <ThemeCtx.Provider value={T}>
     <div style={{background:T.appBg,maxWidth:480,margin:"0 auto",minHeight:"100vh",fontFamily:"-apple-system,sans-serif",color:T.text,position:"relative",overflow:"hidden",transition:"background 0.25s,color 0.25s"}}>
       <GlobalStyle/>
+      {loadFailures.length>0&&(
+        <div data-testid="load-failed" style={{position:"fixed",top:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,zIndex:998,background:T.accentPill,borderBottom:("1px solid "+T.border),padding:"9px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,backdropFilter:"blur(6px)"}}>
+          <div style={{fontSize:12,color:T.text}}>Couldn't load your {[...new Set(loadFailures)].join(", ")}. Some numbers may be missing.</div>
+          <div onClick={()=>{const u=sb.getUser()?.id;if(u)loadUserData(u);}} style={{fontSize:12,fontWeight:700,color:T.accent,cursor:"pointer",flexShrink:0}}>Retry</div>
+        </div>
+      )}
       {errorBanner&&<div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",background:T.red,color:"#fff",borderRadius:10,padding:"10px 18px",fontSize:13,fontWeight:600,zIndex:999,maxWidth:340,textAlign:"center",boxShadow:"0 4px 20px rgba(0,0,0,0.3)",pointerEvents:"none"}}>{errorBanner}</div>}
       {profileMenuOpen&&<ProfileMenu userName={userName} isDark={isDark} onClose={()=>setProfileMenuOpen(false)} onOpenProfile={()=>{closeAll();setProfilePageOpen(true);}} onOpenSettings={()=>{closeAll();setSettingsPageOpen(true);}} onOpenPersonalization={()=>{closeAll();setPersonalizationPageOpen(true);}} onOpenUpgrade={()=>{closeAll();setUpgradePageOpen(true);}} onOpenHelp={()=>{closeAll();setHelpPageOpen(true);}} onSignOut={handleSignOut}/>}
       {profilePageOpen&&<ProfilePage goals={goals} setGoals={setGoals} userName={userName} setUserName={setUserName} isDark={isDark} setIsDark={setIsDark} themeFam={themeFam} logWeight={logWeight} onSignOut={handleSignOut} onClose={()=>setProfilePageOpen(false)}/>}
@@ -6944,8 +7032,8 @@ export default function App(){
         todayPlan={todayPlanFor(workouts)} todayPlanSeeded={workouts===INITIAL_WORKOUTS} onStartPlan={(id)=>{setPendingStartPlanId(id);setTab("workout");}}
         toggleSuppTaken={toggleSuppTaken} weekHistory={weekHistory} onRetryWeek={()=>loadWeekHistory()} profileCreatedAt={profileCreatedAt}/>}
       {tab==="food"&&<FoodTab log={log} setLog={setLog} uid={uid} onDeleteFailed={showError} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/>}
-      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} onSessionComplete={saveWorkoutSession} bests={bests} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress} historyStatus={historyStatus} onRetryHistory={retryHistory} pendingStartPlanId={pendingStartPlanId} onPendingConsumed={()=>setPendingStartPlanId(null)}/>}
-      {tab==="supps"&&<SuppsTab suppList={suppList} setSuppList={setSuppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} taken={taken} total={total} uid={uid} addSuppToList={addSuppToList}/>}
+      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} onSessionComplete={saveWorkoutSession} bests={bests} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress} historyStatus={sectionFailed("plans")?"failed":historyStatus} onRetryHistory={()=>{const u=sb.getUser()?.id;if(sectionFailed("plans")&&u)loadUserData(u);else retryHistory();}} pendingStartPlanId={pendingStartPlanId} onPendingConsumed={()=>setPendingStartPlanId(null)}/>}
+      {tab==="supps"&&<SuppsTab suppList={suppList} setSuppList={setSuppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} taken={taken} total={total} uid={uid} addSuppToList={addSuppToList} onWriteFailed={showError}/>}
       {tab==="calendar"&&<CalendarTab uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz}/>}
       {tab==="progress"&&<ProgressPage uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz} weightLog={weightLog} logWeight={logWeight} onProfileOpen={()=>setProfileMenuOpen(true)}/>}
 

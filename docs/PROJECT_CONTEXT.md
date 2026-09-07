@@ -538,10 +538,10 @@ Anthropic response formats are unchanged and out of scope for security work:
    | Line | Call | What silently fails |
    |---|---|---|
    | ~~2924~~ | ~~`sb.delete` food_log~~ | **fixed 2026-09-07** — result checked, item restored + `showError` on failure |
-   | 4228 | `sb.delete` supplement_stack | a removed supplement comes back |
-   | 4236 | `sb.update` supplement_stack | rename is lost |
-   | 4251 | `sb.update` supplement_stack | reminder settings are lost |
-   | 4337 | `sb.update` supplement_stack | drag-reorder is lost |
+   | ~~4228~~ | ~~`sb.delete` supplement_stack~~ | **fixed 2026-09-07** — checked, restored in place + `showError` |
+   | ~~4236~~ | ~~`sb.update` supplement_stack~~ | **fixed 2026-09-07** — checked, reverted + `showError` |
+   | ~~4251~~ | ~~`sb.update` supplement_stack~~ | **fixed 2026-09-07** — checked, reverted + `showError` |
+   | ~~4337~~ | ~~`sb.update` supplement_stack~~ | **fixed 2026-09-07** — out of the state updater, every PATCH awaited and checked, order reverted on failure |
    | 5259 | `sb.upsert` profiles | onboarding profile never lands |
    | 5887 | `sb.upsert` profiles | name/gender/age edit is lost |
    | 6623 | `sb.upsert` profiles | theme choice is lost |
@@ -819,6 +819,31 @@ Anthropic response formats are unchanged and out of scope for security work:
     as the food delete — and the session's uuid must be written back into state
     (the local-id note in #24), or the delete will have the food bug on day one.
     See `DECISIONS.md` §"Derived values…", second corollary.
+
+26. **REQUIRED PRE-LAUNCH (iOS) — real reminders via `UNUserNotificationCenter`.**
+    The web app's "reminders" are a `setTimeout` in the open tab. As of
+    2026-09-07 the UI says so (time label + in-app nudge; no push/alert copy;
+    dead Settings toggles removed) and the mechanism is at least correct
+    (cancelled on unmount, re-armed daily). `supplement_stack.reminder_time` /
+    `reminder_enabled` are the schedule the iOS app should register. See
+    `DECISIONS.md` §"A claimed capability is the feature-level case of the
+    lying class".
+
+27. **Every mount read now fails loud (P0, 2026-09-07).** `loadUserData`'s
+    `read()` records failed sections in `loadFailures`; a top banner names them
+    with Retry. Writes that would be destructive against an empty state are
+    guarded: water `+8` (the upsert REPLACES the day), supplement capsules
+    (would flip a true row to false), plan create/edit (a 500 used to seed
+    `INITIAL_WORKOUTS` as if the user were new — the seed is no longer shown
+    on failure, and Train pauses). Calendar, Progress and ProfilePage refuse
+    to render numbers/form on a failed read (ProfilePage's Save is disabled —
+    a blank form saved is data loss). Additive writes (food, custom foods,
+    weight) are banner-only. Ten `sb.select` sites remain nowhere; the profile
+    read keeps `authError` on purpose (routing).
+
+    Also from the Supps audit: a capsule tap on a supplement still saving
+    (local key at a uuid column) is refused with "still saving" instead of a
+    swallowed 400; `supplement_stack.sub` stores null for blank.
 
 ---
 
