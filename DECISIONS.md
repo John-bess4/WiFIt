@@ -85,6 +85,52 @@ the user navigates and is unaffected by the correction.
 answer resting on a wrong premise is one refactor away from being deleted by
 someone who checks the premise.
 
+### How to test a restore without fooling yourself
+
+Verified end to end on 2026-09-06 against a signed-in account. Recording the
+**method**, because the obvious test is worthless here:
+
+> "Reload and the sets are still there" is passed identically by a workout that
+> never unmounted. The state that survived a reload and the state that survived
+> because nothing tore down look the same from outside.
+
+**The discriminator: mutate the snapshot in `localStorage` after the app writes
+it, then reload.** Injected values exist only on disk, so if the restored UI
+shows them, the state provably came off disk — in-memory React state cannot
+produce a number written to storage after it was captured.
+
+Concretely: tick 3 sets, type weight `185`, wait past the 500ms debounce, then
+rewrite the stored snapshot with weight `999` and `startedAt` backdated 20
+minutes. React state holds `185` and a 15-second-old start; storage holds `999`
+and 20 minutes. The two sources now disagree, so the reload has to pick a side.
+
+| After reload | Means |
+|---|---|
+| `999`, elapsed `20:19` | read from storage — **pass** |
+| `185`, elapsed `00:05` | never unmounted — **fail** |
+| empty workout list | snapshot not read — **fail** |
+
+Observed: `999`, `20:19`, banner "Resumed · started 8:12 PM". Supporting proof
+the context was destroyed: a `window.__probe` nonce set before the reload came
+back `undefined`.
+
+The negative cases are what actually prove the rules, and each needs its own
+discriminating assertion:
+
+- **6h staleness.** Backdate `startedAt` 7h while setting `savedAt` to *now* —
+  that separates "age judged on start" from "age judged on last save". Assert
+  not just that nothing restored, but that **the key was removed**:
+  `readWorkoutSnapshot` does `removeItem` before returning null, so key-absent
+  proves the staleness branch ran. Without that, a mistyped key name passes
+  identically.
+- **Foreign uid.** Plant `wifit_workout_<other>` holding a workout named
+  `LEG DAY SENTINEL`. Assert the sentinel never renders, **and** that the
+  foreign key is byte-identical afterwards — not read, not deleted. Assert no
+  bare / `undefined` / `null` key was ever created.
+- **Clearing.** Cancel → *Keep going* must **leave the key intact** (this is the
+  case that catches a dialog wired to clear on open); Cancel → *Discard* and
+  Finish must both clear it, with a following reload restoring nothing.
+
 ---
 
 ## 2026-09-06 — Cancel asks; the nav dot stays
@@ -270,6 +316,23 @@ session already carries, makes both cases correct without touching the
 The snapshot's staleness rule follows the same logic for the same reason: it is
 an **age** rule (6h from `startedAt`), not a calendar-day rule, because a
 calendar-day rule misfires on exactly that 11pm session.
+
+**Exercised 2026-09-06** with Playwright's clock API, which is the only way to
+reach this case on demand — the 6h window means a cross-midnight restore is
+otherwise only reproducible between 00:00 and ~06:00 local. Clock installed at
+**23:50**, workout started, fast-forwarded 30 minutes to **00:20**, then
+**reloaded** so `App` remounted on the *following* day before the session was
+restored and finished. That reload is what makes the test discriminate: without
+it, `today` and `localDate(startedAt)` are the same day and both the old and new
+implementations pass.
+
+Result: mounted on `2026-09-07`, stamped `2026-09-06`. Confirmed in Postgres,
+not just the UI — `workout_sessions` row `completed_date 2026-09-06`,
+`duration_secs 1815`, against a real `created_at` of `2026-09-07 03:35Z`. The
+pre-fix code would have written `2026-09-07`.
+
+The arithmetic is pinned in `src/__tests__/sessionDate.test.js` so it keeps
+running in CI; the wiring is what needed the browser.
 
 ---
 

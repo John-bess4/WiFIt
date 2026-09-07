@@ -422,6 +422,13 @@ confirmation when `doneSets > 0`. Supplement reminders are not an exit: they are
 
 ### Demo mode cannot exercise any of this
 
+**Verified end to end 2026-09-06** against a signed-in account: restore after a
+hard reload, the 6h staleness rule, foreign-uid isolation, clearing on finish
+and on cancel, and the cross-midnight `completed_date`. See `DECISIONS.md`
+§"How to test a restore without fooling yourself" for the method — in particular
+why "reload and the sets are still there" is not a valid test, and what to
+inject instead.
+
 `uid` is `sb.getUser()?.id`, and demo mode has no session, so `workoutKey`
 returns `null` and nothing is written or restored. That is the intended
 "no uid means no key" behaviour — an unkeyed snapshot would restore one
