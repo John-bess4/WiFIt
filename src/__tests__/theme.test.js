@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { paletteToTheme, BASE_THEME_KEYS } from "../lib/paletteToTheme.js";
+import { paletteToTheme, BASE_THEME_KEYS, EXTENDED_THEME_KEYS } from "../lib/paletteToTheme.js";
 import { THEME_ORDER } from "../themes.js";
 import { THEMES, resolveTheme, resolveDark } from "../App.jsx";
 
@@ -71,5 +71,20 @@ describe("resolveDark — the toggleTheme persistence bug", () => {
   it("passes a plain boolean through", () => {
     expect(resolveDark(true, false)).toBe(false);
     expect(resolveDark(false, true)).toBe(true);
+  });
+});
+
+describe("THEMES registry — every entry carries every key Home reads", () => {
+  // Home rendered under aurora_dark with T.arc undefined and blanked the app.
+  // This is the test that would have caught it: loop every entry, every key.
+  it("has all base + extended keys defined for all 22 entries", () => {
+    const keys = [...BASE_THEME_KEYS, ...EXTENDED_THEME_KEYS];
+    expect(Object.keys(THEMES)).toHaveLength(22);
+    for (const [name, t] of Object.entries(THEMES)) {
+      const missing = keys.filter((k) => t[k] === undefined);
+      expect({ name, missing }).toEqual({ name, missing: [] });
+    }
+    expect(THEMES.aurora_dark.arc).toHaveLength(3);
+    expect(THEMES.aurora_dark.macroPair[2]).toHaveLength(2);
   });
 });

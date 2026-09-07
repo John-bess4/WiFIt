@@ -1,7 +1,9 @@
 
 import React, { useState, useRef, useEffect, useContext, createContext, useMemo } from "react";
 import { THEME_META, THEME_ORDER, DEFAULT_THEME } from "./themes.js";
-import { paletteToTheme } from "./lib/paletteToTheme.js";
+import { paletteToTheme, legacyExtended } from "./lib/paletteToTheme.js";
+import HomeTab from "./HomeTab.jsx";
+import { weekDays, reduceWeekRows, todayPlanFor } from "./lib/weekSummary.js";
 
 // ── THEME SYSTEM ──────────────────────────────────────────────
 const LEGACY_THEMES = {
@@ -143,7 +145,7 @@ const LEGACY_THEMES = {
 const DEFAULT_THEME_KEY = DEFAULT_THEME + "_" + THEME_META[DEFAULT_THEME].mode; // "pastel_light"
 export const LOCKED_FAMILIES = new Set(THEME_ORDER);
 export const THEMES = {
-  ...Object.fromEntries(Object.entries(LEGACY_THEMES).map(([k, t]) => [k, { ...t, appBg: t.bg, locked: false }])),
+  ...Object.fromEntries(Object.entries(LEGACY_THEMES).map(([k, t]) => [k, { ...t, ...legacyExtended(t) }])),
   ...Object.fromEntries(THEME_ORDER.map((k) => [k + "_" + THEME_META[k].mode, paletteToTheme(k)])),
 };
 
@@ -168,8 +170,8 @@ export function resolveDark(prev, valOrFn) {
   return !!(typeof valOrFn === "function" ? valOrFn(prev) : valOrFn);
 }
 
-const ThemeCtx = createContext(THEMES[DEFAULT_THEME_KEY]);
-const useTheme = () => useContext(ThemeCtx);
+export const ThemeCtx = createContext(THEMES[DEFAULT_THEME_KEY]);
+export const useTheme = () => useContext(ThemeCtx);
 
 // Keep COLORS for food dot randomness
 const COLORS=["#A855F7","#EC4899","#06B6D4","#10B981","#F59E0B","#EF4444"];
@@ -203,9 +205,9 @@ const dayData={
   20:{food:1,workout:1,supp:1,cal:2200},21:{food:1,workout:0,supp:0,cal:720},
 };
 
-const SEED={breakfast:[],lunch:[],dinner:[],snacks:[]};
+export const SEED={breakfast:[],lunch:[],dinner:[],snacks:[]};
 
-function calc(item){
+export function calc(item){
   const g=item.grams/100,m=item.per100;
   return{
     cal:Math.round(m.cal*g),
@@ -218,7 +220,7 @@ function calc(item){
   };
 }
 
-function totals(log){
+export function totals(log){
   return Object.values(log).flat().reduce((a,item)=>{
     const m=calc(item);
     return{cal:a.cal+m.cal,protein:Math.round((a.protein+m.protein)*10)/10,carbs:Math.round((a.carbs+m.carbs)*10)/10,fat:Math.round((a.fat+m.fat)*10)/10,fiber:Math.round((a.fiber+m.fiber)*10)/10,sugar:Math.round((a.sugar+m.sugar)*10)/10,sodium:a.sodium+m.sodium};
@@ -1961,176 +1963,9 @@ function BarcodeScanner({onResult,onClose}){
   );
 }
 
-const GOAL_OZ=128;
-
-function WeightLogWidget({weightLog=[],onLog}){
-  const T=useTheme();
-  const [input,setInput]=useState("");
-  const [logged,setLogged]=useState(false);
-  const [editing,setEditing]=useState(false);
-  const [saving,setSaving]=useState(false);
-  const todayEntry=weightLog.find(w=>w.date===localDate());
-  // The input branch used to be gated on todayEntry alone, so once today had a
-  // row the only affordance left was an "update" link that set `logged` — a
-  // value this ternary never reads. Today's weight could be logged once and
-  // never corrected. `editing` is what reopens it.
-  const showInput=!todayEntry||editing;
-
-  // No local range check: logWeight owns validation (finite, 0<w<=1500) and is
-  // the only thing that can explain a rejection to the user. A second, narrower
-  // guard here returned silently — 45 or 800 lbs did nothing with no message.
-  const handleLog=async()=>{
-    if(saving)return;
-    setSaving(true);
-    const ok=await onLog(input);
-    setSaving(false);
-    if(!ok)return; // logWeight already surfaced the reason and rolled back
-    setInput("");setEditing(false);
-    setLogged(true);setTimeout(()=>setLogged(false),2000);
-  };
-
-  // Trend: difference between first and last entry
-  const trend=weightLog.length>1?(weightLog[weightLog.length-1].lbs-weightLog[0].lbs).toFixed(1):null;
-  const trendColor=trend===null?"":parseFloat(trend)<0?T.green:parseFloat(trend)>0?"#F97316":T.muted;
-
-  return(
-    <div style={{background:T.card,border:("1px solid "+T.border),boxShadow:T.glowShadow,borderRadius:16,padding:"12px 14px",display:"flex",alignItems:"center",gap:12}}>
-      <div style={{fontSize:20}}>⚖️</div>
-      <div style={{flex:1}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.text}}>Body weight</div>
-          {trend!==null&&(
-            <div style={{fontSize:11,fontWeight:700,color:trendColor}}>
-              {parseFloat(trend)<0?"↓":"↑"} {Math.abs(parseFloat(trend))}lbs ({weightLog.length} days)
-            </div>
-          )}
-        </div>
-        {!showInput
-          ?<div style={{fontSize:12,color:T.muted}}>Today: <span style={{color:T.accent,fontWeight:700}}>{todayEntry.lbs} lbs</span> — <span style={{cursor:"pointer",textDecoration:"underline"}} onClick={()=>{setInput(String(todayEntry.lbs));setEditing(true);}}>update</span></div>
-          :<div style={{display:"flex",gap:6,alignItems:"center"}}>
-            <input type="number" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLog()}
-              placeholder="Log today's weight"
-              style={{flex:1,background:T.surface,color:T.text,border:("1px solid "+T.border),borderRadius:10,padding:"7px 10px",fontSize:13,outline:"none"}}/>
-            <div style={{fontSize:11,color:T.muted,flexShrink:0}}>lbs</div>
-            <div onClick={handleLog} style={{background:logged?"#22C55E":T.accent,border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,color:"#fff",cursor:saving?"default":"pointer",opacity:saving?0.6:1,flexShrink:0,transition:"background 0.2s"}}>
-              {saving?"…":logged?"✓":"Log"}
-            </div>
-          </div>
-        }
-      </div>
-    </div>
-  );
-}
+export const GOAL_OZ=128;
 
 
-
-function WeekStrip({log,suppList=[],suppTaken={},workoutHistory=[],waterOz=0,goals={},onViewCalendar}){
-  const T=useTheme();
-  const todayObj=new Date();
-  const todayStr=localDate(todayObj);
-  const calGoal=goals?.cal||2200;
-
-  // Build Mon–Sun week containing today
-  const dow=todayObj.getDay();
-  const diffToMon=dow===0?-6:1-dow;
-  const monday=new Date(todayObj);monday.setDate(todayObj.getDate()+diffToMon);
-
-  const days=Array.from({length:7},(_,i)=>{
-    const d=new Date(monday);d.setDate(monday.getDate()+i);
-    return{
-      ds:localDate(d),
-      label:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i],
-      num:d.getDate(),
-    };
-  });
-
-  // Compute today's live stats from props
-  const todayCal=log?Object.values(log).flat().reduce((s,item)=>{
-    return s+Math.round(((item.per100?.cal||0)*(item.grams||0))/100);
-  },0):0;
-  const takenCount=(suppList||[]).filter(s=>suppTaken?.[s.k]).length;
-  const totalSupps=(suppList||[]).length;
-  const todayWorkout=(workoutHistory||[]).find(w=>w.date===todayStr);
-
-  // Status dots for a day — today uses live data, past days show from calData (simplified: just streak logic)
-  const todayStatus={
-    food:todayCal>0,
-    workout:!!todayWorkout,
-    supps:totalSupps>0&&takenCount>=totalSupps,
-    water:waterOz>=(GOAL_OZ*0.75),
-  };
-
-  const getDots=(ds)=>{
-    if(ds===todayStr)return todayStatus;
-    // Past days — show partial info from workout history
-    const hadWorkout=!!(workoutHistory||[]).find(w=>w.date===ds);
-    return{food:false,workout:hadWorkout,supps:false,water:false};
-  };
-
-  return(
-    <div style={{background:T.card,border:("1px solid "+T.border),boxShadow:T.glowShadow,borderRadius:16,padding:"10px 14px 8px"}}>
-      {/* Header */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <div style={{fontSize:11,fontWeight:700,color:T.text}}>This week</div>
-        <div onClick={onViewCalendar}
-          style={{display:"flex",alignItems:"center",gap:4,background:T.accentPill,border:("1px solid "+T.accent+"44"),borderRadius:20,padding:"3px 9px",cursor:"pointer"}}>
-          <svg width="10" height="10" viewBox="0 0 11 11" fill="none" stroke={T.accent} strokeWidth="1.4" strokeLinecap="round">
-            <rect x="1" y="2" width="9" height="8" rx="1.5"/>
-            <line x1="3.5" y1="1" x2="3.5" y2="3"/>
-            <line x1="7.5" y1="1" x2="7.5" y2="3"/>
-            <line x1="1" y1="5" x2="10" y2="5"/>
-          </svg>
-          <div style={{fontSize:9,fontWeight:700,color:T.accent}}>Full calendar</div>
-        </div>
-      </div>
-
-      {/* Day cells */}
-      <div style={{display:"flex",gap:3}}>
-        {days.map(({ds,label,num})=>{
-          const isToday=ds===todayStr;
-          const isFuture=ds>todayStr;
-          const st=getDots(ds);
-          const allDone=!isFuture&&st.food&&st.workout&&st.supps&&st.water;
-
-          return(
-            <div key={ds} style={{
-              flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,
-              padding:"5px 1px 4px",borderRadius:10,
-              background:isToday?T.accentPill:"transparent",
-              border:isToday?"1.5px solid "+T.accent+"44":"1.5px solid transparent",
-              opacity:isFuture?0.3:1,
-            }}>
-              <div style={{fontSize:8,fontWeight:600,color:isToday?T.accent:T.muted}}>{label}</div>
-              <div style={{
-                width:24,height:24,borderRadius:"50%",
-                background:allDone?T.accent:"transparent",
-                border:"1.5px solid "+(allDone?T.accent:isToday?T.accent:T.border),
-                display:"flex",alignItems:"center",justifyContent:"center",
-                boxShadow:allDone?"0 0 7px "+T.accentGlow:"none",
-              }}>
-                {allDone
-                  ?<svg width="11" height="11" viewBox="0 0 12 12"><polyline points="1.5,6 5,9.5 10.5,2.5" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>
-                  :<div style={{fontSize:10,fontWeight:700,color:isToday?T.accent:T.text}}>{num}</div>
-                }
-              </div>
-              {/* 4 tiny activity dots */}
-              <div style={{display:"flex",gap:2}}>
-                {!isFuture&&[
-                  [st.food,T.macro[0]],
-                  [st.workout,T.macro[2]],
-                  [st.supps,T.macro[1]],
-                  [st.water,T.accent],
-                ].map(([done,color],i)=>(
-                  <div key={i} style={{width:3,height:3,borderRadius:"50%",background:done?color:(color+"25")}}/>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 
 
@@ -2153,9 +1988,11 @@ const cfGramsFor=(qty,unit)=>{
   return String(Math.round(n*f*10)/10);
 };
 
-function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,addSuppToList,customFoods,addCustomFood,waterOz=0,setWaterOz}){
+function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,addSuppToList,customFoods,addCustomFood,waterOz=0,setWaterOz,initialMode="food"}){
   const T=useTheme();
-  const [mode,setMode]=useState("food");
+  // initialMode is applied each time the panel opens (see the open effect), so
+  // Home's quick-add fan can land on Water or Supplements directly.
+  const [mode,setMode]=useState(initialMode);
   const [foodView,setFoodView]=useState("search");
   const [query,setQuery]=useState("");
   const [results,setResults]=useState([]);
@@ -2228,7 +2065,7 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
 
   // Reset when panel opens
   useEffect(()=>{
-    if(open){setQuery("");setResults([]);setSelected(null);setError("");setAdded(false);setGrams("100");setServings("1");setFoodView("search");}
+    if(open){setMode(initialMode);setQuery("");setResults([]);setSelected(null);setError("");setAdded(false);setGrams("100");setServings("1");setFoodView("search");}
   },[open]);
 
   const doSearch=async()=>{
@@ -3018,246 +2855,6 @@ function GallonBottle({oz,size=52}){
   );
 }
 
-function HomeTab({setTab,log,suppList=[],suppTaken={},workoutHistory=[],isDark:_isDark,toggleTheme,userName="",goals={cal:2200,protein:140,carbs:180,fat:78},onProfileOpen,waterOz=0,setWaterOz,weightLog=[],logWeight}){
-  const T=useTheme();
-  const isDark=T.mode==="dark";
-  const M=totals(log);
-  const calGoal=goals?.cal||2200;
-  const remain=Math.max(0,calGoal-M.cal);
-  const pct=Math.min(M.cal/calGoal,1);
-  const takenCount=(suppList||[]).filter(s=>suppTaken[s.k]).length;
-  const totalSupps=(suppList||[]).length;
-  const todayStr=localDate();
-  const todayWorkout=workoutHistory.find(w=>w.date===todayStr);
-  const now=new Date();
-  const hour=now.getHours();
-  const greeting=hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
-  const dayLabel=now.toLocaleDateString("en-US",{weekday:"long"});
-  const dateLabel=now.toLocaleDateString("en-US",{month:"long",day:"numeric"});
-  const monthYearLabel=now.toLocaleDateString("en-US",{month:"long",year:"numeric"});
-  const initials=userName?userName.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase():"?";
-
-  // Arc gauge
-  const cx=90,cy=82,r=64;
-  const arcLen=Math.PI*r;
-  const filled=arcLen*pct;
-  const arcPath="M "+(cx-r)+","+cy+" A "+r+","+r+" 0 0 1 "+(cx+r)+","+cy;
-  const θ=Math.PI*(1-pct);
-  const dotX=cx+r*Math.cos(θ);
-  const dotY=cy-r*Math.sin(θ);
-
-  const shortcuts=[
-    {
-      icon:"🍽",label:"Food Log",tab:"food",
-      val:M.cal+" kcal",
-      sub:remain.toLocaleString()+" remaining",
-      pct:pct,
-      color:T.macro[0],
-    },
-    {
-      icon:"🏋️",label:"Workout",tab:"workout",
-      val:todayWorkout?"Session logged":"No session yet",
-      sub:todayWorkout?todayWorkout.workoutName||"Tap to train":"Tap to train",
-      pct:todayWorkout?1:0,
-      color:T.macro[2],
-    },
-    {
-      icon:"💊",label:"Supplements",tab:"supps",
-      val:totalSupps>0?takenCount+"/"+totalSupps+" taken":"Set up stack",
-      sub:totalSupps>0?(totalSupps-takenCount)+" remaining":"Tap to add",
-      pct:totalSupps>0?takenCount/totalSupps:0,
-      color:T.macro[3],
-    },
-    {
-      icon:"📈",label:"Progress",tab:"progress",
-      val:weightLog.length>0?weightLog[weightLog.length-1].lbs+" lbs":"Progress projection",
-      sub:"View progressions",
-      pct:0,
-      color:"#F59E0B",
-    },
-  ];
-
-  return(
-    <div style={{paddingBottom:80,minHeight:"100vh",position:"relative",fontFamily:"-apple-system,sans-serif"}}>
-      {/* Background grid texture */}
-      <div style={{position:"fixed",inset:0,backgroundImage:"linear-gradient("+(isDark?"rgba(124,58,237,0.025)":"rgba(79,70,229,0.03)")+" 1px,transparent 1px),linear-gradient(90deg,"+(isDark?"rgba(124,58,237,0.025)":"rgba(79,70,229,0.03)")+" 1px,transparent 1px)",backgroundSize:"22px 22px",pointerEvents:"none",zIndex:0}}/>
-      {/* Top radial glow */}
-      <div style={{position:"fixed",top:-80,left:"50%",transform:"translateX(-50%)",width:280,height:280,borderRadius:"50%",background:"radial-gradient(circle,"+(isDark?"rgba(124,58,237,0.16)":"rgba(79,70,229,0.08)")+" 0%,transparent 65%)",pointerEvents:"none",zIndex:0}}/>
-
-      {/* ── STICKY HEADER ── */}
-      <div style={{
-        position:"sticky",top:0,zIndex:50,
-        padding:"12px 16px 10px",
-        display:"flex",justifyContent:"space-between",alignItems:"center",
-        background:isDark?"rgba(7,7,15,0.88)":"rgba(248,249,252,0.92)",
-        backdropFilter:"blur(16px)",
-        WebkitBackdropFilter:"blur(16px)",
-        borderBottom:("1px solid "+T.border),
-      }}>
-        {/* Left — greeting */}
-        <div>
-          <div style={{fontSize:9,color:T.accentSoft,fontWeight:600,letterSpacing:2,textTransform:"uppercase",opacity:0.8,marginBottom:2}}>{dayLabel} · {dateLabel}</div>
-          <div style={{fontSize:18,fontWeight:700,color:T.text,letterSpacing:"-0.4px"}}>{greeting}{userName?", "+userName.split(" ")[0]:""} 👋</div>
-        </div>
-
-        {/* Right — streak + toggle + avatar */}
-        <div style={{display:"flex",alignItems:"center",gap:7,flexShrink:0}}>
-          {/* Streak */}
-          <div style={{background:"rgba(245,158,11,0.12)",border:"1px solid rgba(245,158,11,0.28)",borderRadius:20,padding:"3px 8px",fontSize:10,fontWeight:700,color:"#FBBF24",flexShrink:0}}>🔥 7</div>
-
-          {/* Theme toggle — inline, compact. Hidden for mode-locked palettes. */}
-          {!T.locked&&<div onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:4,background:T.accentPill,border:("1px solid "+T.border),borderRadius:18,padding:"4px 8px 4px 5px",cursor:"pointer",flexShrink:0,transition:"all 0.2s",boxShadow:T.glowShadow}}>
-            <div style={{width:16,height:16,borderRadius:"50%",background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,flexShrink:0}}>
-              {isDark?"🌙":"☀️"}
-            </div>
-            <span style={{fontSize:10,fontWeight:600,color:T.accent}}>{isDark?"Dark":"Light"}</span>
-          </div>}
-
-          {/* Avatar */}
-          <div style={{width:32,height:32,borderRadius:9,background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:11,fontWeight:700,boxShadow:("0 3px 10px "+T.accentGlow),flexShrink:0,cursor:"pointer"}} onClick={onProfileOpen}>{initials}</div>
-        </div>
-      </div>
-
-      <div style={{padding:"8px 16px 0 16px"}}>
-        <WeekStrip log={log} suppList={suppList} suppTaken={suppTaken} workoutHistory={workoutHistory} waterOz={waterOz} goals={goals} onViewCalendar={()=>setTab("calendar")}/>
-      </div>
-
-      <div style={{padding:"10px 16px 0",display:"flex",flexDirection:"column",gap:10}}>
-
-        {/* ── CALORIE ARC + WATER BOTTLE ── */}
-        <div style={{background:T.card,border:("1px solid "+T.border),boxShadow:T.glowShadow,borderRadius:20,padding:"14px 14px 12px",position:"relative"}}>
-          <div style={{position:"absolute",top:-20,right:-20,width:90,height:90,borderRadius:"50%",background:T.accentGlow,filter:"blur(22px)",pointerEvents:"none"}}/>
-          <div style={{fontSize:8,color:T.accentSoft,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8,opacity:0.85}}>Calorie status</div>
-
-          <div style={{display:"flex",alignItems:"center",gap:4}}>
-            {/* Arc — takes most of the space */}
-            <div style={{flex:1,display:"flex",justifyContent:"center"}}>
-              <svg width="200" height="118" viewBox="0 0 200 118" style={{display:"block",overflow:"visible"}}>
-                <defs>
-                  <linearGradient id="htArc" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor={T.accent}/>
-                    <stop offset="100%" stopColor={T.accentSoft}/>
-                  </linearGradient>
-                  <filter id="htGlow">
-                    <feGaussianBlur stdDeviation="2.5" result="b"/>
-                    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-                  </filter>
-                </defs>
-                {/* True semicircle: endpoints(15,104)→(185,104), r=85, center=(100,104) */}
-                <path d="M 15,104 A 85,85 0 0 1 185,104" fill="none" stroke={T.accentPill} strokeWidth="9" strokeLinecap="round"/>
-                <path d="M 15,104 A 85,85 0 0 1 185,104" fill="none" stroke="url(#htArc)" strokeWidth="9" strokeLinecap="round"
-                  strokeDasharray={(267*pct)+" 267"}/>
-                {/* Dot — center=(100,104), r=85 */}
-                {pct>0.03&&pct<0.97&&(()=>{
-                  const a=Math.PI*(1-pct);
-                  return <circle cx={100+85*Math.cos(a)} cy={104-85*Math.sin(a)} r="5.5" fill={T.accentSoft} filter="url(#htGlow)"/>;
-                })()}
-                {/* Numbers inside arc */}
-                <text x="100" y="78" textAnchor="middle" fill={T.text} fontSize="28" fontWeight="800" style={{letterSpacing:"-1px"}}>{remain.toLocaleString()}</text>
-                <text x="100" y="92" textAnchor="middle" fill={T.subtext} fontSize="9">kcal remaining</text>
-                <text x="100" y="115" textAnchor="middle" fill={T.accentSoft} fontSize="8.5" fontWeight="700">{Math.round(pct*100)}% consumed</text>
-                <text x="15"  y="115" textAnchor="middle" fill={T.muted} fontSize="7">0</text>
-                <text x="185" y="115" textAnchor="middle" fill={T.muted} fontSize="7">{calGoal}</text>
-              </svg>
-            </div>
-
-            {/* Divider */}
-            <div style={{width:1,height:80,background:T.border,flexShrink:0}}/>
-
-            {/* Water bottle — small badge */}
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,paddingLeft:6,flexShrink:0,minWidth:56}}>
-              <div style={{fontSize:7,fontWeight:700,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>Water</div>
-              <GallonBottle oz={waterOz} size={44}/>
-              <div style={{fontSize:11,fontWeight:700,color:T.accent,lineHeight:1}}>{waterOz}<span style={{fontSize:8,color:T.muted,fontWeight:500}}>oz</span></div>
-              <div onClick={()=>setWaterOz&&setWaterOz(w=>Math.min(GOAL_OZ,w+8))}
-                style={{background:T.accentPill,border:("1px solid "+T.accent+"44"),borderRadius:20,padding:"3px 9px",fontSize:9,fontWeight:700,color:T.accent,cursor:"pointer"}}>
-                +8
-              </div>
-            </div>
-          </div>
-
-          {/* Protein · Carbs · Fat */}
-          <div style={{display:"flex",gap:7,marginTop:10}}>
-            {[
-              ["Protein", M.protein, goals?.protein||140, T.macro[0]],
-              ["Carbs",   M.carbs,   goals?.carbs||180,   T.macro[1]],
-              ["Fat",     M.fat,     goals?.fat||78,      T.macro[2]],
-            ].map(([l,v,g,c])=>(
-              <div key={l} style={{flex:1,background:(c+"12"),border:("1px solid "+c+"28"),borderRadius:11,padding:"8px 6px",textAlign:"center"}}>
-                <div style={{fontSize:15,fontWeight:800,color:c,letterSpacing:"-0.5px"}}>{Math.round(v)}g</div>
-                <div style={{height:3,background:isDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.06)",borderRadius:2,margin:"5px 5px 4px"}}>
-                  <div style={{width:(Math.min(Math.round(v/g*100),100)+"%"),height:"100%",background:c,borderRadius:2}}/>
-                </div>
-                <div style={{fontSize:8,color:T.subtext}}>{l}</div>
-                <div style={{fontSize:7,color:(c+"99"),marginTop:1}}>{Math.round(v)}/{g}g</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── BODY WEIGHT ── */}
-        <WeightLogWidget weightLog={weightLog} onLog={logWeight}/>
-
-        {/* ── SECTION SHORTCUTS ── */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-          {shortcuts.map(s=>(
-            <div key={s.label} onClick={()=>setTab(s.tab)}
-              style={{background:(s.color+"0E"),border:("1px solid "+s.color+"2A"),boxShadow:("0 0 0 1px "+s.color+"15"),borderRadius:16,padding:"13px 13px",cursor:"pointer",position:"relative",overflow:"hidden",transition:"transform 0.1s"}}>
-              <div style={{position:"absolute",top:-14,right:-14,width:50,height:50,borderRadius:"50%",background:(s.color+"20"),filter:"blur(14px)",pointerEvents:"none"}}/>
-              <div style={{fontSize:22,marginBottom:7}}>{s.icon}</div>
-              <div style={{fontSize:12,fontWeight:700,color:T.text,lineHeight:1.25,marginBottom:3}}>{s.val}</div>
-              <div style={{fontSize:8.5,color:T.subtext,marginBottom:8}}>{s.sub}</div>
-              {/* mini progress */}
-              {s.pct>0&&(
-                <div style={{height:2.5,background:"rgba(255,255,255,0.07)",borderRadius:2,marginBottom:6,overflow:"hidden"}}>
-                  <div style={{width:(Math.round(s.pct*100)+"%"),height:"100%",background:s.color,borderRadius:2}}/>
-                </div>
-              )}
-              <div style={{fontSize:9,color:s.color,fontWeight:700}}>{s.label} →</div>
-            </div>
-          ))}
-        </div>
-
-        {/* ── TODAY'S MEALS ── */}
-        <div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div style={{fontSize:14,fontWeight:600,color:T.text}}>Today's meals</div>
-            <div style={{fontSize:12,color:T.accent,fontWeight:600,cursor:"pointer"}} onClick={()=>setTab("food")}>View all →</div>
-          </div>
-          {[["Breakfast","breakfast"],["Lunch","lunch"],["Dinner","dinner"],["Snacks","snacks"]].map(([label,slot])=>{
-            const slotCal=log[slot].reduce((s,i)=>s+calc(i).cal,0);
-            const hasItems=log[slot].length>0;
-            if(hasItems){
-              return(
-                <div key={slot} onClick={()=>setTab("food")}
-                  style={{background:T.card,border:("1px solid "+T.border),boxShadow:T.glowShadow,borderRadius:13,padding:"10px 14px",marginBottom:7,display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:600,color:T.text}}>{label}</div>
-                    <div style={{fontSize:11,color:T.subtext,marginTop:2}}>{log[slot].length} item{log[slot].length!==1?"s":""} · {slotCal} cal</div>
-                  </div>
-                  <svg width="32" height="32" viewBox="0 0 32 32">
-                    <circle cx="16" cy="16" r="12" fill="none" stroke={T.border} strokeWidth="2.5"/>
-                    <circle cx="16" cy="16" r="12" fill="none" stroke={T.accent} strokeWidth="2.5"
-                      strokeDasharray={Math.min(75,Math.round((slotCal/700)*75))+" 75"} strokeLinecap="round" transform="rotate(-90 16 16)"/>
-                  </svg>
-                </div>
-              );
-            }
-            return(
-              <div key={slot} onClick={()=>setTab("food")}
-                style={{background:"transparent",border:("1.5px dashed "+T.border),borderRadius:13,padding:"10px 14px",marginBottom:7,display:"flex",alignItems:"center",justifyContent:"center",gap:7,cursor:"pointer"}}>
-                <div style={{fontSize:15,color:T.muted,lineHeight:1}}>+</div>
-                <div style={{fontSize:13,color:T.muted,fontWeight:500}}>Add {label.toLowerCase()}</div>
-              </div>
-            );
-          })}
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
 // ── WORKOUT DATA & HELPERS ──────────────────────────────────────
 const EXERCISE_LIBRARY=[
   // Push
@@ -3880,7 +3477,7 @@ function ExercisePreviewList({exercises}){
 }
 
 // ── WORKOUT TAB ──────────────────────────────────────────────────
-function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory,setPrHistory,onSavePlan,onDeletePlan,uid,onActiveChange}){
+function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory,setPrHistory,onSavePlan,onDeletePlan,uid,onActiveChange,pendingStartPlanId=null,onPendingConsumed}){
   const T=useTheme();
   const [createOpen,setCreateOpen]=useState(false);
   const [editWorkout,setEditWorkout]=useState(null);
@@ -3903,9 +3500,18 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory
 
   const cancelWorkout=()=>{clearWorkoutSnapshot(snapKey);setActiveWorkout(null);};
 
-  const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-  const todayDayName=DAYS[new Date().getDay()];
-  const todayWorkout=workouts.find(w=>w.scheduledDay===todayDayName)||workouts[0]||null;
+  // Home's Start button: consume the pending id in an effect, not a render.
+  // StrictMode runs this twice with the same id; the functional update keeps
+  // the first open and the second call finds a session already live.
+  useEffect(()=>{
+    if(!pendingStartPlanId)return;
+    const plan=workouts.find(w=>w.id===pendingStartPlanId);
+    if(plan)setActiveWorkout(prev=>prev||plan);
+    onPendingConsumed&&onPendingConsumed();
+  },[pendingStartPlanId,workouts,onPendingConsumed]);
+
+  const todayDayName=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][new Date().getDay()]; // the TODAY badge in My Plans
+  const todayWorkout=todayPlanFor(workouts);
 
   const saveWorkout=(w)=>{
     const isNew=!workouts.find(x=>x.id===w.id);
@@ -6699,6 +6305,32 @@ export default function App(){
   const [log,setLog]=useState(SEED);
   const [aiOpen,setAiOpen]=useState(false);
   const [quickOpen,setQuickOpen]=useState(false);
+  const [quickMode,setQuickMode]=useState("food");
+  // Home: the six prior days of this Mon–Sun week, read once. null means the
+  // read FAILED and the rail says so with a Retry — never rendered as empty,
+  // which is how a 401 once became "new user". Today is always live.
+  const [weekHistory,setWeekHistory]=useState({});
+  const [profileCreatedAt,setProfileCreatedAt]=useState(null);
+  const [pendingStartPlanId,setPendingStartPlanId]=useState(null);
+  const loadWeekHistory=async(forUid)=>{
+    const u=forUid||sb.getUser()?.id; if(!u)return;
+    const days=weekDays(new Date()); const mon=days[0].ds;
+    const yd=new Date(); yd.setDate(yd.getDate()-1); const yday=localDate(yd);
+    if(mon>yday){setWeekHistory({});return;} // Monday: nothing prior this week
+    const range=(col)=>"user_id=eq."+u+"&"+col+"=gte."+mon+"&"+col+"=lte."+yday;
+    const [f,w,sl]=await Promise.all([
+      sb.selectAuth("food_log",range("logged_date")+"&select=logged_date,grams,per100_cal",{limit:1000}),
+      sb.selectAuth("water_log",range("log_date")+"&select=log_date,oz",{limit:7}),
+      sb.selectAuth("supplement_log",range("log_date")+"&select=log_date,taken",{limit:500}),
+    ]);
+    if(f.authError||w.authError||sl.authError){setWeekHistory(null);return;}
+    setWeekHistory(reduceWeekRows({food:f.rows,water:w.rows,supp:sl.rows}));
+  };
+  const onAddOpen=(key)=>{
+    if(key==="workout"){setTab("workout");return;} // QuickAddPanel has no workout section
+    setQuickMode(key==="water"?"water":key==="supp"?"supps":"food");
+    setQuickOpen(true);
+  };
   const [customFoods,setCustomFoods]=useState([]);
   const [suppList,setSuppList]=useState([]);
   const [suppTaken,setSuppTaken]=useState({});
@@ -6764,6 +6396,8 @@ export default function App(){
         profileLoaded=true;
         const p=profiles[0];
         setUserName(p.name||"");
+        setProfileCreatedAt(p.created_at||null);
+        loadWeekHistory(uid);
         setGoals({cal:p.cal_goal||2200,protein:p.protein_goal||140,carbs:p.carbs_goal||180,fat:p.fat_goal||78});
         if(p.theme){
           const r=resolveTheme(p.theme);
@@ -6860,6 +6494,7 @@ export default function App(){
     setHistory([]);
     setWaterOzState(0);
     setWeightLog([]);
+    setWeekHistory({});setProfileCreatedAt(null);setPendingStartPlanId(null);
     setUserName("");
     setGoals({cal:2200,protein:140,carbs:180,fat:78});
     setIsDarkState(false);
@@ -7104,7 +6739,7 @@ export default function App(){
     <ThemeCtx.Provider value={T}><GlobalStyle/><AuthScreen onAuth={handleAuth}/></ThemeCtx.Provider>
   );
   if(authState==="onboarding")return(
-    <ThemeCtx.Provider value={T}><GlobalStyle/><OnboardingWizard userId={uid} onComplete={(g,n)=>{setGoals(g);setUserName(n);setAuthState("app");}}/></ThemeCtx.Provider>
+    <ThemeCtx.Provider value={T}><GlobalStyle/><OnboardingWizard userId={uid} onComplete={(g,n)=>{setGoals(g);setUserName(n);setProfileCreatedAt(new Date().toISOString());setWeekHistory({});setAuthState("app");}}/></ThemeCtx.Provider>
   );
 
   return(
@@ -7118,9 +6753,12 @@ export default function App(){
       {personalizationPageOpen&&<PersonalizationPage onBack={()=>setPersonalizationPageOpen(false)} isDark={isDark} themeFam={themeFam} setThemeFam={setThemeFam}/>}
       {upgradePageOpen&&<UpgradePage onBack={()=>setUpgradePageOpen(false)}/>}
       {helpPageOpen&&<HelpPage onBack={()=>setHelpPageOpen(false)}/>}
-      {tab==="home"&&<HomeTab setTab={setTab} log={log} suppList={suppList} suppTaken={suppTaken} workoutHistory={history} isDark={isDark} toggleTheme={()=>setIsDark(d=>!d)} userName={userName} goals={goals} onProfileOpen={()=>setProfileMenuOpen(true)} waterOz={waterOz} setWaterOz={setWaterOz} weightLog={weightLog} logWeight={logWeight}/>}
+      {tab==="home"&&<HomeTab setTab={setTab} log={log} suppList={suppList} suppTaken={suppTaken} workoutHistory={history} isDark={isDark} toggleTheme={()=>setIsDark(d=>!d)} userName={userName} goals={goals} onProfileOpen={()=>setProfileMenuOpen(true)} waterOz={waterOz} setWaterOz={setWaterOz} weightLog={weightLog} logWeight={logWeight}
+        onCoachOpen={()=>setAiOpen(true)} onCalendarOpen={()=>setTab("calendar")} onProgressOpen={()=>setTab("progress")} onAddOpen={onAddOpen}
+        todayPlan={todayPlanFor(workouts)} onStartPlan={(id)=>{setPendingStartPlanId(id);setTab("workout");}}
+        toggleSuppTaken={toggleSuppTaken} weekHistory={weekHistory} onRetryWeek={()=>loadWeekHistory()} profileCreatedAt={profileCreatedAt}/>}
       {tab==="food"&&<FoodTab log={log} setLog={setLog} uid={uid} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/>}
-      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} onSessionComplete={saveWorkoutSession} prHistory={prHistory} setPrHistory={setPrHistory} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress}/>}
+      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} onSessionComplete={saveWorkoutSession} prHistory={prHistory} setPrHistory={setPrHistory} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress} pendingStartPlanId={pendingStartPlanId} onPendingConsumed={()=>setPendingStartPlanId(null)}/>}
       {tab==="supps"&&<SuppsTab suppList={suppList} setSuppList={setSuppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} taken={taken} total={total} uid={uid} addSuppToList={addSuppToList}/>}
       {tab==="calendar"&&<CalendarTab uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz}/>}
       {tab==="progress"&&<ProgressPage uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz} weightLog={weightLog} logWeight={logWeight} onProfileOpen={()=>setProfileMenuOpen(true)}/>}
@@ -7174,7 +6812,7 @@ export default function App(){
           weightLog:weightLog,
         }}
         onAddSupp={addSuppToList}/>
-      <QuickAddPanel open={quickOpen} onClose={()=>setQuickOpen(false)} onAddItem={addFoodItem} suppList={suppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} addSuppToList={addSuppToList} customFoods={customFoods} addCustomFood={addCustomFoodDB} waterOz={waterOz} setWaterOz={setWaterOz}/>
+      <QuickAddPanel initialMode={quickMode} open={quickOpen} onClose={()=>setQuickOpen(false)} onAddItem={addFoodItem} suppList={suppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} addSuppToList={addSuppToList} customFoods={customFoods} addCustomFood={addCustomFoodDB} waterOz={waterOz} setWaterOz={setWaterOz}/>
     </div>
     </ThemeCtx.Provider>
   );

@@ -1,16 +1,21 @@
 import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
 
-// Node environment, not jsdom: everything under test is pure logic or fetch
+// Node environment by default: everything under test is pure logic or fetch
 // mocking. App.jsx has no module-level DOM access, so the only browser global
-// it needs is localStorage, which setup.js stubs in ~10 lines. That keeps the
-// suite dependency-light and fast enough to actually run.
+// it needs is localStorage, which setup.js stubs in ~10 lines.
+//
+// Component tests opt in to jsdom per file with `// @vitest-environment jsdom`
+// (see homeTab.test.jsx). No testing-library: react-dom/client + act() is
+// enough for "does this render the demo numbers" and "did the handler fire".
 //
 // TZ is pinned in the npm script rather than here — Node reads it at startup,
 // and localDate's whole job is to be correct in a non-UTC zone.
 export default defineConfig({
+  plugins: [react()],
   test: {
     environment: "node",
     setupFiles: ["./src/test/setup.js"],
-    include: ["src/__tests__/**/*.test.js"],
+    include: ["src/__tests__/**/*.test.{js,jsx}"],
   },
 });

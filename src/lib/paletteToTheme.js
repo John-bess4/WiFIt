@@ -124,3 +124,59 @@ export function paletteToTheme(key) {
     faint: ink(dark ? 0.4 : 0.48),
   };
 }
+
+// Every key the redesigned Home reads beyond the base 32. Legacy themes must
+// carry all of them too — Home rendered under aurora_dark with T.arc undefined
+// and took the whole tree down (no error boundary). Tested for every registry
+// entry in theme.test.js.
+export const EXTENDED_THEME_KEYS = Object.keys(paletteToTheme("pastel")).filter((k) => !BASE_THEME_KEYS.includes(k));
+
+// Derives the extended keys for a LEGACY entry from its own colours, so the
+// five families keep their look and Home simply picks up their accent/macros.
+export function legacyExtended(t) {
+  const dark = t.mode === "dark";
+  const acc = t.accent;
+  const isHex = (c) => /^#[0-9a-fA-F]{6}$/.test(c || "");
+  const a = (c, al) => (isHex(c) ? hexA(c, al) : c);
+  const m = t.macro;
+  const accIsLight = isHex(acc) && luminance(acc) > 0.19;
+  const onAccentInk = accIsLight ? "#1a1220" : "#ffffff";
+  const ink = (al) => dark ? "rgba(244,241,248," + al + ")" : "rgba(24,18,32," + al + ")";
+  const water = m[1], supp = t.green;
+  return {
+    locked: false,
+    appBg: t.bg,
+    homeSurface: t.card,
+    heroBg: t.card,
+    arc: [m[1], acc, t.accentSoft],
+    macroPair: [[m[0], t.accentSoft], [m[1], m[1]], [m[2], m[2]]],
+    water, waterDeep: water, waterText: dark ? water : m[1],
+    waterBorder: a(water, dark ? 0.55 : 0.62),
+    waterGlow: a(water, dark ? 0.35 : 0.22),
+    supp, suppDeep: supp, suppText: t.greenText || supp,
+    suppBorder: a(supp, dark ? 0.48 : 0.6),
+    chip: "#F59E0B", chipBg: "rgba(245,158,11,0.12)", chipBorder: "rgba(245,158,11,0.28)",
+    fab: [t.accentSoft, acc, m[1]],
+    fabBase: t.card,
+    fabInk: "#ffffff",
+    tracer: [a(acc, dark ? 0.5 : 0.55), acc, t.accentSoft],
+    navA: t.navBg, navB: t.navBg,
+    navOn: dark ? "#ffffff" : "#181220",
+    navOff: ink(dark ? 0.42 : 0.5),
+    navLine: t.border,
+    navShadow: dark ? "0 -8px 22px rgba(0,0,0,.5)" : "0 -2px 10px rgba(24,18,32,.09)",
+    track: t.barEmpty,
+    glow: t.accentGlow, glowSoft: a(acc, dark ? 0.24 : 0.18), glowInner: a(acc, dark ? 0.1 : 0.07),
+    lift: t.glowShadow,
+    pillBg: t.accentPill,
+    pillLine: dark ? "rgba(8,6,12,.35)" : "rgba(255,255,255,.5)",
+    sessionBg: "linear-gradient(155deg," + a(acc, dark ? 0.3 : 0.18) + "," + t.card + ")",
+    startBg: acc, startText: onAccentInk,
+    onAccent: onAccentInk,
+    avatarFrom: acc, avatarTo: t.accentSoft,
+    accentText: dark ? t.accentSoft : acc,
+    accentSurface: "linear-gradient(160deg," + a(acc, dark ? 0.16 : 0.12) + "," + t.card + ")",
+    accentLine: t.borderStrong,
+    dim: t.subtext, faint: t.muted,
+  };
+}

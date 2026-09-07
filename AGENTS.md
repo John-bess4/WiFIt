@@ -18,7 +18,7 @@ at `wifit.vercel.app`, backed by Supabase (Postgres + Auth, RLS on all 11 tables
 
 | Path | What |
 |---|---|
-| `src/App.jsx` | The entire app — ~7,100 lines, one file. Components, the `sb` client, auth, parsers. |
+| `src/App.jsx` | Almost the entire app — ~7,000 lines. Components, the `sb` client, auth, parsers. `HomeTab.jsx` and `src/lib/` are the first pieces outside it. |
 | `src/main.jsx` | Mount point. |
 | `api/coach.js` | Vercel Edge function proxying Anthropic. The only server-side code. |
 | `supabase/migrations/` | Applied migrations, recorded after the fact. |
@@ -33,7 +33,7 @@ npm run dev       # vite → http://localhost:5173
 npm run build     # vite build
 npm run preview   # serve the production build
 npm run lint      # eslint 9, flat config; 25 known no-unused-vars warnings, 0 errors
-npm test          # vitest, node env; 79 tests, ~700ms. TZ pinned for localDate.
+npm test          # vitest, node env (+ jsdom per file); 97 tests, ~1.5s. TZ pinned for localDate.
 ```
 
 Package manager is **npm** (`package-lock.json`). `npm test` is a deliberately

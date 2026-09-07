@@ -70,6 +70,8 @@ splitting `App.jsx`: it is its own deliberate piece of work.
 |---|---|
 | `src/App.jsx` | The entire app — ~7,200 lines, one file. All components, the `sb` client, auth, parsers. |
 | `src/themes.js` | The 12 mode-locked home palettes (design export) + `hexA`/`luminance`. |
+| `src/HomeTab.jsx` | The redesigned Home tab (2026-09-06). Reads theme via `useTheme`; every write goes through App's existing handlers. |
+| `src/lib/weekSummary.js` | Pure helpers for the Home week rail: Mon–Sun builder, on-target rule, streak, `todayPlanFor`. |
 | `src/lib/paletteToTheme.js` | Turns a palette into a full theme object with the legacy keys plus the extended Home keys. |
 | `src/main.jsx` | Mount point. |
 | `api/coach.js` | Vercel **Edge** function proxying Anthropic. The only server-side code. |
@@ -568,6 +570,12 @@ Anthropic response formats are unchanged and out of scope for security work:
 
 8. **`today` is computed once per mount** (see Dates above).
 
+   **Same family, Home week rail (2026-09-06):** `weekHistory` — the six prior
+   days of the Mon–Sun week — is loaded once per mount by `loadWeekHistory`.
+   If the app stays open across midnight the new "yesterday" is not in it and
+   its ring renders as unknown until reload. Accepted for now; fix together with
+   `today`.
+
 9. **ESLint reports 25 `no-unused-vars` warnings**, 0 errors. Mostly untriaged —
    but worth knowing they are not all noise. Twice now a warning here has been
    pointing at something real:
@@ -646,6 +654,15 @@ Anthropic response formats are unchanged and out of scope for security work:
     goes through `ACTION_VALID.supplement` or `toSuppCategory`, both of which
     already guarantee the enum-or-null invariant, so the constraint becomes a
     belt-and-braces guard rather than a live failure mode.
+
+15. **Phase 4 (after the Home redesign): audit every `T.accent` consumer used as
+    TEXT — not fill or border — across all tabs, and switch to `T.accentText`
+    where contrast fails on light palettes.** Found in the Phase 1 pass: the 12
+    mode-locked palettes deliberately have a light `acc` (rings, borders,
+    glows) and a separate `accTxt` "safe for small text"; legacy code uses
+    `T.accent` for both. Settings' "Manage" chip is pink-on-pink under Pastel.
+    Neither Phase 2 nor 3 touches Settings, so this is its own pass. Logged
+    2026-09-06.
 
 ---
 
