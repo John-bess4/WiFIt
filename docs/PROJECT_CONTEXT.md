@@ -664,6 +664,12 @@ Anthropic response formats are unchanged and out of scope for security work:
     Neither Phase 2 nor 3 touches Settings, so this is its own pass. Logged
     2026-09-06.
 
+16. **Onboarding can leave a partial `profiles` row.** Row `768bb3ac…` has
+    `theme` set and `name` null (2026-07-04). The wizard's upsert fires per step
+    or on an incomplete run and nothing requires `name` at the database. Logged
+    2026-09-06, not fixed: needs either a NOT NULL + default, or a single write
+    at wizard completion. Check this row before trusting any per-user report.
+
 ---
 
 ## Current data state (2026-08-13)

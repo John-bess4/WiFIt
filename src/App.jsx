@@ -154,6 +154,12 @@ export const THEMES = {
 // not a preference, so it snaps to pastel_light whatever mode was stored.
 export function resolveTheme(stored) {
   const str = typeof stored === "string" ? stored : "";
+  // Legacy rows hold a bare "dark"/"light" from before families existed. Keep
+  // the MODE — flipping a dark-mode user to light is the failure — with the
+  // default family for that mode. Pastel has no dark, so dark is aurora_dark,
+  // which is exactly what those users were seeing when the row was written.
+  if (str === "dark") return { family: "aurora", dark: true, T: THEMES.aurora_dark };
+  if (str === "light") return { family: DEFAULT_THEME, dark: false, T: THEMES[DEFAULT_THEME_KEY] };
   const i = str.lastIndexOf("_");
   const family = i > 0 ? str.slice(0, i) : "";
   let dark = i > 0 && str.slice(i + 1) === "dark";
@@ -4911,7 +4917,7 @@ function OnboardingWizard({userId,onComplete}){
         fat_goal:g.fat,
         bmr:g.bmr,
         tdee:g.tdee,
-        theme:"dark",
+        theme:DEFAULT_THEME_KEY,
         updated_at:new Date().toISOString(),
       });
     }
@@ -6755,7 +6761,7 @@ export default function App(){
       {helpPageOpen&&<HelpPage onBack={()=>setHelpPageOpen(false)}/>}
       {tab==="home"&&<HomeTab setTab={setTab} log={log} suppList={suppList} suppTaken={suppTaken} workoutHistory={history} isDark={isDark} toggleTheme={()=>setIsDark(d=>!d)} userName={userName} goals={goals} onProfileOpen={()=>setProfileMenuOpen(true)} waterOz={waterOz} setWaterOz={setWaterOz} weightLog={weightLog} logWeight={logWeight}
         onCoachOpen={()=>setAiOpen(true)} onCalendarOpen={()=>setTab("calendar")} onProgressOpen={()=>setTab("progress")} onAddOpen={onAddOpen}
-        todayPlan={todayPlanFor(workouts)} onStartPlan={(id)=>{setPendingStartPlanId(id);setTab("workout");}}
+        todayPlan={todayPlanFor(workouts)} todayPlanSeeded={workouts===INITIAL_WORKOUTS} onStartPlan={(id)=>{setPendingStartPlanId(id);setTab("workout");}}
         toggleSuppTaken={toggleSuppTaken} weekHistory={weekHistory} onRetryWeek={()=>loadWeekHistory()} profileCreatedAt={profileCreatedAt}/>}
       {tab==="food"&&<FoodTab log={log} setLog={setLog} uid={uid} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/>}
       {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} onSessionComplete={saveWorkoutSession} prHistory={prHistory} setPrHistory={setPrHistory} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress} pendingStartPlanId={pendingStartPlanId} onPendingConsumed={()=>setPendingStartPlanId(null)}/>}

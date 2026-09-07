@@ -147,7 +147,7 @@ function MacroRow({ T, macros }) {
 }
 
 /* ── today's session ────────────────────────────────────────────────────── */
-function SessionCard({ T, plan, onStart, onBrowse }) {
+function SessionCard({ T, plan, seeded, onStart, onBrowse }) {
   const card = { margin: "10px 18px 0", padding: "14px 18px", borderRadius: 22, background: T.sessionBg, border: "1px solid " + T.border, position: "relative", overflow: "hidden" };
   if (!plan) return (
     <div style={card}>
@@ -168,7 +168,7 @@ function SessionCard({ T, plan, onStart, onBrowse }) {
       <div style={{ position: "absolute", right: -46, top: -56, width: 170, height: 170, borderRadius: "50%", background: "radial-gradient(circle," + T.glow + ",transparent 65%)", pointerEvents: "none" }} />
       <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-          <span style={{ ...mono(8.5, 0.2), color: T.accentText }}>TODAY{plan.tag ? " · " + plan.tag.toUpperCase() : ""}</span>
+          <span style={{ ...mono(8.5, 0.2), color: T.accentText }}>{seeded ? "SUGGESTED" : "TODAY"}{plan.tag ? " · " + plan.tag.toUpperCase() : ""}</span>
           <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-.02em", color: T.text }}>{plan.name}</span>
           <span style={{ fontSize: 11.5, color: T.subtext }}>{(plan.exercises || []).length} exercises · {sets} sets{plan.estMin ? " · ~" + plan.estMin + " min" : ""}</span>
         </div>
@@ -322,7 +322,7 @@ export default function HomeTab({
   setTab, log, suppList = [], suppTaken = {}, workoutHistory = [], isDark, toggleTheme, userName = "",
   goals = { cal: 2200, protein: 140, carbs: 180, fat: 78 }, onProfileOpen, waterOz = 0, setWaterOz, weightLog = [], logWeight,
   // new
-  onCoachOpen, onCalendarOpen, onProgressOpen, onAddOpen, todayPlan = null, onStartPlan,
+  onCoachOpen, onCalendarOpen, onProgressOpen, onAddOpen, todayPlan = null, todayPlanSeeded = false, onStartPlan,
   toggleSuppTaken, weekHistory = null, onRetryWeek, profileCreatedAt = null,
 }) {
   const T = useTheme();
@@ -348,7 +348,7 @@ export default function HomeTab({
       <WeekRail T={T} summary={week} calGoal={goals.cal} onOpen={onCalendarOpen} failed={weekHistory === null} onRetry={onRetryWeek} />
       <CalorieHero T={T} consumed={eaten.cal} goal={goals.cal} />
       <MacroRow T={T} macros={[{ label: "PROTEIN", value: eaten.protein, goal: goals.protein }, { label: "CARBS", value: eaten.carbs, goal: goals.carbs }, { label: "FAT", value: eaten.fat, goal: goals.fat }]} />
-      <SessionCard T={T} plan={todayPlan} onStart={(id) => onStartPlan && onStartPlan(id)} onBrowse={() => setTab("workout")} />
+      <SessionCard T={T} plan={todayPlan} seeded={todayPlanSeeded} onStart={(id) => onStartPlan && onStartPlan(id)} onBrowse={() => setTab("workout")} />
       <WaterCard T={T} oz={waterOz} onAdd={(n) => setWaterOz && setWaterOz(Math.min(GOAL_OZ, waterOz + n))} />
       <SuppStack T={T} supps={suppList} taken={suppTaken} onToggle={(k, val) => toggleSuppTaken && toggleSuppTaken(k, val)} onLog={() => setTab("supps")} onEmpty={() => setTab("supps")} />
       <WeightStrip T={T} weightLog={weightLog} onLog={(lbs) => (logWeight ? logWeight(lbs) : Promise.resolve(false))} />

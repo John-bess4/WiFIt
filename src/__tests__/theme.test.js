@@ -50,6 +50,13 @@ describe("resolveTheme — profiles.theme -> theme object", () => {
     }
   });
 
+  it("keeps the MODE for a legacy bare value: dark -> aurora_dark, light -> pastel_light", () => {
+    expect(resolveTheme("dark")).toMatchObject({ family: "aurora", dark: true });
+    expect(resolveTheme("dark").T).toBe(THEMES.aurora_dark);
+    expect(resolveTheme("light")).toMatchObject({ family: "pastel", dark: false });
+    expect(resolveTheme("light").T).toBe(THEMES.pastel_light);
+  });
+
   it("ignores a stored mode that contradicts a locked palette", () => {
     // A row that somehow says pastel_dark must not crash or invent a dark pastel.
     expect(resolveTheme("pastel_dark").T).toBe(THEMES.pastel_light);

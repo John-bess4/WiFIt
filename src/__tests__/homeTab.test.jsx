@@ -82,3 +82,14 @@ describe("HomeTab — writes go to the existing App handlers", () => {
     expect(setWaterOz).toHaveBeenCalledWith(GOAL_OZ);
   });
 });
+
+describe("HomeTab — seeded starter plans are a suggestion, not a schedule", () => {
+  const plan = { id: "w1", name: "Push Day", tag: "Upper Body", estMin: 55, exercises: [{ name: "Bench Press", sets: [{ reps: 8 }] }] };
+  it("labels a seeded plan SUGGESTED and a user plan TODAY", async () => {
+    await render({ ...EMPTY, weekHistory: {}, todayPlan: plan, todayPlanSeeded: true });
+    expect(text()).toContain("SUGGESTED · UPPER BODY");
+    expect(text()).not.toContain("TODAY · UPPER BODY");
+    await render({ ...EMPTY, weekHistory: {}, todayPlan: plan, todayPlanSeeded: false });
+    expect(text()).toContain("TODAY · UPPER BODY");
+  });
+});
