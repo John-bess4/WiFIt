@@ -250,7 +250,16 @@ function useLongPress(onLongPress, ms=500){
 
 // Paste your free USDA FoodData Central key here:
 // Get one free at: https://fdc.nal.usda.gov/api-guide.html
-const USDA_API_KEY = "DEMO_KEY"; // Replace with your key for full access
+// The USDA key lives on the server (api/usda.js, env USDA_API_KEY). This used
+// to be the literal "DEMO_KEY": 30 requests per IP per hour, shared by every
+// user behind the same NAT, and a 429 rendered as "No results" — search died
+// silently for anyone on a carrier IP. Launch blocker, fixed 2026-09-07.
+async function usdaSearch(q, { dataType, pageSize } = {}) {
+  const qs = "q=" + encodeURIComponent(q) + (dataType ? "&dataType=" + encodeURIComponent(dataType) : "") + (pageSize ? "&pageSize=" + pageSize : "");
+  const res = await fetch("/api/usda?" + qs, { headers: coachHeaders() });
+  if (!res.ok) throw new Error("USDA " + res.status);
+  return res.json();
+}
 
 // ── LOCAL FOOD DATABASE ────────────────────────────────────────
 const LOCAL_FOOD_DB=[
@@ -417,13 +426,12 @@ export function usdaServingGrams(f){
   return Math.round(qty*factor*10)/10;
 }
 
+// Returns {ok, results}. ok:false means the SEARCH FAILED (network, 429, 5xx,
+// proxy not configured) and must never be rendered as "no results".
 async function searchUSDA(query){
   try{
-    const url="https://api.nal.usda.gov/fdc/v1/foods/search?query="+encodeURIComponent(query)+"&dataType=Branded,Foundation,SR%20Legacy&pageSize=10&api_key="+USDA_API_KEY;
-    const res=await fetch(url);
-    if(!res.ok)throw new Error("USDA "+res.status);
-    const data=await res.json();
-    return(data.foods||[])
+    const data=await usdaSearch(query,{dataType:"Branded,Foundation,SR Legacy",pageSize:10});
+    const results=(data.foods||[])
       .filter(f=>f.description&&f.foodNutrients&&f.foodNutrients.length>0)
       .map(f=>{
         // USDA returns nutrient IDs — map common ones
@@ -452,13 +460,15 @@ async function searchUSDA(query){
       })
       .filter(Boolean)
       .slice(0,6);
+    return {ok:true,results};
   }catch(e){
     console.warn("USDA search failed:",e.message);
-    return [];
+    return {ok:false,results:[]};
   }
 }
 
 async function searchOFF(query){
+  let anyOk=false;
   // Try two OFF endpoints — v2 search is more reliable for CORS
   const urls=[
     "https://world.openfoodfacts.org/cgi/search.pl?search_terms="+encodeURIComponent(query)+"&search_simple=1&action=process&json=1&page_size=10&fields=product_name,nutriments,brands,serving_quantity",
@@ -486,12 +496,13 @@ async function searchOFF(query){
             sodium:Math.round((p.nutriments["sodium_100g"]||0)*1000),
           }
         }));
-      if(results.length>0)return results;
+      if(results.length>0)return {ok:true,results};
+      anyOk=true; // answered, just no matches
     }catch(e){
       console.warn("OFF search failed:",e.message);
     }
   }
-  return [];
+  return {ok:anyOk,results:[]};
 }
 
 // Deduplicate by normalised name prefix
@@ -514,10 +525,18 @@ async function searchFood(query,customFoods=[]){
   const local=searchLocalFood(query);
   // Always fire external APIs in parallel — don't short-circuit on local hits
   const [usdaR,offR]=await Promise.allSettled([searchUSDA(query),searchOFF(query)]);
-  const usda=usdaR.status==="fulfilled"?usdaR.value:[];
-  const off=offR.status==="fulfilled"?offR.value:[];
+  const usda=usdaR.status==="fulfilled"?usdaR.value:{ok:false,results:[]};
+  const off=offR.status==="fulfilled"?offR.value:{ok:false,results:[]};
+  const failed=[!usda.ok&&"USDA",!off.ok&&"Open Food Facts"].filter(Boolean);
   // Priority: custom → local → USDA → OFF
-  return dedup([...custom,...local,...usda,...off]).slice(0,10);
+  return {results:dedup([...custom,...local,...usda.results,...off.results]).slice(0,10),failed};
+}
+
+// What the search UI should say. "No results" is only honest when every source
+// answered; a failed source with nothing else to show is "search failed".
+export function searchStatus({results,failed}){
+  if(results.length>0)return failed.length?"partial":"ok";
+  return failed.length?"failed":"none";
 }
 
 // Supplement search — always runs local + USDA in parallel
@@ -525,10 +544,7 @@ async function searchSupp(query){
   if(!query||!query.trim())return[];
   const local=searchLocalSupp(query).map(s=>({...s,isSupp:true}));
   try{
-    const url="https://api.nal.usda.gov/fdc/v1/foods/search?query="+encodeURIComponent(query)+"&dataType=Branded&pageSize=8&api_key="+USDA_API_KEY;
-    const res=await fetch(url);
-    if(!res.ok)throw new Error();
-    const data=await res.json();
+    const data=await usdaSearch(query,{dataType:"Branded",pageSize:8});
     const usdaSupps=(data.foods||[])
       .filter(f=>f.description&&f.foodNutrients)
       .map(f=>{
@@ -2132,10 +2148,13 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
     setLoading(true);
     try{
       const r=await searchFood(query,customFoods);
-      setResults(r);
-      if(r.length===0)setError("No results. Try a brand name like 'Real Good' or a food name.");
+      setResults(r.results);
+      const st=searchStatus(r);
+      if(st==="failed")setError("Search failed ("+r.failed.join(", ")+"). Tap Search to retry.");
+      else if(st==="none")setError("No results. Try a brand name like 'Real Good' or a food name.");
+      else if(st==="partial")setError(r.failed.join(", ")+" didn't respond — showing the rest.");
     }catch{
-      if(localImmediate.length===0)setError("Search failed. Showing local results only.");
+      setError("Search failed. Tap Search to retry.");
     }
     setLoading(false);
   };
@@ -2563,10 +2582,13 @@ function AddFoodModal({slot,onAdd,onClose,customFoods=[]}){
     setLoading(true);
     try{
       const r=await searchFood(query,customFoods);
-      setResults(r);
-      if(r.length===0)setError("No results found. Try a brand name like 'Real Good' or a food name.");
+      setResults(r.results);
+      const st=searchStatus(r);
+      if(st==="failed")setError("Search failed ("+r.failed.join(", ")+"). Tap Search to retry.");
+      else if(st==="none")setError("No results found. Try a brand name like 'Real Good' or a food name.");
+      else if(st==="partial")setError(r.failed.join(", ")+" didn't respond — showing the rest.");
     }catch{
-      if(localImmediate.length===0)setError("Search failed. Check your connection.");
+      setError("Search failed. Tap Search to retry.");
     }
     setLoading(false);
   };
