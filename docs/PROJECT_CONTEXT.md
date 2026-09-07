@@ -10,6 +10,11 @@ production, because `sb.insert`/`sb.upsert` swallow non-2xx responses. **Every
 statement below was verified against the live schema or the current code. If you
 change the schema, change this file in the same commit.**
 
+**Decisions with their reasons live in `DECISIONS.md`** at the repo root — the
+cases where the obvious thing to do differs from what the code does. This file
+is schema, architecture and open bugs; that file is why the code is the way it
+is. Cross-references go both ways.
+
 ---
 
 ## What WiFit is
@@ -316,6 +321,81 @@ across midnight keeps writing yesterday's date.
 
 ---
 
+## Workout session persistence — and a premise that was wrong
+
+An in-progress workout is snapshotted to `localStorage` under
+`wifit_workout_<uid>` (`workoutKey`, `readWorkoutSnapshot`,
+`clearWorkoutSnapshot`, ~line 6216). Written debounced at 500ms from
+`ActiveWorkout`, read once on `WorkoutTab` mount, cleared on finish, on cancel
+and on sign-out, and discarded when older than **6h measured from `startedAt`**.
+
+### What it is actually for
+
+**It is not protection against tab switching.** The commit that added it
+(`0e032ee`) said it was, and that was wrong:
+
+- `ActiveWorkout` renders `position:fixed`, inset 0, opaque `T.bg`,
+  **`zIndex:190`** (~line 3606).
+- The bottom nav is **`zIndex:99`** (~line 7007).
+- `App`'s root is `position:relative` with **no** `z-index`, so it creates no
+  stacking context and the two compete directly. 190 wins.
+
+The nav stays mounted in the DOM during a workout — it is never conditionally
+hidden — but it is completely covered by an opaque overlay with no
+`pointer-events:none`. **It cannot be tapped, so the tab switch that would
+unmount `WorkoutTab` and destroy the session was never reachable.** Both z-index
+values have been what they are since the first commit `eca72a5`; this was never
+possible at any point in the project's history.
+
+Verified in the running app rather than by reading: `document.elementFromPoint`
+at the centre of the Train nav item during a workout returns a set row inside
+`ActiveWorkout`, not the nav.
+
+The snapshot is justified by what remains, which is not theoretical for a phone
+in a pocket during a 45-minute session: **hard reload, accidental refresh, the
+OS evicting a backgrounded tab, the tab being closed.** `index.html` sets
+`apple-mobile-web-app-capable` but there is **no service worker and no
+manifest**, so on iOS "Add to Home Screen" a backgrounded session frequently
+gets a full reload on return — for that case the reload is close to the normal
+path back into the app, not an edge case.
+
+See `DECISIONS.md` §"Verify reachability before fixing reachability".
+
+### Exit paths
+
+There is no router, and **no `popstate`, `pushState`, `beforeunload`,
+`pagehide` or `visibilitychange` handler anywhere in `App.jsx`.** Tab state is
+plain React state. That gives exactly three in-app exits, plus the environment:
+
+| Path | Snapshot | Session saved |
+|---|---|---|
+| "✕ Cancel" (header) | **cleared** | **no — discarded** |
+| "Finish" (header) | cleared | yes |
+| "🏁 Finish workout" (bottom) | cleared | yes |
+| Browser/Android back, swipe-back | survives | resumable |
+| Reload, tab close, OS eviction | survives | resumable |
+| Sign out | cleared (deliberate) | no |
+
+Back does **not** close the workout — with no router it leaves the app entirely,
+and with no `beforeunload` there is no prompt. The snapshot is what makes that
+recoverable.
+
+**Cancel is the only path that destroys work**, which is why it asks for
+confirmation when `doneSets > 0`. Supplement reminders are not an exit: they are
+`new Notification()` from `setTimeout` with no service worker and no
+`notificationclick` handler, so a tap just focuses the tab.
+
+### Demo mode cannot exercise any of this
+
+`uid` is `sb.getUser()?.id`, and demo mode has no session, so `workoutKey`
+returns `null` and nothing is written or restored. That is the intended
+"no uid means no key" behaviour — an unkeyed snapshot would restore one
+account's workout for another on a shared device. **The practical consequence is
+that verifying the snapshot, the restore, or the resumed-session banner requires
+a signed-in account; demo mode is not enough.**
+
+---
+
 ## `/api/coach` security
 
 Vercel Edge runtime. Not streaming — `await upstream.json()` buffers the whole response.
@@ -366,13 +446,34 @@ Anthropic response formats are unchanged and out of scope for security work:
 
 ## Known issues / not done
 
-1. **10 `sb.*` call sites still ignore the return value.** Verified count — an earlier
-   estimate of ~6 was low. Lines (approximate, locate by identifier):
-   `sb.delete` food_log (~2769), `sb.delete` supplement_stack (~3940), `sb.update`
-   supplement_stack (~3948, ~3963, ~4049), `sb.upsert` profiles (~4913, ~5541, ~6238),
-   `sb.insert` custom_foods (~6445), `sb.delete` workout_plans (~6613). Each can fail
-   silently. `addFoodItem` and `saveWorkoutSession` are the two that *do* check — copy
-   their shape.
+1. **10 `sb.*` call sites still ignore the return value.** Re-verified 2026-09-06
+   against the current file — still exactly 10 ignored against 9 checked. Locate by
+   identifier, not by line; these shift:
+
+   | Line | Call | What silently fails |
+   |---|---|---|
+   | 2924 | `sb.delete` food_log | a deleted food comes back on reload |
+   | 4228 | `sb.delete` supplement_stack | a removed supplement comes back |
+   | 4236 | `sb.update` supplement_stack | rename is lost |
+   | 4251 | `sb.update` supplement_stack | reminder settings are lost |
+   | 4337 | `sb.update` supplement_stack | drag-reorder is lost |
+   | 5259 | `sb.upsert` profiles | onboarding profile never lands |
+   | 5887 | `sb.upsert` profiles | name/gender/age edit is lost |
+   | 6623 | `sb.upsert` profiles | theme choice is lost |
+   | 6835 | `sb.insert` custom_foods | a created custom food is lost |
+   | 7017 | `sb.delete` workout_plans | a deleted plan comes back |
+
+   Line 4337 is worse than the rest: it is `sb.update(...)` with **no `await`**, so
+   it is fire-and-forget — not even a rejected promise would be observed. The
+   others at least resolve before the handler returns.
+
+   Note the shape of the `try/catch` on several of these. `try{await sb.delete(…)}
+   catch{}` reads like error handling and is not: `sb` does not throw, so the catch
+   is unreachable and the `null`/`[]` return sails straight past it. That is the
+   trap this whole section exists to flag.
+
+   `addFoodItem` (6823) and `saveWorkoutSession` (6916) are the two that *do* check
+   — copy their shape. Fixing one is always in scope.
 
 2. **Open Food Facts search is CORS-blocked** from the browser. USDA works. Needs a
    proxy (an Edge function like `/api/coach`) or removal.
@@ -382,15 +483,25 @@ Anthropic response formats are unchanged and out of scope for security work:
    refuses to guess and requires the user to supply grams for food-dependent units. Two
    different positions on what a cup weighs.
 
-4. **USDA `servingSizeUnit` is never read** — `servingG: f.servingSize` takes the number
-   regardless of whether USDA reported grams, ml, or IU. Same class of bug as the
-   custom-food unit bug, on data the user doesn't control.
+4. ~~**USDA `servingSizeUnit` is never read.**~~ **RESOLVED 2026-09-06.**
+   `usdaServingGrams` (above `searchUSDA`) now reads the unit: grams pass through,
+   ounces convert at 28.3495, and ml / IU / anything unrecognised return `null`.
+   Both call sites use it — the food search and the supplement search, which was
+   the worse of the two (a 5000 IU vitamin D rendered as "5000g/serving"). ml is
+   deliberately **not** converted: ml→g needs a density, which is a property of the
+   food, and issue #3 below already documents the app holding two positions on that
+   question — this does not add a third. `null` is safe because the food UI falls
+   back to 100 g **and says so**. 6 tests in `src/__tests__/usdaServing.test.js`.
+   See `DECISIONS.md`.
 
 5. **No edit or delete UI for custom foods.** Create-only. A bad row can only be removed
    from the database directly.
 
-6. **`GoalDots`** (~line 498) is a complete component nothing renders. `WeightLogWidget`
-   had the same problem and is now wired in.
+6. ~~**`GoalDots`** (~line 498) is a complete component nothing renders.~~
+   **RESOLVED 2026-09-06 — deleted.** Unlike `WeightLogWidget`, which had a place to
+   be wired into, nothing in the app had a use for it. It also called `useTheme()`
+   and never used the result, so it accounted for **two** of the `no-unused-vars`
+   warnings, not one.
 
 7. **`coach_usage` retention.** One row per request, ~110 bytes with the index. At 100
    active users it approaches the 500 MB free tier within a year. Only the last 24h is
@@ -400,15 +511,21 @@ Anthropic response formats are unchanged and out of scope for security work:
 
 8. **`today` is computed once per mount** (see Dates above).
 
-9. **ESLint reports 27 `no-unused-vars` warnings**, 0 errors. Mostly untriaged —
-   but worth knowing they are not all noise. One of them, `SUPP_CATS`, was a dead
-   13-entry category list sitting next to a hardcoded 8-entry copy in the browse
-   filter; the warning was pointing at a real UX bug (five categories no filter
-   could reach) for as long as it went unread. Count dropped 28 → 27 when that
-   constant was given its purpose back on 2026-08-29.
+9. **ESLint reports 25 `no-unused-vars` warnings**, 0 errors. Mostly untriaged —
+   but worth knowing they are not all noise. Twice now a warning here has been
+   pointing at something real:
 
-   Note `AGENTS.md` still says 28; it is untracked in git, so it was not updated
-   with this.
+   - `SUPP_CATS` was a dead 13-entry category list sitting next to a hardcoded
+     8-entry copy in the browse filter. The warning marked a real UX bug — five
+     categories no filter could reach — for as long as it went unread. 28 → 27 on
+     2026-08-29, when the constant was given its purpose back.
+   - `GoalDots` was an entire unrendered component (issue #6). 27 → 25 on
+     2026-09-06 when it was deleted, two warnings rather than one because it also
+     called `useTheme()` without using the result.
+
+   `AGENTS.md` is now tracked in git (commit `81aaa26`) and its counts are updated
+   in the same commits that move them. The previous note here — that it still said
+   28 and could not be kept in sync because it was untracked — no longer applies.
 
 10. **The pinned model ID in `api/coach.js` is a maintenance liability — and it is
     the first thing to check when the coach breaks.** `MODEL` is pinned

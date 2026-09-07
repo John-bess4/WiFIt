@@ -23,6 +23,7 @@ at `wifit.vercel.app`, backed by Supabase (Postgres + Auth, RLS on all 11 tables
 | `api/coach.js` | Vercel Edge function proxying Anthropic. The only server-side code. |
 | `supabase/migrations/` | Applied migrations, recorded after the fact. |
 | `docs/PROJECT_CONTEXT.md` | Verified schema + architecture reference. |
+| `DECISIONS.md` | Why the code is the way it is, when the obvious thing differs. |
 
 ## Commands
 
