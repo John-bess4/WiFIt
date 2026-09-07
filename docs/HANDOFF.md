@@ -128,6 +128,17 @@ Every one of these was **silent**: wrong data or no data, no error shown. Food l
 ### Claimed capabilities (Supps audit, 2026-09-07)
 Reminders were `setTimeout` in the open tab, labelled "daily push notification". A toggle wired to `()=>{}` is the purest lie: it exists only to be believed. The web UI now says what it does; `supplement_stack.reminder_time` / `reminder_enabled` is the schedule the iOS app registers with `UNUserNotificationCenter` — required pre-launch (#26). Also from that audit: every mount read fails loud (#27), and the conflict target for `supplement_log` is `(supplement_id, log_date)` — no `user_id`.
 
+### Decimal, not Double (Progress audit, 2026-09-07) — HARD REQUIREMENT
+All macro arithmetic in the Swift client must use Decimal, not Double. JS doubles disagree with Postgres numeric on exact-.5 products (21 of 3,996 tested; 32.3 × 500 / 100 → 161 in JS, 162 in the view). A Double port reproduces the JS answer and disagrees with daily_summary, so the same day shows different totals depending on which side computed it.
+
+The JS side is the wrong one and stays wrong until the client reads daily_summary everywhere. Still provisional (do NOT port these):
+- Home week rail — `src/lib/weekSummary.js` `reduceWeekRows`
+- Calendar month — `CalendarTab`'s per-day cal bucket
+- `calc()` / `totals()` — today's meals on Home and Food
+
+The definition is `daily_summary` (`20260907_daily_summary_views.sql`); the Swift
+client reads it for any day total and computes nothing that the view already does.
+
 ### The reachability lesson
 A tab-switch data-loss bug was diagnosed, approved, fixed, and committed — then found to be **unreachable at any point in the project's history**. `ActiveWorkout` renders `position:fixed, zIndex:190` with an opaque background over a nav at `zIndex:99`. The nav was never clickable during a workout. The check was one tap in the running app; nobody ran it.
 

@@ -297,8 +297,12 @@ four client re-derivations (Home rail, Calendar, Progress, `calc`). kcal/macros 
 in `numeric`: IEEE doubles disagree on 21 of 3,996 exact-.5 products (32.3 per100 ×
 500 g = 161.5 → numeric 162, double 161). **The view is the definition.** Progress
 reads it; Home/Calendar/`calc` still compute in JS and can differ by 1 kcal on such
-rows — switching them is a follow-up, and the Swift port must use `Decimal` or read
-the view. `supps_due` counts a supplement only from `due_from` (closes D2: a
+rows — switching them is a follow-up. **Hard Swift requirement** (also in
+`HANDOFF.md` and the migration header): all macro arithmetic in the Swift client
+must use `Decimal`, not `Double` — a `Double` port reproduces the JS answer and
+disagrees with `daily_summary`, so the same day shows different totals depending
+on which side computed it. Do not port `reduceWeekRows`, `CalendarTab`'s bucket,
+or `calc()`/`totals()`; read the view. `supps_due` counts a supplement only from `due_from` (closes D2: a
 supplement added on day 29 no longer scores 29 misses); the client uses
 `supplement_due_from` for the same rule on days the view has no row for.
 Migration: `20260907_daily_summary_views.sql`. See `DECISIONS.md` §"daily_summary".

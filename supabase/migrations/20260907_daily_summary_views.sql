@@ -20,6 +20,19 @@
 -- client in IEEE doubles, which differ on 21 of 3,996 exact-.5 products
 -- (e.g. 32.3 per100 × 500 g = 161.5: numeric → 162, double → 161). The view
 -- is the definition; see DECISIONS.md §"daily_summary".
+--
+-- HARD SWIFT REQUIREMENT, not an observation:
+-- All macro arithmetic in the Swift client must use Decimal, not Double.
+-- JS doubles disagree with Postgres numeric on exact-.5 products (21 of
+-- 3,996 tested; 32.3 × 500 / 100 → 161 in JS, 162 in the view). A Double
+-- port reproduces the JS answer and disagrees with daily_summary, so the
+-- same day shows different totals depending on which side computed it.
+--
+-- The JS side is the wrong one and stays wrong until the client reads
+-- daily_summary everywhere. Still provisional (do NOT port these):
+--   - Home week rail — src/lib/weekSummary.js reduceWeekRows
+--   - Calendar month — CalendarTab's per-day cal bucket
+--   - calc() / totals() — today's meals on Home and Food
 
 create or replace view public.supplement_due_from
 with (security_invoker = true) as
