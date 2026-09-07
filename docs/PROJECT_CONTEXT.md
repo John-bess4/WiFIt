@@ -23,6 +23,41 @@ A single-user fitness PWA: food logging with macros, workout plans and sessions,
 supplements, water, body weight, and an AI coach. React + Vite, deployed on Vercel
 at `wifit.vercel.app`, backed by Supabase (Postgres + Auth).
 
+## Where this is going — a native SwiftUI rewrite
+
+**A native SwiftUI rewrite is planned. This codebase is becoming a reference
+implementation rather than the long-term product.** Stating it here because it
+changes how work on it should be judged, and because it is not derivable from
+the code, the commits, or any config.
+
+The reason is capability, not taste. Four things this app needs are impossible
+on the web platform, not merely awkward:
+
+- **HealthKit** — reading and writing the system health store.
+- **Apple Watch** — a companion app, and logging sets from the wrist.
+- **WidgetKit** — home-screen macros and workout state.
+- **Reliable background notifications** — supplement reminders currently run on
+  `setTimeout` with `new Notification()`, which means they fire only while a tab
+  is alive. There is no service worker and no manifest (see §Workout session
+  persistence), so a backgrounded reminder is simply lost.
+
+**What this means for work here.** Two things, pulling in opposite directions:
+
+1. Bugs in the current app are still worth fixing — it is what gets used today,
+   and the user's data is real.
+2. But the durable output of a fix is the **understanding**, not the patch.
+   `DECISIONS.md` exists for exactly this: so the rewrite inherits the lessons
+   instead of rediscovering them one production bug at a time. When recording a
+   defect, write down **what would structurally prevent it**, and name the
+   language mechanism where one exists — several of the worst classes here
+   (§Known issues #1, and both `DECISIONS.md` entries dated 2026-09-06 about
+   `sb`) collapse into `async`/`await`, typed `throws`, and
+   `@discardableResult`, where the compiler makes ignoring a failure a
+   deliberate, visible choice instead of an accident.
+
+Do **not** start the rewrite as a side effect of another task. Same rule as
+splitting `App.jsx`: it is its own deliberate piece of work.
+
 ## Stack and layout
 
 | Path | What |

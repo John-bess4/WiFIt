@@ -8,6 +8,12 @@ This is not a changelog and not a bug list. Bugs live in
 `docs/PROJECT_CONTEXT.md` §Known issues; the schema lives there too. Entries are
 newest first and dated absolutely.
 
+**A native SwiftUI rewrite is planned** (see `docs/PROJECT_CONTEXT.md` §Where
+this is going). That is the main reason this file exists: the rewrite should
+inherit these lessons rather than rediscover them. So entries say what would
+**structurally prevent** a problem, not that someone should have been more
+careful.
+
 ---
 
 ## 2026-09-06 — Verify reachability before fixing reachability
