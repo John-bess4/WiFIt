@@ -454,6 +454,7 @@ async function searchUSDA(query){
             carbs:Math.round((byId[1005]||byName["carbohydrate, by difference"]||byName["carbohydrate"]||0)*10)/10,
             fat:Math.round((byId[1004]||byName["total lipid (fat)"]||byName["fat"]||0)*10)/10,
             fiber:Math.round((byId[1079]||byName["fiber, total dietary"]||byName["fiber"]||0)*10)/10,
+            sugar:Math.round((byId[2000]||byName["total sugars"]||byName["sugars, total including nlea"]||0)*10)/10,
             sodium:Math.round((byId[1093]||byName["sodium, na"]||byName["sodium"]||0)),
           }
         };
@@ -493,6 +494,7 @@ async function searchOFF(query){
             carbs:Math.round((p.nutriments["carbohydrates_100g"]||0)*10)/10,
             fat:Math.round((p.nutriments["fat_100g"]||0)*10)/10,
             fiber:Math.round((p.nutriments["fiber_100g"]||0)*10)/10,
+            sugar:Math.round((p.nutriments["sugars_100g"]||0)*10)/10,
             sodium:Math.round((p.nutriments["sodium_100g"]||0)*1000),
           }
         }));
@@ -730,13 +732,23 @@ export const legacyFormatOf=(reply)=>LEGACY_PREFIXES.find(p=>reply.startsWith(p)
 // absolute macros for a specific gram weight. This scaling was written out by
 // hand in five places, which is exactly how a rounding or field-name slip ships
 // unnoticed. Callers must guarantee grams>0 (ACTION_VALID.food does).
-export const per100From=(item)=>({
-  cal:Math.round((item.cal/item.grams)*100),
-  protein:Math.round((item.protein/item.grams)*100),
-  carbs:Math.round((item.carbs/item.grams)*100),
-  fat:Math.round((item.fat/item.grams)*100),
-  fiber:0,sodium:0,
-});
+// Coach items arrive as totals for `grams`; convert to per-100 g. fiber,
+// sodium and sugar used to be hardcoded 0 here, so every coach-logged food
+// under-reported the Fiber tile and the sodium bar. The prompt now asks for
+// them; absent values still fall back to 0 rather than NaN.
+const per100Of=(v,g)=>Math.round(((Number(v)||0)/g)*100);
+export const per100From=(item)=>{
+  const g=Number(item.grams)||100;
+  return {
+    cal:per100Of(item.cal,g),
+    protein:per100Of(item.protein,g),
+    carbs:per100Of(item.carbs,g),
+    fat:per100Of(item.fat,g),
+    fiber:per100Of(item.fiber,g),
+    sugar:per100Of(item.sugar,g),
+    sodium:per100Of(item.sodium,g),
+  };
+};
 
 // A component, not a branch of renderMsg, because it owns collapsible state.
 // renderMsg runs inside a .map, so a useState there made the panel's hook count
@@ -916,7 +928,7 @@ One block, one pipe, done. Never emit two blocks. When a message contains more t
 
 The sections below say WHEN each action applies and WHAT fields it needs. Their field names are unchanged; only the wrapper differs. Map them to these type values:
 
-- {"type":"food","items":[{name,grams,slot,cal,protein,carbs,fat}]}     — the FOOD LOGGING section
+- {"type":"food","items":[{name,grams,slot,cal,protein,carbs,fat,fiber,sugar,sodium}]}     — the FOOD LOGGING section (fiber/sugar in g, sodium in mg, totals for the grams given; 0 if unknown)
 - {"type":"meal_suggestion","items":[{...,description}]}                — the MEAL SUGGESTIONS section
 - {"type":"water","oz":16}                                              — the WATER LOGGING section
 - {"type":"supplement","items":[{name,dose,timing,category,note}]}      — the SUPPLEMENT section
@@ -1908,6 +1920,7 @@ function BarcodeScanner({onResult,onClose}){
             carbs:Math.round((n.carbohydrates_100g||0)*10)/10,
             fat:Math.round((n.fat_100g||0)*10)/10,
             fiber:Math.round((n.fiber_100g||0)*10)/10,
+            sugar:Math.round((n.sugars_100g||0)*10)/10,
             sodium:Math.round((n.sodium_100g||0)*1000),
           }
         };
