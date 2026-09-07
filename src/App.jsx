@@ -222,7 +222,7 @@ export function calc(item){
     carbs:Math.round(m.carbs*g*10)/10,
     fat:Math.round(m.fat*g*10)/10,
     fiber:Math.round(m.fiber*g*10)/10,
-    sugar:Math.round((m.sugar||0)*g*10)/10,
+    sugar:Math.round((m.sugar||0)*g*10)/10, // null = unknown; counts as 0 in a total, but is stored as null
     sodium:Math.round(m.sodium*g),
   };
 }
@@ -262,52 +262,55 @@ async function usdaSearch(q, { dataType, pageSize } = {}) {
 }
 
 // ── LOCAL FOOD DATABASE ────────────────────────────────────────
-const LOCAL_FOOD_DB=[
+// sugar is total sugars per 100 g from the label/USDA where known; null where
+// not (a missing value is honest, a 0 is a claim). The catalogue used to have
+// no sugar field at all, so every seed food logged per100_sugar = 0.
+export const LOCAL_FOOD_DB=[
   // Branded grocery items
-  {name:"Real Good Chicken Tenders",brand:"Real Good Foods",servingG:85,per100:{cal:176,protein:24,carbs:2,fat:8,fiber:0,sodium:400}},
-  {name:"Real Good Chicken Enchiladas",brand:"Real Good Foods",servingG:227,per100:{cal:106,protein:13,carbs:4,fat:4,fiber:0,sodium:330}},
-  {name:"Real Good Pizza (Pepperoni)",brand:"Real Good Foods",servingG:128,per100:{cal:266,protein:23,carbs:5,fat:17,fiber:0,sodium:600}},
-  {name:"Fairlife Whole Milk",brand:"Fairlife",servingG:240,per100:{cal:63,protein:6.3,carbs:5,fat:3.3,fiber:0,sodium:50}},
-  {name:"Fairlife 2% Milk",brand:"Fairlife",servingG:240,per100:{cal:54,protein:6.3,carbs:5,fat:2.1,fiber:0,sodium:50}},
-  {name:"Fairlife Fat Free Milk",brand:"Fairlife",servingG:240,per100:{cal:42,protein:6.3,carbs:5,fat:0,fiber:0,sodium:55}},
-  {name:"Fairlife Core Power (Chocolate)",brand:"Fairlife",servingG:414,per100:{cal:60,protein:9.9,carbs:5.5,fat:1.5,fiber:0,sodium:60}},
-  {name:"Fairlife Core Power (Vanilla)",brand:"Fairlife",servingG:414,per100:{cal:58,protein:9.9,carbs:5.3,fat:1.4,fiber:0,sodium:58}},
-  {name:"Fairlife Chocolate Milk (2%)",brand:"Fairlife",servingG:240,per100:{cal:75,protein:6.3,carbs:9.6,fat:2.1,fiber:0,sodium:55}},
-  {name:"Chobani Plain Greek Yogurt (0%)",brand:"Chobani",servingG:150,per100:{cal:59,protein:10,carbs:4,fat:0,fiber:0,sodium:45}},
-  {name:"Chobani Plain Greek Yogurt (2%)",brand:"Chobani",servingG:150,per100:{cal:80,protein:9,carbs:5,fat:2,fiber:0,sodium:50}},
-  {name:"Siggi's Plain Yogurt (0%)",brand:"Siggi's",servingG:150,per100:{cal:63,protein:11,carbs:4,fat:0,fiber:0,sodium:53}},
-  {name:"RXBAR Chocolate Sea Salt",brand:"RXBAR",servingG:52,per100:{cal:219,protein:23,carbs:37,fat:8,fiber:6,sodium:277}},
-  {name:"RXBAR Blueberry",brand:"RXBAR",servingG:52,per100:{cal:210,protein:21,carbs:38,fat:7,fiber:6,sodium:200}},
-  {name:"Quest Bar Chocolate Chip Cookie Dough",brand:"Quest",servingG:60,per100:{cal:367,protein:35,carbs:47,fat:12,fiber:27,sodium:350}},
-  {name:"Quest Bar Cookies & Cream",brand:"Quest",servingG:60,per100:{cal:367,protein:35,carbs:47,fat:12,fiber:27,sodium:340}},
-  {name:"Built Bar Chocolate Mint",brand:"Built Bar",servingG:53,per100:{cal:221,protein:30,carbs:25,fat:4,fiber:13,sodium:188}},
-  {name:"Kirkland Canned Chicken",brand:"Kirkland/Costco",servingG:56,per100:{cal:109,protein:25,carbs:0,fat:1,fiber:0,sodium:330}},
-  {name:"Kirkland Protein Bar (Chocolate Chip)",brand:"Kirkland/Costco",servingG:60,per100:{cal:333,protein:33,carbs:43,fat:10,fiber:17,sodium:333}},
-  {name:"Applegate Natural Turkey Breast",brand:"Applegate",servingG:56,per100:{cal:80,protein:18,carbs:1,fat:1,fiber:0,sodium:500}},
-  {name:"Rao's Marinara Sauce",brand:"Rao's",servingG:125,per100:{cal:80,protein:2,carbs:8,fat:4,fiber:2,sodium:280}},
+  {name:"Real Good Chicken Tenders",brand:"Real Good Foods",servingG:85,per100:{cal:176,protein:24,carbs:2,fat:8,fiber:0,sugar:null,sodium:400}},
+  {name:"Real Good Chicken Enchiladas",brand:"Real Good Foods",servingG:227,per100:{cal:106,protein:13,carbs:4,fat:4,fiber:0,sugar:null,sodium:330}},
+  {name:"Real Good Pizza (Pepperoni)",brand:"Real Good Foods",servingG:128,per100:{cal:266,protein:23,carbs:5,fat:17,fiber:0,sugar:null,sodium:600}},
+  {name:"Fairlife Whole Milk",brand:"Fairlife",servingG:240,per100:{cal:63,protein:6.3,carbs:5,fat:3.3,fiber:0,sugar:2.5,sodium:50}},
+  {name:"Fairlife 2% Milk",brand:"Fairlife",servingG:240,per100:{cal:54,protein:6.3,carbs:5,fat:2.1,fiber:0,sugar:2.5,sodium:50}},
+  {name:"Fairlife Fat Free Milk",brand:"Fairlife",servingG:240,per100:{cal:42,protein:6.3,carbs:5,fat:0,fiber:0,sugar:2.5,sodium:55}},
+  {name:"Fairlife Core Power (Chocolate)",brand:"Fairlife",servingG:414,per100:{cal:60,protein:9.9,carbs:5.5,fat:1.5,fiber:0,sugar:1.7,sodium:60}},
+  {name:"Fairlife Core Power (Vanilla)",brand:"Fairlife",servingG:414,per100:{cal:58,protein:9.9,carbs:5.3,fat:1.4,fiber:0,sugar:1.7,sodium:58}},
+  {name:"Fairlife Chocolate Milk (2%)",brand:"Fairlife",servingG:240,per100:{cal:75,protein:6.3,carbs:9.6,fat:2.1,fiber:0,sugar:5,sodium:55}},
+  {name:"Chobani Plain Greek Yogurt (0%)",brand:"Chobani",servingG:150,per100:{cal:59,protein:10,carbs:4,fat:0,fiber:0,sugar:2.7,sodium:45}},
+  {name:"Chobani Plain Greek Yogurt (2%)",brand:"Chobani",servingG:150,per100:{cal:80,protein:9,carbs:5,fat:2,fiber:0,sugar:2.7,sodium:50}},
+  {name:"Siggi's Plain Yogurt (0%)",brand:"Siggi's",servingG:150,per100:{cal:63,protein:11,carbs:4,fat:0,fiber:0,sugar:2.7,sodium:53}},
+  {name:"RXBAR Chocolate Sea Salt",brand:"RXBAR",servingG:52,per100:{cal:219,protein:23,carbs:37,fat:8,fiber:6,sugar:25,sodium:277}},
+  {name:"RXBAR Blueberry",brand:"RXBAR",servingG:52,per100:{cal:210,protein:21,carbs:38,fat:7,fiber:6,sugar:26.9,sodium:200}},
+  {name:"Quest Bar Chocolate Chip Cookie Dough",brand:"Quest",servingG:60,per100:{cal:367,protein:35,carbs:47,fat:12,fiber:27,sugar:1.7,sodium:350}},
+  {name:"Quest Bar Cookies & Cream",brand:"Quest",servingG:60,per100:{cal:367,protein:35,carbs:47,fat:12,fiber:27,sugar:1.7,sodium:340}},
+  {name:"Built Bar Chocolate Mint",brand:"Built Bar",servingG:53,per100:{cal:221,protein:30,carbs:25,fat:4,fiber:13,sugar:7.5,sodium:188}},
+  {name:"Kirkland Canned Chicken",brand:"Kirkland/Costco",servingG:56,per100:{cal:109,protein:25,carbs:0,fat:1,fiber:0,sugar:0,sodium:330}},
+  {name:"Kirkland Protein Bar (Chocolate Chip)",brand:"Kirkland/Costco",servingG:60,per100:{cal:333,protein:33,carbs:43,fat:10,fiber:17,sugar:3.3,sodium:333}},
+  {name:"Applegate Natural Turkey Breast",brand:"Applegate",servingG:56,per100:{cal:80,protein:18,carbs:1,fat:1,fiber:0,sugar:0,sodium:500}},
+  {name:"Rao's Marinara Sauce",brand:"Rao's",servingG:125,per100:{cal:80,protein:2,carbs:8,fat:4,fiber:2,sugar:3.2,sodium:280}},
   // Generic whole foods
-  {name:"White Rice (cooked)",brand:"Generic",servingG:100,per100:{cal:130,protein:2.7,carbs:28,fat:0.3,fiber:0.4,sodium:1}},
-  {name:"Chicken Breast (grilled)",brand:"Generic",servingG:100,per100:{cal:165,protein:31,carbs:0,fat:3.6,fiber:0,sodium:74}},
-  {name:"Whole Egg (large)",brand:"Generic",servingG:50,per100:{cal:155,protein:13,carbs:1.1,fat:11,fiber:0,sodium:124}},
-  {name:"Oatmeal (dry)",brand:"Generic",servingG:40,per100:{cal:389,protein:17,carbs:66,fat:7,fiber:11,sodium:6}},
-  {name:"Banana",brand:"Generic",servingG:118,per100:{cal:89,protein:1.1,carbs:23,fat:0.3,fiber:2.6,sodium:1}},
-  {name:"Salmon (cooked)",brand:"Generic",servingG:100,per100:{cal:208,protein:20,carbs:0,fat:13,fiber:0,sodium:59}},
-  {name:"Sweet Potato",brand:"Generic",servingG:130,per100:{cal:86,protein:1.6,carbs:20,fat:0.1,fiber:3,sodium:55}},
-  {name:"Brown Rice (cooked)",brand:"Generic",servingG:100,per100:{cal:216,protein:5,carbs:45,fat:1.8,fiber:3.5,sodium:10}},
-  {name:"Almonds",brand:"Generic",servingG:28,per100:{cal:579,protein:21,carbs:22,fat:50,fiber:12.5,sodium:1}},
-  {name:"Broccoli",brand:"Generic",servingG:100,per100:{cal:34,protein:2.8,carbs:7,fat:0.4,fiber:2.6,sodium:33}},
-  {name:"Ground Beef 80/20",brand:"Generic",servingG:100,per100:{cal:254,protein:17,carbs:0,fat:20,fiber:0,sodium:72}},
-  {name:"Cheddar Cheese",brand:"Generic",servingG:28,per100:{cal:403,protein:25,carbs:1.3,fat:33,fiber:0,sodium:621}},
-  {name:"Avocado",brand:"Generic",servingG:100,per100:{cal:160,protein:2,carbs:9,fat:15,fiber:7,sodium:7}},
-  {name:"Peanut Butter",brand:"Generic",servingG:32,per100:{cal:588,protein:25,carbs:20,fat:50,fiber:6,sodium:459}},
-  {name:"Pasta (cooked)",brand:"Generic",servingG:140,per100:{cal:158,protein:5.8,carbs:31,fat:0.9,fiber:1.8,sodium:1}},
-  {name:"Bread (whole wheat)",brand:"Generic",servingG:28,per100:{cal:247,protein:13,carbs:41,fat:4.2,fiber:7,sodium:400}},
-  {name:"Apple",brand:"Generic",servingG:182,per100:{cal:52,protein:0.3,carbs:14,fat:0.2,fiber:2.4,sodium:1}},
-  {name:"Tuna (canned in water)",brand:"Generic",servingG:85,per100:{cal:109,protein:25,carbs:0,fat:1,fiber:0,sodium:320}},
-  {name:"Milk (whole)",brand:"Generic",servingG:240,per100:{cal:61,protein:3.2,carbs:4.8,fat:3.3,fiber:0,sodium:43}},
-  {name:"Cottage Cheese (low fat)",brand:"Generic",servingG:113,per100:{cal:72,protein:12,carbs:3,fat:1,fiber:0,sodium:320}},
-  {name:"Olive Oil",brand:"Generic",servingG:14,per100:{cal:884,protein:0,carbs:0,fat:100,fiber:0,sodium:2}},
-  {name:"Greek Yogurt (plain)",brand:"Generic",servingG:150,per100:{cal:59,protein:10,carbs:3.6,fat:0.4,fiber:0,sodium:36}},
+  {name:"White Rice (cooked)",brand:"Generic",servingG:100,per100:{cal:130,protein:2.7,carbs:28,fat:0.3,fiber:0.4,sugar:0.1,sodium:1}},
+  {name:"Chicken Breast (grilled)",brand:"Generic",servingG:100,per100:{cal:165,protein:31,carbs:0,fat:3.6,fiber:0,sugar:0,sodium:74}},
+  {name:"Whole Egg (large)",brand:"Generic",servingG:50,per100:{cal:155,protein:13,carbs:1.1,fat:11,fiber:0,sugar:1.1,sodium:124}},
+  {name:"Oatmeal (dry)",brand:"Generic",servingG:40,per100:{cal:389,protein:17,carbs:66,fat:7,fiber:11,sugar:1,sodium:6}},
+  {name:"Banana",brand:"Generic",servingG:118,per100:{cal:89,protein:1.1,carbs:23,fat:0.3,fiber:2.6,sugar:12.2,sodium:1}},
+  {name:"Salmon (cooked)",brand:"Generic",servingG:100,per100:{cal:208,protein:20,carbs:0,fat:13,fiber:0,sugar:0,sodium:59}},
+  {name:"Sweet Potato",brand:"Generic",servingG:130,per100:{cal:86,protein:1.6,carbs:20,fat:0.1,fiber:3,sugar:4.2,sodium:55}},
+  {name:"Brown Rice (cooked)",brand:"Generic",servingG:100,per100:{cal:216,protein:5,carbs:45,fat:1.8,fiber:3.5,sugar:0.4,sodium:10}},
+  {name:"Almonds",brand:"Generic",servingG:28,per100:{cal:579,protein:21,carbs:22,fat:50,fiber:12.5,sugar:4.4,sodium:1}},
+  {name:"Broccoli",brand:"Generic",servingG:100,per100:{cal:34,protein:2.8,carbs:7,fat:0.4,fiber:2.6,sugar:1.7,sodium:33}},
+  {name:"Ground Beef 80/20",brand:"Generic",servingG:100,per100:{cal:254,protein:17,carbs:0,fat:20,fiber:0,sugar:0,sodium:72}},
+  {name:"Cheddar Cheese",brand:"Generic",servingG:28,per100:{cal:403,protein:25,carbs:1.3,fat:33,fiber:0,sugar:0.5,sodium:621}},
+  {name:"Avocado",brand:"Generic",servingG:100,per100:{cal:160,protein:2,carbs:9,fat:15,fiber:7,sugar:0.7,sodium:7}},
+  {name:"Peanut Butter",brand:"Generic",servingG:32,per100:{cal:588,protein:25,carbs:20,fat:50,fiber:6,sugar:9,sodium:459}},
+  {name:"Pasta (cooked)",brand:"Generic",servingG:140,per100:{cal:158,protein:5.8,carbs:31,fat:0.9,fiber:1.8,sugar:0.6,sodium:1}},
+  {name:"Bread (whole wheat)",brand:"Generic",servingG:28,per100:{cal:247,protein:13,carbs:41,fat:4.2,fiber:7,sugar:5.6,sodium:400}},
+  {name:"Apple",brand:"Generic",servingG:182,per100:{cal:52,protein:0.3,carbs:14,fat:0.2,fiber:2.4,sugar:10.4,sodium:1}},
+  {name:"Tuna (canned in water)",brand:"Generic",servingG:85,per100:{cal:109,protein:25,carbs:0,fat:1,fiber:0,sugar:0,sodium:320}},
+  {name:"Milk (whole)",brand:"Generic",servingG:240,per100:{cal:61,protein:3.2,carbs:4.8,fat:3.3,fiber:0,sugar:5,sodium:43}},
+  {name:"Cottage Cheese (low fat)",brand:"Generic",servingG:113,per100:{cal:72,protein:12,carbs:3,fat:1,fiber:0,sugar:2.7,sodium:320}},
+  {name:"Olive Oil",brand:"Generic",servingG:14,per100:{cal:884,protein:0,carbs:0,fat:100,fiber:0,sugar:0,sodium:2}},
+  {name:"Greek Yogurt (plain)",brand:"Generic",servingG:150,per100:{cal:59,protein:10,carbs:3.6,fat:0.4,fiber:0,sugar:4,sodium:36}},
 ];
 
 // ── LOCAL SUPPLEMENT DATABASE ──────────────────────────────────
@@ -6626,7 +6629,7 @@ export default function App(){
     setLog(p=>({...p,[slot]:[...p[slot],item]}));
     if(!uid)return;
     try{
-      const row=await sb.insert("food_log",{user_id:uid,logged_date:today,meal_slot:slot,food_name:item.name,brand:item.brand||"",grams,per100_cal:item.per100.cal,per100_protein:item.per100.protein,per100_carbs:item.per100.carbs,per100_fat:item.per100.fat,per100_fiber:item.per100.fiber||0,per100_sugar:item.per100.sugar||0,per100_sodium:item.per100.sodium||0,color:item.color||COLORS[0]});
+      const row=await sb.insert("food_log",{user_id:uid,logged_date:today,meal_slot:slot,food_name:item.name,brand:item.brand||null,grams,per100_cal:item.per100.cal,per100_protein:item.per100.protein,per100_carbs:item.per100.carbs,per100_fat:item.per100.fat,per100_fiber:item.per100.fiber||0,per100_sugar:item.per100.sugar??null,per100_sodium:item.per100.sodium||0,color:item.color||COLORS[0]});
       if(!row)throw new Error("insert returned no row");
       // Carry the database id so a same-session delete can reach the row.
       setLog(p=>({...p,[slot]:withDbId(p[slot],item,row)}));

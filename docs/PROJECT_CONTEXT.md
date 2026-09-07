@@ -699,15 +699,15 @@ Anthropic response formats are unchanged and out of scope for security work:
     Blanc Nature". The cgi endpoint is CORS-blocked (#2), so v2 is what actually
     answers, and it never answers "nothing" — a true no-results state is
     unreachable through OFF, and a user searching a food OFF lacks sees foreign
-    junk instead. Log only; the redesign should either require a name match or
-    drop the v2 fallback.
+    junk instead. Log only. **The fix is a name-match filter on OFF results, not
+    dropping OFF** — it is also the barcode source.
 
-19. **The built-in food catalogue (`LOCAL_FOOD_DB`) has no sugar field**, so the
-    fifth entry path still writes `per100_sugar = 0` — the Fairlife Whole Milk
-    rows in the audit. #4/P2 fixed USDA, OFF, barcode and coach; the seed data
-    needs its own pass (~40 entries, sugar per 100 g). Also: `addFoodItem` writes
-    `brand: item.brand || ""` while `custom_foods.brand` is now null for blank,
-    so the same custom food is `""` in `food_log` and NULL in `custom_foods`.
+19. ~~**The built-in food catalogue (`LOCAL_FOOD_DB`) has no sugar field.**~~
+    **RESOLVED 2026-09-07.** Every one of the 43 entries now carries `sugar`
+    per 100 g — label/USDA values where known, `null` for the three Real Good
+    meals (unknown is honest; 0 is a claim). `food_log` writes `per100_sugar`
+    as null when unknown and `brand` as null when blank, so empty means empty
+    in both tables. Totals treat null as 0. Tested.
 
 20. **Food surfaces, cosmetic — for the redesign, not now (audit 2026-09-07,
     390×844):** the Create-food view carries the previous search's "No results
