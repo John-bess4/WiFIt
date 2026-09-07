@@ -158,7 +158,7 @@ describe("sb — return contracts survive the retry path", () => {
       () => res(401, {}),
     ]);
     const r = await sb.selectAuth("profiles", "id=eq.u1");
-    expect(r).toEqual({ authError: true, rows: [] });
+    expect(r).toMatchObject({ ok: false, authError: true, rows: [] });
   });
 
   it("delete and update still return booleans", async () => {
@@ -166,5 +166,31 @@ describe("sb — return contracts survive the retry path", () => {
     expect(await sb.delete("food_log", "id=eq.1")).toBe(true);
     mockFetch([() => res(500, {})]);
     expect(await sb.update("food_log", { grams: 1 }, { filter: "id=eq.1" })).toBe(false);
+  });
+});
+
+// selectAuth must let a reader tell "succeeded, no rows" from "failed". Before
+// ok existed, a 500 and a network failure both came back {authError:false,
+// rows:[]} — the same shape as an empty table. For the PR baseline that shape
+// means "new lifter", and it stamps a genuine PR as false, permanently.
+describe("sb.selectAuth ok vs authError", () => {
+  beforeEach(() => { sb._session = { access_token: "tok", refresh_token: "r", user: { id: "u1" } }; });
+  afterEach(() => { sb._session = null; });
+  it("200 with no rows: ok:true, rows [] — a real empty state", async () => {
+    mockFetch([() => res(200, [])]);
+    expect(await sb.selectAuth("exercise_bests", "user_id=eq.u1")).toMatchObject({ ok: true, authError: false, rows: [] });
+  });
+  it("500: ok:false, authError:false — failed, not empty", async () => {
+    mockFetch([() => res(500, { message: "boom" })]);
+    expect(await sb.selectAuth("exercise_bests", "user_id=eq.u1")).toMatchObject({ ok: false, authError: false, rows: [] });
+  });
+  it("401 after a failed refresh: ok:false, authError:true", async () => {
+    mockFetch([() => res(401, {}), () => res(401, {}), () => res(401, {})]);
+    const r = await sb.selectAuth("exercise_bests", "user_id=eq.u1");
+    expect(r.ok).toBe(false); expect(r.authError).toBe(true);
+  });
+  it("network failure: ok:false", async () => {
+    globalThis.fetch = async () => { throw new Error("offline"); };
+    expect((await sb.selectAuth("exercise_bests", "x")).ok).toBe(false);
   });
 });

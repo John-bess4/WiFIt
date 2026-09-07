@@ -3649,10 +3649,11 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,bests,onS
   };
 
   const deleteWorkout=async(id)=>{
-    const removed=workouts.find(w=>w.id===id);
+    const idx=workouts.findIndex(w=>w.id===id);
+    const removed=workouts[idx];
     setWorkouts(prev=>prev.filter(w=>w.id!==id));
     const ok=onDeletePlan?await onDeletePlan(id):true;
-    if(!ok&&removed)setWorkouts(prev=>[removed,...prev]); // restore; App already said why
+    if(!ok&&removed)setWorkouts(prev=>{const next=[...prev];next.splice(Math.min(idx,next.length),0,removed);return next;}); // restore where it was; App already said why
   };
 
   const finishWorkout=(sets,elapsed,startedAt=Date.now())=>{
@@ -4689,13 +4690,16 @@ export const sb={
       const r=await this._fetch("/rest/v1/"+table+"?"+q);
       if(!r.ok){
         console.error("[sb.selectAuth]",table,r.status,await r.text().catch(()=>""));
-        return{authError:r.status===401||r.status===403,rows:[]};
+        // ok:false on ANY non-2xx. authError alone let a 500 or a network
+        // failure come back as {authError:false, rows:[]} — the same shape as
+        // "succeeded, no rows". Readers that must not launder check ok.
+        return{ok:false,authError:r.status===401||r.status===403,status:r.status,rows:[]};
       }
       const d=await r.json();
-      return{authError:false,rows:Array.isArray(d)?d:[]};
+      return{ok:true,authError:false,status:r.status,rows:Array.isArray(d)?d:[]};
     }catch(e){
       console.error("[sb.selectAuth]",table,"network",e);
-      return{authError:false,rows:[]};
+      return{ok:false,authError:false,status:0,rows:[]};
     }
   },
   async insert(table,row){
@@ -6473,7 +6477,7 @@ export default function App(){
       sb.selectAuth("water_log",range("log_date")+"&select=log_date,oz",{limit:7}),
       sb.selectAuth("supplement_log",range("log_date")+"&select=log_date,taken",{limit:500}),
     ]);
-    if(f.authError||w.authError||sl.authError){setWeekHistory(null);return;}
+    if(!f.ok||!w.ok||!sl.ok){setWeekHistory(null);return;} // any failure is null (Retry), never {}
     setWeekHistory(reduceWeekRows({food:f.rows,water:w.rows,supp:sl.rows}));
   };
   const [quickAction,setQuickAction]=useState(null);
@@ -6586,9 +6590,9 @@ export default function App(){
         // history. Empty bests means every lift is "a first" and a genuine
         // PR is persisted as isPR:false — worse than no value. On failure the
         // status is "failed" and WorkoutTab blocks Start behind a Retry.
-        const {authError:histErr,rows:sessions}=await sb.selectAuth("workout_sessions","user_id=eq."+uid,{order:"created_at.desc",limit:20});
-        const bestsOk=!histErr&&await loadBests(uid);
-        setHistoryStatus(histErr||!bestsOk?"failed":"ready");
+        const {ok:histOk,rows:sessions}=await sb.selectAuth("workout_sessions","user_id=eq."+uid,{order:"created_at.desc",limit:20});
+        const bestsOk=histOk&&await loadBests(uid);
+        setHistoryStatus(!histOk||!bestsOk?"failed":"ready");
         if(sessions?.length>0){
           setHistory(sessions.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[],prs:s.prs||[]})));
         }
@@ -6769,6 +6773,9 @@ export default function App(){
       const completedDate=session.startedAt?localDate(new Date(session.startedAt)):today;
       const row=await sb.insert("workout_sessions",{user_id:uid,workout_name:wname,completed_date:completedDate,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises||[],prs:session.prs||[]});
       if(!row)throw new Error("insert returned no row");
+      // Carry the row's uuid into state (the food-delete lesson): a session
+      // edit/delete (#25) needs it, and a local "h<ts>" id would 400 at a uuid.
+      setHistory(p=>withDbId(p,session,row));
       // The row is the source of truth for bests; re-read the view rather than
       // bumping a client copy. A failed re-read pauses Start like any other.
       await loadBests(uid);
@@ -6787,16 +6794,16 @@ export default function App(){
   const [bests,setBests]=useState({});
   const [historyStatus,setHistoryStatus]=useState("loading"); // loading | ready | failed
   const loadBests=async(u)=>{
-    const {authError,rows}=await sb.selectAuth("exercise_bests","user_id=eq."+u+"&select=name,best_lbs",{limit:1000});
-    if(authError){setHistoryStatus("failed");return false;}
+    const {ok,rows}=await sb.selectAuth("exercise_bests","user_id=eq."+u+"&select=name,best_lbs",{limit:1000});
+    if(!ok){setHistoryStatus("failed");return false;} // any failure, not just 401 — an empty read must mean "no history", never "unknown"
     setBests(bestsFromView(rows));
     return true;
   };
   const retryHistory=async()=>{
     const u=sb.getUser()?.id; if(!u)return;
     setHistoryStatus("loading");
-    const {authError,rows}=await sb.selectAuth("workout_sessions","user_id=eq."+u,{order:"created_at.desc",limit:20});
-    if(authError){setHistoryStatus("failed");return;}
+    const {ok,rows}=await sb.selectAuth("workout_sessions","user_id=eq."+u,{order:"created_at.desc",limit:20});
+    if(!ok){setHistoryStatus("failed");return;}
     setHistory(rows.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[],prs:s.prs||[]})));
     if(await loadBests(u))setHistoryStatus("ready");
   };
@@ -6840,7 +6847,7 @@ export default function App(){
         const row=await sb.insert("workout_plans",{
           user_id:uid,name:structured.name,tag:structured.tag,level:structured.level,
           est_min:structured.estMin,scheduled_day:structured.scheduledDay||null,
-          exercises:structured.exercises,sort_order:0,
+          exercises:structured.exercises,sort_order:workouts.length, // append, same as the manual path
         });
         if(!row)throw new Error("insert returned no row");
         if(row.id)setWorkouts(prev=>prev.map(w=>w.id===tempId?{...w,id:row.id}:w));

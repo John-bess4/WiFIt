@@ -321,6 +321,16 @@ on failure — that logging is the only reason the schema mismatches above were 
 
 ### `selectAuth` — narrow by design
 
+**`ok` vs `authError` (2026-09-07).** `selectAuth` returns `{ok, authError, status,
+rows}`. `authError` is true only for 401/403 and drives routing (the profile
+read). `ok` is false for ANY non-2xx or network failure. Readers that must not
+launder a failure into "no rows" — `exercise_bests`, the sessions read, the
+week-history reads — key on `ok`. Before `ok` existed, a 500 on the view read
+came back `{authError:false, rows:[]}`, the same shape as a new lifter, and
+Start would have proceeded with an empty PR baseline. Verified: 500 and a
+network abort both pause Start; 200-with-no-rows lets a session start with no
+baseline and no PR on a first lift.
+
 Used at **exactly one call site**: the mount profile check in `loadUserData`. It exists
 because `select`'s `[]`-on-error contract makes a 401 look like a brand-new user. It is
 a sibling method, not a replacement — adding callers is fine, changing `select` is not.
@@ -791,11 +801,13 @@ Anthropic response formats are unchanged and out of scope for security work:
 
     Logged, not fixed, from the same audit: `workout_plans.sort_order` is
     written as `0` by the coach path and `workouts.length` by the manual path
-    (two conventions); every stored plan exercise set carries a runtime
-    `done:false`; sessions keep a local `"h"+Date.now()` id with no uuid
-    write-back — harmless today because there is no session edit/delete, and
-    the Food delete bug the moment one exists (in `HANDOFF.md`); a plan
-    restored after a failed delete reappears at the top of the list.
+    (two conventions) — **fixed 2026-09-07, append everywhere**; every stored
+    plan exercise set carries a runtime `done:false` — **left as is**, not
+    worth a migration for a flag nothing reads; sessions kept a local
+    `"h"+Date.now()` id with no uuid write-back — **fixed**, `saveWorkoutSession`
+    now carries the row's uuid into state so #25's delete cannot have the food
+    bug; a plan restored after a failed delete reappeared at the top — **fixed**,
+    restored at its original index.
 
 25. **REQUIRED PRE-LAUNCH — edit / delete a logged workout session.** Train
     inventory path #8 "does not exist", and with F4 the `exercise_bests` view is
