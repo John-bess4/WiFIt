@@ -513,7 +513,7 @@ Anthropic response formats are unchanged and out of scope for security work:
 
    | Line | Call | What silently fails |
    |---|---|---|
-   | 2924 | `sb.delete` food_log | a deleted food comes back on reload |
+   | ~~2924~~ | ~~`sb.delete` food_log~~ | **fixed 2026-09-07** — result checked, item restored + `showError` on failure |
    | 4228 | `sb.delete` supplement_stack | a removed supplement comes back |
    | 4236 | `sb.update` supplement_stack | rename is lost |
    | 4251 | `sb.update` supplement_stack | reminder settings are lost |
@@ -521,7 +521,7 @@ Anthropic response formats are unchanged and out of scope for security work:
    | 5259 | `sb.upsert` profiles | onboarding profile never lands |
    | 5887 | `sb.upsert` profiles | name/gender/age edit is lost |
    | 6623 | `sb.upsert` profiles | theme choice is lost |
-   | 6835 | `sb.insert` custom_foods | a created custom food is lost |
+   | ~~6835~~ | ~~`sb.insert` custom_foods~~ | **fixed 2026-09-07** — returns whether the row landed; the toast waits for it |
    | 7017 | `sb.delete` workout_plans | a deleted plan comes back |
 
    Line 4337 is worse than the rest: it is `sb.update(...)` with **no `await`**, so
@@ -693,6 +693,36 @@ Anthropic response formats are unchanged and out of scope for security work:
     the prompt gained explicit action-hygiene rules. Verified against the live
     model on a cleared chat: one water action, one food action, and a plain
     question produced no actions. No time-window dedup was added.
+
+18. **Open Food Facts v2 search returns unrelated products for a non-matching
+    query.** Audit 2026-09-07: `zzzqqqxx` returned "Sidi Ali", "Perly", "Fromage
+    Blanc Nature". The cgi endpoint is CORS-blocked (#2), so v2 is what actually
+    answers, and it never answers "nothing" — a true no-results state is
+    unreachable through OFF, and a user searching a food OFF lacks sees foreign
+    junk instead. Log only; the redesign should either require a name match or
+    drop the v2 fallback.
+
+19. **The built-in food catalogue (`LOCAL_FOOD_DB`) has no sugar field**, so the
+    fifth entry path still writes `per100_sugar = 0` — the Fairlife Whole Milk
+    rows in the audit. #4/P2 fixed USDA, OFF, barcode and coach; the seed data
+    needs its own pass (~40 entries, sugar per 100 g). Also: `addFoodItem` writes
+    `brand: item.brand || ""` while `custom_foods.brand` is now null for blank,
+    so the same custom food is `""` in `food_log` and NULL in `custom_foods`.
+
+20. **Food surfaces, cosmetic — for the redesign, not now (audit 2026-09-07,
+    390×844):** the Create-food view carries the previous search's "No results
+    found" banner into the form; `AddFoodModal`'s nutrition preview uses
+    hardcoded white text on a light card and is near-invisible on light
+    palettes.
+
+    Also recorded from the same audit, all correct: the same food logged twice is
+    two rows (no merge); decimal grams (87.5) round-trip; apostrophe/slash in
+    search and an apostrophe in a custom-food name are fine; a food logged at a
+    fake 23:55 local stamps the local day; offline, a logged item rolls back
+    within a second with "Food couldn't be saved" — there is no pending-sync
+    queue, the write is lost and the user is told; no `[sb.*]` line in any run.
+    Not exercised: barcode (needs a camera), USDA→log (needs `USDA_API_KEY` on
+    Vercel), quantity edit and slot change (do not exist).
 
 ---
 
