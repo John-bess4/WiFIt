@@ -2115,7 +2115,7 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
     return{per100,servingCal:parseFloat(cf.cal)||0};
   })():null;
 
-  const saveCustomFood=()=>{
+  const saveCustomFood=async()=>{
     if(!cf.name.trim()||!cf.cal||!cfGramsOk)return;
     const s=cfGrams;
     const food={
@@ -2135,7 +2135,8 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
         sodium:Math.round((parseFloat(cf.sodium)||0)/s*100),
       }
     };
-    addCustomFood(food);
+    const ok=await addCustomFood(food);
+    if(!ok)return; // addCustomFoodDB already rolled back and said why
     setCfSaved(true);
     setTimeout(()=>{
       setCfSaved(false);
@@ -6635,14 +6636,19 @@ export default function App(){
     }
   };
 
+  // Returns whether the row landed. sb.insert never throws — the old try/catch
+  // here was unreachable — so the caller's "saved" toast fired on a null.
   const addCustomFoodDB=async(food)=>{
     setCustomFoods(p=>[food,...p]);
-    if(!uid)return;
+    if(!uid)return true;
     try{
-      await sb.insert("custom_foods",{user_id:uid,name:food.name,brand:food.brand||"",serving_g:food.servingG,serving_qty:food.servingQty??null,serving_unit:food.servingUnit||"g",per100_cal:food.per100.cal,per100_protein:food.per100.protein,per100_carbs:food.per100.carbs,per100_fat:food.per100.fat,per100_fiber:food.per100.fiber||0,per100_sugar:food.per100.sugar||0,per100_sodium:food.per100.sodium||0});
+      const row=await sb.insert("custom_foods",{user_id:uid,name:food.name,brand:food.brand||"",serving_g:food.servingG,serving_qty:food.servingQty??null,serving_unit:food.servingUnit||"g",per100_cal:food.per100.cal,per100_protein:food.per100.protein,per100_carbs:food.per100.carbs,per100_fat:food.per100.fat,per100_fiber:food.per100.fiber||0,per100_sugar:food.per100.sugar||0,per100_sodium:food.per100.sodium||0});
+      if(!row)throw new Error("insert returned no row");
+      return true;
     }catch{
       setCustomFoods(p=>p.filter(f=>f!==food));
       showError("Custom food couldn't be saved. Check your connection.");
+      return false;
     }
   };
 
