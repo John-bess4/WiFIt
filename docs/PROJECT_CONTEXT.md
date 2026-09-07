@@ -472,6 +472,13 @@ Anthropic response formats are unchanged and out of scope for security work:
    is unreachable and the `null`/`[]` return sails straight past it. That is the
    trap this whole section exists to flag.
 
+   Both of those are **separate bug classes**, not variants of this one, and
+   `DECISIONS.md` records each with what would structurally prevent it —
+   §"Fire-and-forget async is a different bug from an ignored result" and
+   §"A catch block around code that cannot throw is worse than none". The second
+   matters most to a reviewer: an unchecked call looks unfinished and gets read
+   on; a `catch` block looks considered and stops the reading.
+
    `addFoodItem` (6823) and `saveWorkoutSession` (6916) are the two that *do* check
    — copy their shape. Fixing one is always in scope.
 

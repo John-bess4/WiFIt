@@ -143,6 +143,112 @@ is part of the value. Dropping it is not simplification.
 
 ---
 
+## 2026-09-06 — Fire-and-forget async is a different bug from an ignored result
+
+`App.jsx:4337` is not a variant of "ignored return value". It is a distinct
+class, and the rewrite should treat it as one.
+
+```js
+setSuppList(prev=>{
+  const arr=[...prev];
+  const [moved]=arr.splice(from,1);
+  arr.splice(i,0,moved);
+  if(uid){
+    arr.forEach((s,idx)=>{
+      try{sb.update("supplement_stack",{sort_order:idx},{filter:"id=eq."+s.k+"&user_id=eq."+uid});}catch{}
+    });
+  }
+  return arr;
+});
+```
+
+**The failure is not ignoring a return value. It is never waiting to learn there
+was one.** Every other site in §Known issues #1 at least resolves before its
+handler returns, so the value exists and is discarded. This one does not
+`await`, so nothing observes success, failure, or even a rejected promise. The
+drag-reorder appears to persist, the list re-renders in the new order from local
+state, and whether Postgres agreed is information the app never had.
+
+Two things make it worse than the un-awaited call alone:
+
+- **It runs inside a React state updater.** `setSuppList(prev => {…})` must be a
+  pure function of `prev`. StrictMode is on (`src/main.jsx`), and React
+  double-invokes updaters in development, so N supplements fire **2N** writes on
+  every reorder in dev — a rate the code never intended and nobody would see,
+  because nothing reports.
+- **The `catch{}` compounds it**, for the reason in the entry below: it is
+  wrapped in exactly the shape that stops a reviewer looking.
+
+**What structurally prevents it.** Not discipline — the language. In Swift,
+calling an `async` function without `await` is a **compile error**
+("expression is 'async' but is not marked with 'await'"). Fire-and-forget stays
+possible, but only by writing `Task { … }`, which is a visible, greppable
+declaration that you meant it. `@discardableResult` inverts JavaScript's
+default: discarding a result warns unless the *API author* marked it
+discardable, so the decision lives once at the definition instead of silently at
+every call site. And typed throws (`throws(DBError)`) put the error channel in
+the signature, so "this can fail" is checked rather than remembered.
+
+That is the whole shape of the fix: make ignoring a result a **deliberate,
+visible choice** rather than something that happens by omission. The current
+`sb` contract is the exact opposite — `null` on failure, no throw, nothing that
+notices when a call site says nothing.
+
+Until then, in JS: the reorder write should be awaited and batched (one call,
+not one per row), and moved out of the state updater into an effect or handler.
+`eslint-plugin-promise`'s `catch-or-return` would catch the floating promise;
+it is not currently installed.
+
+---
+
+## 2026-09-06 — A catch block around code that cannot throw is worse than none
+
+Five sites share this shape (`App.jsx` 2924, 4228, 4236, 4251, 6623):
+
+```js
+try{ await sb.delete("supplement_stack","id=eq."+k+"&user_id=eq."+uid); }catch{}
+```
+
+**`sb` never throws.** `select` returns `[]` on any non-2xx; `insert`/`upsert`/
+`update`/`delete` return `null`. So the `catch` is not empty-by-oversight, it is
+**structurally unreachable** — no execution path can enter it. The `null` sails
+straight past and the delete silently fails.
+
+**The property worth recording: code that performs safety is more dangerous than
+code that visibly lacks it.** A bare unchecked `await sb.delete(…)` looks
+unfinished, and a reviewer reads on. This looks considered. The `try`/`catch`
+is a claim that failure was thought about, and it costs a reviewer the one
+signal that would have made them check. Five sites carried that claim for
+months. The empty `catch{}` even reads as a deliberate "failure here is
+acceptable" — a decision nobody made.
+
+This is why it is filed separately from "ignored return value". The ignored
+return is an omission; this is a **false positive in the reader's model of the
+code**. Omissions get found by grep. False assurances do not, because nobody
+greps for the thing that already looks handled.
+
+**What structurally prevents it.** Swift refuses to compile the lie. `try` on a
+non-throwing call warns ("no calls to throwing functions occur within 'try'
+expression"), and the handler itself is diagnosed — "'catch' block is
+unreachable because no errors are thrown in 'do' block". The mismatch between
+where errors actually come from and where the code claims to handle them is a
+**compile-time** disagreement, not something a reviewer has to hold in their
+head across 6,800 lines. With typed throws the signature states which errors are
+possible, so an impossible handler cannot be written by accident.
+
+The deeper point for the rewrite: `sb`'s "never throws, returns null/[]" contract
+is what makes both of these classes possible. It is load-bearing here and must
+not change (16 `select` call sites depend on `[]`, see §Standing conventions),
+but it is a contract carried entirely in prose. Anything that replaces it should
+put failure in the type — `Result`, a typed `throws`, an optional the compiler
+forces you to unwrap — so that "I did not handle this" becomes something the
+build says out loud.
+
+See `docs/PROJECT_CONTEXT.md` §Known issues #1 for the full table of all 10
+sites. Both classes are documented there, not fixed.
+
+---
+
 ## 2026-08-29 — `completed_date` derives from `startedAt`, not `today`
 
 A workout session is dated from when the work **started**, not from when Finish
