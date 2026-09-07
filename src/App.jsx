@@ -5051,6 +5051,9 @@ function GoalRatePicker({rate,setRate,tdee=0}){
 function OnboardingWizard({userId,onComplete}){
   const T=useTheme();
   const [step,setStep]=useState(0);
+  // A failed upsert must not call onComplete: the app would run on goals the
+  // database never received, and the wizard would never show again.
+  const [saveError,setSaveError]=useState("");
   const [name,setName]=useState("");
   const [gender,setGender]=useState("male");
   const [age,setAge]=useState("");
@@ -5094,8 +5097,9 @@ function OnboardingWizard({userId,onComplete}){
     setSaving(true);
     const goals={cal:g.cal,protein:g.protein,carbs:g.carbs,fat:g.fat};
     const hin=(parseInt(heightFt)||5)*12+(parseInt(heightIn)||9);
+    setSaveError("");
     if(userId){
-      await sb.upsert("profiles",{
+      const row=await sb.upsert("profiles",{
         id:userId,
         name:name.trim()||"Friend",
         gender,
@@ -5113,6 +5117,11 @@ function OnboardingWizard({userId,onComplete}){
         theme:DEFAULT_THEME_KEY,
         updated_at:new Date().toISOString(),
       });
+      if(!row){
+        setSaving(false);
+        setSaveError("Your plan couldn't be saved. Check your connection and try again.");
+        return;
+      }
     }
     setSaving(false);
     onComplete(goals,name.trim()||"Friend");
@@ -5320,6 +5329,11 @@ function OnboardingWizard({userId,onComplete}){
         {STEPS[step].content}
       </div>
 
+      {saveError&&(
+        <div data-testid="onboarding-save-failed" style={{margin:"0 20px",padding:"10px 14px",borderRadius:12,background:"rgba(239,68,68,0.12)",border:"1px solid rgba(239,68,68,0.35)",color:T.red,fontSize:13,fontWeight:600}}>
+          {saveError}
+        </div>
+      )}
       {/* Footer buttons */}
       <div style={{padding:"20px 20px 44px",display:"flex",gap:10,flexShrink:0}}>
         {step>0&&(
@@ -5332,7 +5346,7 @@ function OnboardingWizard({userId,onComplete}){
           onClick={()=>step<STEPS.length-1?setStep(s=>s+1):finish()}
           disabled={!canAdvance()||saving}
           style={{flex:2,background:(!canAdvance()||saving)?T.muted:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:14,padding:"15px",color:"#fff",fontSize:15,fontWeight:700,cursor:(!canAdvance()||saving)?"not-allowed":"pointer",boxShadow:canAdvance()?("0 4px 20px "+T.accentGlow):"none",transition:"all 0.2s"}}>
-          {saving?"Saving your plan…":step<STEPS.length-1?"Continue →":"Let's go 🚀"}
+          {saving?"Saving your plan…":step<STEPS.length-1?"Continue →":saveError?"Try again":"Let's go 🚀"}
         </button>
       </div>
     </div>
@@ -5658,6 +5672,7 @@ function ProfilePage({goals,setGoals,userName,setUserName,isDark,setIsDark,theme
   const [goalRate,setGoalRate]=useState("maintain");
   const [saving,setSaving]=useState(false);
   const [saved,setSaved]=useState(false);
+  const [saveError,setSaveError]=useState("");
   const initials=name?name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase():"?";
 
   const ACTIVITY_LABELS={
@@ -5723,7 +5738,13 @@ function ProfilePage({goals,setGoals,userName,setUserName,isDark,setIsDark,theme
     const uid=sb.getUser()?.id;
     const g={cal:parseInt(calGoal)||2200,protein:parseInt(protGoal)||140,carbs:parseInt(carbGoal)||180,fat:parseInt(fatGoal)||78};
     const hin=(parseInt(heightFt)||5)*12+(parseInt(heightIn)||9);
-    if(uid)await sb.upsert("profiles",{id:uid,name:name.trim()||userName,gender,age:parseInt(age)||null,weight_lbs:parseFloat(weightLbs)||null,height_in:hin,activity_level:activity,goal_rate:goalRate,cal_goal:g.cal,protein_goal:g.protein,carbs_goal:g.carbs,fat_goal:g.fat,theme:themeFam+"_"+(isDark?"dark":"light"),bmr:tdeeData?.bmr||null,tdee:tdeeData?.tdee||null,updated_at:new Date().toISOString()});
+    setSaveError("");
+    if(uid){
+      const row=await sb.upsert("profiles",{id:uid,name:name.trim()||userName,gender,age:parseInt(age)||null,weight_lbs:parseFloat(weightLbs)||null,height_in:hin,activity_level:activity,goal_rate:goalRate,cal_goal:g.cal,protein_goal:g.protein,carbs_goal:g.carbs,fat_goal:g.fat,theme:themeFam+"_"+(isDark?"dark":"light"),bmr:tdeeData?.bmr||null,tdee:tdeeData?.tdee||null,updated_at:new Date().toISOString()});
+      // Neither the ✓ nor the local goals may move until the row landed —
+      // otherwise the app runs on numbers the database never received.
+      if(!row){setSaving(false);setSaveError("Profile couldn't be saved. Check your connection and try again.");return;}
+    }
     // profiles.weight_lbs is only "current weight" — record the day's entry in
     // body_weight_log too, or the weight chart never accumulates history.
     const wl=parseFloat(weightLbs);
@@ -5738,9 +5759,10 @@ function ProfilePage({goals,setGoals,userName,setUserName,isDark,setIsDark,theme
   );
 
   return(
-    <PageShell title="Profile" onBack={onClose} footer={
+    <PageShell title="Profile" onBack={onClose} footer={<>
+      {saveError&&<div data-testid="profile-save-failed" style={{marginBottom:10,padding:"10px 14px",borderRadius:12,background:"rgba(239,68,68,0.12)",border:"1px solid rgba(239,68,68,0.35)",color:T.red,fontSize:13,fontWeight:600}}>{saveError}</div>}
       <button onClick={save} disabled={saving||loadError} style={{width:"100%",background:saved?"#22C55E":(saving||loadError)?T.muted:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:14,padding:"14px",color:"#fff",fontSize:15,fontWeight:700,cursor:saving?"not-allowed":"pointer",transition:"background 0.2s"}}>{saved?"Saved ✓":saving?"Saving...":"Save changes"}</button>
-    }>
+    </>}>
       {loadError&&(
         <div data-testid="profile-failed" style={{margin:"12px 16px 0",padding:"10px 14px",borderRadius:12,background:T.accentPill,border:("1px solid "+T.border),fontSize:12,color:T.text}}>
           Couldn't load your profile. The fields below are NOT your saved values — reopen this page before saving.
@@ -6492,10 +6514,16 @@ export default function App(){
   const [themeFam,setThemeFamState]=useState(DEFAULT_THEME);
   const T=resolveTheme(themeFam+"_"+(isDark?"dark":"light")).T;
 
-  const saveTheme=async(fam,dark)=>{
+  // sb never throws, so the old try/catch here caught nothing. Check the row;
+  // on failure put the previous theme back so the screen matches the database.
+  const saveTheme=async(fam,dark,prev)=>{
     const uid=sb.getUser()?.id;
     if(!uid)return;
-    try{await sb.upsert("profiles",{id:uid,theme:fam+"_"+(dark?"dark":"light"),updated_at:new Date().toISOString()});}catch{}
+    const row=await sb.upsert("profiles",{id:uid,theme:fam+"_"+(dark?"dark":"light"),updated_at:new Date().toISOString()});
+    if(!row){
+      setThemeFamState(prev.fam);setIsDarkState(prev.dark);
+      showError("Theme couldn't be saved — reverted.");
+    }
   };
 
   // Mode-locked palettes ignore the toggle entirely: the toggles are hidden,
@@ -6503,11 +6531,11 @@ export default function App(){
   const setIsDark=(valOrFn)=>{
     if(LOCKED_FAMILIES.has(themeFam))return;
     const next=resolveDark(isDark,valOrFn);
-    setIsDarkState(next);saveTheme(themeFam,next);
+    setIsDarkState(next);saveTheme(themeFam,next,{fam:themeFam,dark:isDark});
   };
   const setThemeFam=(fam)=>{
     const next=LOCKED_FAMILIES.has(fam)?THEME_META[fam].mode==="dark":isDark;
-    setThemeFamState(fam);setIsDarkState(next);saveTheme(fam,next);
+    setThemeFamState(fam);setIsDarkState(next);saveTheme(fam,next,{fam:themeFam,dark:isDark});
   };
   const [tab,setTab]=useState("home");
   const [log,setLog]=useState(SEED);
