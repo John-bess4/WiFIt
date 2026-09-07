@@ -2814,7 +2814,7 @@ function WaterStrip({waterOz=0,setWaterOz}){
   );
 }
 
-function FoodTab({log,setLog,onAddItem,uid,customFoods=[],addCustomFood,goals={cal:2200,protein:140,carbs:180,fat:78,fiber:25,sodium:2300},waterOz=0,setWaterOz}){
+function FoodTab({log,setLog,onAddItem,uid,customFoods=[],addCustomFood,onDeleteFailed,goals={cal:2200,protein:140,carbs:180,fat:78,fiber:25,sodium:2300},waterOz=0,setWaterOz}){
   const T=useTheme();
   const [modal,setModal]=useState(null);
   const M=totals(log);
@@ -2865,8 +2865,17 @@ function FoodTab({log,setLog,onAddItem,uid,customFoods=[],addCustomFood,goals={c
               const m=calc(item);
               return(
                 <FoodItemRow key={item.id||i} item={item} m={m} onDelete={async()=>{
-                  setLog(p=>({...p,[slot]:p[slot].filter((_,j)=>j!==i)}));
-                  if(uid&&item.id)try{await sb.delete("food_log","id=eq."+item.id+"&user_id=eq."+uid);}catch{}
+                  // sb.delete never throws; it returns false. The old try/catch{}
+                  // here was unreachable and the 400 from a local id sailed past it.
+                  const filter=foodDeleteFilter(item,uid);
+                  if(uid&&!filter){onDeleteFailed&&onDeleteFailed("That item hasn't finished saving yet — try again in a moment.");return;}
+                  setLog(p=>({...p,[slot]:p[slot].filter(x=>x!==item)}));
+                  if(!filter)return;
+                  const ok=await sb.delete("food_log",filter);
+                  if(!ok){
+                    setLog(p=>({...p,[slot]:[...p[slot],item]}));
+                    onDeleteFailed&&onDeleteFailed("Couldn't delete "+item.name+". Check your connection.");
+                  }
                 }}/>
               );
             })}
@@ -4543,6 +4552,18 @@ const SUPABASE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 // in the evening. "en-CA" formats local time as YYYY-MM-DD. Writes, read
 // filters and comparisons all go through this so they cannot drift apart.
 export const localDate=(d=new Date())=>d.toLocaleDateString("en-CA");
+
+// Food-log identity. Every entry path gives a new item a local id (Date.now()
+// or Date.now()+Math.random()); the database gives it a uuid on insert. Until
+// 2026-09-07 the uuid was never written back, so deleting an item logged in
+// the same session sent id=eq.1788763… at a uuid column — a 400 swallowed by
+// an unreachable catch, the UI removed the item, and the row came back on
+// reload. These helpers are exported so that contract is tested.
+const UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const hasDbId=(item)=>typeof item?.id==="string"&&UUID_RE.test(item.id);
+// Replace the local item with one carrying the database id, by reference.
+export const withDbId=(items,item,row)=>items.map(i=>i===item?{...i,id:row.id}:i);
+export const foodDeleteFilter=(item,uid)=>hasDbId(item)&&uid?"id=eq."+item.id+"&user_id=eq."+uid:null;
 
 export const sb={
   _url:SUPABASE_URL,_key:SUPABASE_ANON,_session:null,
@@ -6593,6 +6614,8 @@ export default function App(){
     try{
       const row=await sb.insert("food_log",{user_id:uid,logged_date:today,meal_slot:slot,food_name:item.name,brand:item.brand||"",grams,per100_cal:item.per100.cal,per100_protein:item.per100.protein,per100_carbs:item.per100.carbs,per100_fat:item.per100.fat,per100_fiber:item.per100.fiber||0,per100_sugar:item.per100.sugar||0,per100_sodium:item.per100.sodium||0,color:item.color||COLORS[0]});
       if(!row)throw new Error("insert returned no row");
+      // Carry the database id so a same-session delete can reach the row.
+      setLog(p=>({...p,[slot]:withDbId(p[slot],item,row)}));
     }catch{
       setLog(p=>({...p,[slot]:p[slot].filter(i=>i!==item)}));
       showError("Food couldn't be saved. Check your connection.");
@@ -6827,7 +6850,7 @@ export default function App(){
         onCoachOpen={()=>setAiOpen(true)} onCalendarOpen={()=>setTab("calendar")} onProgressOpen={()=>setTab("progress")} onAddOpen={onAddOpen}
         todayPlan={todayPlanFor(workouts)} todayPlanSeeded={workouts===INITIAL_WORKOUTS} onStartPlan={(id)=>{setPendingStartPlanId(id);setTab("workout");}}
         toggleSuppTaken={toggleSuppTaken} weekHistory={weekHistory} onRetryWeek={()=>loadWeekHistory()} profileCreatedAt={profileCreatedAt}/>}
-      {tab==="food"&&<FoodTab log={log} setLog={setLog} uid={uid} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/>}
+      {tab==="food"&&<FoodTab log={log} setLog={setLog} uid={uid} onDeleteFailed={showError} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/>}
       {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} onSessionComplete={saveWorkoutSession} prHistory={prHistory} setPrHistory={setPrHistory} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress} pendingStartPlanId={pendingStartPlanId} onPendingConsumed={()=>setPendingStartPlanId(null)}/>}
       {tab==="supps"&&<SuppsTab suppList={suppList} setSuppList={setSuppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} taken={taken} total={total} uid={uid} addSuppToList={addSuppToList}/>}
       {tab==="calendar"&&<CalendarTab uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz}/>}
