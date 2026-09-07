@@ -6201,6 +6201,8 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
   const [range,setRange]=useState("30d");
   const [dailyData,setDailyData]=useState([]);
   const [monthly,setMonthly]=useState([]); // weight_monthly rows, all time
+  // Retry was setRange(r=>r): same value, React bails out, nothing re-ran.
+  const [reloadKey,setReloadKey]=useState(0);
   const [loading,setLoading]=useState(true);
   const [loadError,setLoadError]=useState(false);
   const [newWeight,setNewWeight]=useState("");
@@ -6268,7 +6270,7 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
       setLoading(false);
     })();
     return()=>{cancel=true;};
-  },[uid,range,dayCount,weightLog]);
+  },[uid,range,dayCount,weightLog,reloadKey]);
 
   // Stats
   const stats=useMemo(()=>{
@@ -6334,7 +6336,7 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
       {loadError&&(
         <div data-testid="progress-failed" style={{margin:"12px 16px 0",padding:"10px 14px",borderRadius:12,background:T.accentPill,border:("1px solid "+T.border),display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
           <div style={{fontSize:12,color:T.text}}>Couldn't load this range — the numbers below are not yours.</div>
-          <div onClick={()=>setRange(r=>r)} style={{fontSize:12,fontWeight:700,color:T.accent,cursor:"pointer"}}>Retry</div>
+          <div onClick={()=>setReloadKey(k=>k+1)} style={{fontSize:12,fontWeight:700,color:T.accent,cursor:"pointer"}}>Retry</div>
         </div>
       )}
       {/* Sticky header */}
