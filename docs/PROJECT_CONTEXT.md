@@ -451,6 +451,14 @@ a signed-in account; demo mode is not enough.**
 
 ## `/api/coach` security
 
+**Local dev burns the real rate limit (2026-09-07).** `vite.config.js` proxies
+`/api` to the deployment, so every coach call from `localhost:5173` counts
+against `coach_usage` for the signed-in user — the same **60/hour + 400/day**
+the production app uses. When iOS testing starts on the same account, that
+budget is shared three ways (web prod, localhost, the Swift client) and a 429
+will look like a client bug. Check `coach_usage` for the user before debugging
+a coach that "stopped working".
+
 Vercel Edge runtime. Not streaming — `await upstream.json()` buffers the whole response.
 
 **Auth gate.** The client attaches its `access_token` via `coachHeaders()`, read at call
@@ -671,16 +679,20 @@ Anthropic response formats are unchanged and out of scope for security work:
     2026-09-06, not fixed: needs either a NOT NULL + default, or a single write
     at wizard completion. Check this row before trusting any per-user report.
 
-17. **The coach can emit the same action twice in one reply, and the client
-    applies both.** Observed 2026-09-07 with the bar-lift verify: "log 16 oz of
-    water" produced two `water 16` actions (one carrying the message, one a bare
-    "Water logged!"), so `water_log` got 32; "100g of chicken breast" produced
-    two identical food items, two `food_log` rows 6 ms apart. Not a client
-    double-apply — `send` returns after `applyActions`, and `generateSuggestions`
-    never applies actions — the model hedged. `applyActions` has no in-reply
-    dedup. Whether identical actions in one reply should collapse is a contract
-    decision ("two 8 oz glasses" is a legitimate pair), so logged rather than
-    changed. The two extra rows from the verify are still in the tables.
+17. ~~**The coach can emit the same action twice in one reply.**~~ **RESOLVED
+    2026-09-07 — and it was the client, not the model.** `send` passed
+    `[...messages, userMsg]` as history and `callClaude` appended `userMsg`
+    again, so **every request carried the user's message twice**. The model did
+    exactly what it was asked, twice: two `water 16` actions, two chicken rows
+    6 ms apart, and on a cleared chat it literally replied "Logged both 16oz
+    entries". Fixed in request assembly — `buildRequestMessages` puts the new
+    turn on exactly once and is tested — and `send` now passes prior turns
+    only. Two related changes shipped with it: applied-action cards are
+    replayed into the model's context as `[Logged …]` lines (they were dropped
+    entirely, so the model could not know a request had been acted on), and
+    the prompt gained explicit action-hygiene rules. Verified against the live
+    model on a cleared chat: one water action, one food action, and a plain
+    question produced no actions. No time-window dedup was added.
 
 ---
 

@@ -577,6 +577,42 @@ const SUPP_CATS=["All",...Object.entries(
 ).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).map(([c])=>c)];
 const DOT_COLORS={"Protein":"#FF6B4A","Creatine":"#5B8DEF","Pre-Workout":"#E24B4A","BCAAs":"#9B6DFF","Vitamins":"#F5A623","Omega-3":"#2ECC8F","Electrolytes":"#5B8DEF","Sleep":"#9B6DFF","Collagen":"#FF6B4A","Probiotic":"#2ECC8F","Multivitamin":"#F5A623","Greens/Multi":"#2ECC8F","Supplement":"#888"};
 
+// What the model is shown of the conversation so far. Applied-action cards
+// (water_logged, multi_food_logged, …) used to be filtered out entirely, so
+// from the model's side nothing it had done ever happened — and it re-emitted
+// the previous turn's water action alongside the next request (2026-09-07,
+// known issue #17). They are now replayed as short assistant lines. Consecutive
+// same-role entries are merged so the transcript alternates cleanly.
+export function summarizeActionCard(m){
+  if(m.type==="water_logged")return "[Logged "+m.oz+" oz water]"+(m.text?" "+m.text:"");
+  if(m.type==="multi_food_logged")return "[Logged: "+(m.items||[]).map(i=>i.name+" "+i.grams+" g").join(", ")+"]"+(m.text?" "+m.text:"");
+  if(m.type==="supp_added")return "[Proposed supplements: "+(m.items||[]).map(i=>i.name).join(", ")+"]"+(m.text?" "+m.text:"");
+  if(m.type==="meal_suggestion")return "[Suggested meals]"+(m.text?" "+m.text:"");
+  if(m.type==="recipe")return "[Gave a recipe]"+(m.text?" "+m.text:"");
+  if(m.type==="workout_plan")return "[Proposed a workout plan]"+(m.text?" "+m.text:"");
+  return m.text||"";
+}
+// The full messages array for one request: context, then the new user turn
+// exactly once. If the caller already put the new message at the end of
+// history, it is not appended a second time — that duplication is what made
+// the model act on every request twice.
+export function buildRequestMessages(userMsg,history){
+  const ctx=buildContextMessages(history);
+  const last=ctx[ctx.length-1];
+  if(last&&last.role==="user"&&last.content===userMsg)return ctx;
+  return [...ctx,{role:"user",content:userMsg}];
+}
+export function buildContextMessages(history){
+  // isError bubbles are our own failure text; check-ins are unprompted. Neither
+  // is something the model said in reply to the user.
+  const turns=history.filter(m=>!m.isCheckin&&!m.isError).map(m=>({role:m.bot?"assistant":"user",content:m.type?summarizeActionCard(m):(m.text||"")})).filter(t=>t.content);
+  const merged=[];
+  turns.forEach(t=>{const last=merged[merged.length-1]; if(last&&last.role===t.role)last.content+="\n"+t.content; else merged.push({...t});});
+  // The API requires the first message to be from the user.
+  while(merged.length&&merged[0].role!=="user")merged.shift();
+  return merged.slice(-10);
+}
+
 // ── SIDE RAIL AI PANEL ──────────────────────────────────────────
 // ── ACTIONS contract ────────────────────────────────────────────
 // One block per reply, multiplicity inside the array rather than across blocks:
@@ -872,6 +908,12 @@ The sections below say WHEN each action applies and WHAT fields it needs. Their 
 - {"type":"workout_plan","name":...,"exercises":[...],...}              — the WORKOUT PLAN section
 
 Ignore the literal MULTI_FOOD:/WATER_LOG:/ADD_SUPP:/RECIPE:/WORKOUT_PLAN:/MEAL_SUGGESTION: prefixes shown in the examples below — those are the previous contract. Emit the same data as ACTIONS entries. Maximum 10 actions per response.
+
+ACTION HYGIENE — these are hard rules, each one has produced a duplicate database row:
+- ONE action per intent, and its quantity is the amount in THIS MESSAGE ONLY: "16 oz of water" is [{"type":"water","oz":16}] — never two entries of 16, never 16 plus a bare confirmation, and NEVER the day's running total from the live data (the app adds it to today's total itself).
+- Every action must do something the user asked for IN THIS MESSAGE. Never emit an action to confirm, restate, or summarise — the message after the pipe is where you talk.
+- Never re-emit an action from an earlier turn. Your earlier actions appear in the conversation as "[Logged …]" lines; those already happened. Only what THIS message asks for goes in the array.
+- If the message asks for nothing to be logged, the array is empty: ACTIONS:[]|message.
 ${buildContextBlock()}
 
 ══════════════════════════════════════
@@ -946,11 +988,10 @@ RULES:
     // Replayed as assistant turns they poison every later request — and if one
     // lands first in the window, messages[0].role is "assistant" and Anthropic
     // 400s, so a single failure breaks the conversation permanently.
-    const contextMsgs=history.filter(m=>!m.type&&!m.isCheckin&&!m.isError).slice(-10).map(m=>({role:m.bot?"assistant":"user",content:m.text}));
     const res=await fetch("/api/coach",{
       method:"POST",
       headers:coachHeaders(),
-      body:JSON.stringify({max_tokens:1200,system:buildSystem(),messages:[...contextMsgs,{role:"user",content:userMsg}]}),
+      body:JSON.stringify({max_tokens:1200,system:buildSystem(),messages:buildRequestMessages(userMsg,history)}),
     });
     if(!res.ok){
       const errBody=await res.json().catch(()=>({}));
@@ -1139,7 +1180,11 @@ RULES:
     // returns a format prefix — it is the only thing that should choose.
     setThinking(true);
     try{
-      const reply=await callClaude(msg,[...messages,userMsg]);
+      // Prior turns only. Passing [...messages,userMsg] here while callClaude
+      // appended userMsg again sent every request with the user's message TWICE —
+      // the model logged "both 16oz entries" and two chicken rows landed 6 ms
+      // apart (known issue #17). buildRequestMessages also guards against it.
+      const reply=await callClaude(msg,messages);
 
       // ── Current contract ──
       const actions=parseActions(reply);

@@ -195,6 +195,42 @@ is part of the value. Dropping it is not simplification.
 
 ---
 
+## 2026-09-07 — "The model did it twice" was the client asking twice
+
+Two identical `food_log` rows 6 ms apart, `water_log` at 32 for "16 oz". The
+chat log showed two water cards from one reply, the second carrying the
+client's default text — so the model *had* emitted two actions, and the first
+diagnosis was "the model hedged; contract decision". That diagnosis was wrong
+in a way worth recording.
+
+**What actually happened.** `send` passed `[...messages, userMsg]` as history
+and `callClaude` appended `userMsg` again. Every request ended with the user's
+message twice. The model logged what it was asked, twice — and on a cleared
+chat, after the prompt was tightened, it said so out loud: "Logged both 16oz
+entries". Not hedging. Obedience.
+
+**Why the first diagnosis was wrong.** It stopped at the model's *output* and
+never read the model's *input*. The screenshot, the DB rows and the stored
+cards all describe the reply; none of them describe the request. A duplicate
+in the output has two candidate causes — the model, or what it was shown — and
+only the request body separates them. The prompt tightening that followed was
+work against the wrong cause; it made the model *explain* the duplicate
+rather than stop it.
+
+**What structurally prevents it.** Request assembly is one pure function,
+`buildRequestMessages(userMsg, history)`, and its test asserts the new turn
+appears exactly once. Before, assembly was split across two functions with an
+implicit contract about whether `history` already contained the new message
+— the kind of contract that lives in nobody's head. In Swift the same shape:
+build the transcript in one place, from a value type, and make "append the
+current turn" the builder's job rather than the caller's.
+
+**How to apply.** When the model appears to misbehave, read the request
+before the reply. Log or replay the exact `messages` array. A verify pass on
+a model integration is not complete until it has looked at both sides.
+
+---
+
 ## 2026-09-07 — A correct write with a stale literal is its own bug class
 
 `OnboardingWizard`'s profile upsert wrote `theme:"dark"` — right table, right

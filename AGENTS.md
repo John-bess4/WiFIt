@@ -33,7 +33,7 @@ npm run dev       # vite → http://localhost:5173
 npm run build     # vite build
 npm run preview   # serve the production build
 npm run lint      # eslint 9, flat config; 25 known no-unused-vars warnings, 0 errors
-npm test          # vitest, node env (+ jsdom per file); 100 tests, ~1.5s. TZ pinned for localDate.
+npm test          # vitest, node env (+ jsdom per file); 107 tests, ~1.5s. TZ pinned for localDate.
 ```
 
 Package manager is **npm** (`package-lock.json`). `npm test` is a deliberately
@@ -77,7 +77,8 @@ signal lives in the console and the network tab, so:
    table — rather than trusting the optimistic UI update.
 
 **If the AI coach breaks, check the pinned `MODEL` constant in `api/coach.js`
-first.** Model IDs retire; the proxy passes `upstream.status` through verbatim, so
+first** — then `coach_usage`: localhost proxies `/api` to production and shares
+the user's 60/hour limit with every other client on that account. Model IDs retire; the proxy passes `upstream.status` through verbatim, so
 a retired model surfaces as a 404 that looks exactly like a missing deployment.
 
 ## Conventions
