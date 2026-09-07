@@ -195,6 +195,54 @@ is part of the value. Dropping it is not simplification.
 
 ---
 
+## 2026-09-07 — Derived values belong in the database, not in client state
+
+**Decision.** When a value can be computed from rows we already store, compute
+it in Postgres (a view, a generated column, or a query) rather than caching it
+in client state and writing it back.
+
+**Why.** `prHistory` was a client-side cache of per-exercise best weight — a
+value `workout_sessions` already contained. Because it had its own writer, it
+could drift from its source, and every one of the five PR bugs (P1–P5, audit
+2026-09-07) was a form of that drift: computed at the wrong moment, from an
+incomplete window, or never recomputed after the underlying set changed.
+Replacing it with the `exercise_bests` view didn't fix five bugs individually;
+it made four of them structurally impossible. A value with one writer cannot
+drift.
+
+**Second reason, specific to this project.** The SwiftUI client is a second
+consumer of the same data. Derived state in the React client has to be
+reimplemented in Swift, and any divergence between the two implementations is
+a bug that only appears on one platform. Derived state in the database is
+correct for both by construction and gets ported for free.
+
+**When this does NOT apply.** Presentation formatting, values that are
+genuinely per-session and never re-read, and anything where the query cost is
+real and measured (not assumed). This is not an argument for pushing business
+logic into Postgres generally — it's an argument against caching a derivation
+next to its source.
+
+**Three tests before caching a derived value:**
+1. Can it be computed from rows we already store? If yes, default to
+   computing it.
+2. If it drifts from its source, does anything detect that? If nothing
+   recomputes or reconciles, the drift is permanent and silent.
+3. Would a second client reimplement this logic? If yes, the
+   reimplementation is a future divergence bug.
+
+**Corollary.** A derived read must fail loud. An empty `exercise_bests` read is
+indistinguishable from a new lifter, and that branch stamps a genuine PR as
+`false` — permanently, since nothing recomputes it. Use `selectAuth` and
+surface the failure, per the laundering entry.
+
+**One more thing it exposed.** `workout_sessions.exercises[].sets` stored each
+set as its *display string* (`"10×80lbs"`), so any baseline computed from the
+rows had to regex a render format. The migration adds `setsData: [{reps,
+weight}]` alongside (backfilled once) and the view reads the number. A stored
+value should never depend on how it was once formatted.
+
+---
+
 ## 2026-09-07 — A stored derived value is only as right as the moment it was derived
 
 `workout_sessions.prs` is the app's one computed-and-stored value, and nothing

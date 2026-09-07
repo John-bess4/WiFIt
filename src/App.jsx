@@ -3221,7 +3221,7 @@ function CreateWorkoutModal({onSave,onClose,existing}){
 }
 
 // ── ACTIVE WORKOUT VIEW ──────────────────────────────────────────
-function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapKey=null}){
+function ActiveWorkout({workout,onFinish,onClose,bests={},restore=null,snapKey=null}){
   const T=useTheme();
   // `restore` is a snapshot of this same workout from before an unmount — a tab
   // switch, a reload, or the app being evicted. Seeding from it is what makes
@@ -3325,7 +3325,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapK
   const doneSets=allSets.filter(s=>s.done).length;
   const totalSets=allSets.length;
   // Derived, not accumulated: reflects the sets as they are right now.
-  const newPRs=useMemo(()=>computePRs(sets,prHistory),[sets,prHistory]);
+  const newPRs=useMemo(()=>computePRs(sets,bests),[sets,bests]);
   const pct=totalSets>0?Math.round((doneSets/totalSets)*100):0;
 
   const toggleSet=(exIdx,setIdx)=>{
@@ -3339,13 +3339,13 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapK
           //
           // best===0 means this exercise has no history to beat, and a first-ever
           // lift is a baseline, not a record. Without the best>0 test an empty
-          // prHistory made every weighted set a "PR" — that is what put 4 phantom
+          // bests made every weighted set a "PR" — that is what put 4 phantom
           // PRs on a 13-second artifact session, and it would fire on every
-          // exercise of the first real session too, since prHistory is seeded
+          // exercise of the first real session too, since bests is seeded
           // only when workout_sessions already has rows.
           //
-          // Every writer of prHistory stores positive weights only (see the
-          // loader and both setPrHistory updaters), so best>0 is exactly "has a
+          // Every writer of bests stores positive weights only (see the
+          // loader and both setBests updaters), so best>0 is exactly "has a
           // baseline". This also fails safe if a workout starts before the
           // history load finishes: no PRs claimed rather than all of them.
         }else{
@@ -3481,7 +3481,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapK
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
             <div style={{fontSize:14,fontWeight:700,color:T.text}}>{ex.name}</div>
             {newPRs.includes(ex.name)&&<span style={{fontSize:10,fontWeight:700,color:"#F59E0B",background:"rgba(245,158,11,0.15)",padding:"2px 8px",borderRadius:20}}>🏆 PR</span>}
-            {prHistory[ex.name]&&<span style={{fontSize:10,color:T.muted}}>Best: {prHistory[ex.name]}lbs</span>}
+            {bests[ex.name]&&<span style={{fontSize:10,color:T.muted}}>Best: {bests[ex.name]}lbs</span>}
           </div>
           <div style={{background:T.card,border:("1px solid "+T.border),boxShadow:T.glowShadow,borderRadius:14,overflow:"hidden"}}>
             <div style={{display:"grid",gridTemplateColumns:"32px 1fr 1fr 44px",gap:8,padding:"8px 12px",borderBottom:("1px solid "+T.border),background:T.surface}}>
@@ -3597,7 +3597,7 @@ function ExercisePreviewList({exercises}){
 }
 
 // ── WORKOUT TAB ──────────────────────────────────────────────────
-function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory,setPrHistory,onSavePlan,onDeletePlan,uid,onActiveChange,historyStatus="ready",onRetryHistory,pendingStartPlanId=null,onPendingConsumed}){
+function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,bests,onSavePlan,onDeletePlan,uid,onActiveChange,historyStatus="ready",onRetryHistory,pendingStartPlanId=null,onPendingConsumed}){
   const T=useTheme();
   const [createOpen,setCreateOpen]=useState(false);
   const [editWorkout,setEditWorkout]=useState(null);
@@ -3660,15 +3660,7 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory
     const doneSets=allSets.filter(s=>s.done).length;
     // The persisted value is decided HERE, from the final sets, against the
     // history as loaded. Whatever the live banner showed is not consulted.
-    const newPRs=computePRs(sets,prHistory);
-    setPrHistory(prev=>{
-      const updated={...prev};
-      sets.forEach(ex=>{
-        const best=bestDoneWeight(ex);
-        if(best>0&&best>(updated[ex.name]||0))updated[ex.name]=best;
-      });
-      return updated;
-    });
+    const newPRs=computePRs(sets,bests);
     const entry={
       id:"h"+Date.now(),
       workoutName:activeWorkout.name,
@@ -3687,7 +3679,8 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory
       exercises:sets.map(ex=>({
         name:ex.name,
         isPR:newPRs.includes(ex.name),
-        sets:ex.sets.filter(s=>s.done).map(s=>s.actualReps+"×"+s.actualWeight+"lbs")
+        sets:ex.sets.filter(s=>s.done).map(s=>s.actualReps+"×"+s.actualWeight+"lbs"),
+        setsData:setsDataOf(ex),
       }))
     };
     clearWorkoutSnapshot(snapKey);
@@ -3705,7 +3698,7 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,prHistory
     <div style={{paddingBottom:80}}>
       {createOpen&&<CreateWorkoutModal onSave={saveWorkout} onClose={()=>setCreateOpen(false)}/>}
       {editWorkout&&<CreateWorkoutModal existing={editWorkout} onSave={saveWorkout} onClose={()=>setEditWorkout(null)}/>}
-      {activeWorkout&&<ActiveWorkout workout={activeWorkout} onFinish={finishWorkout} onClose={cancelWorkout} prHistory={prHistory} restore={restorePayload} snapKey={snapKey}/>}
+      {activeWorkout&&<ActiveWorkout workout={activeWorkout} onFinish={finishWorkout} onClose={cancelWorkout} bests={bests} restore={restorePayload} snapKey={snapKey}/>}
 
       {/* Header */}
       <div style={{background:T.card,padding:"16px 20px 12px",borderBottom:("1px solid "+T.border),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -4627,8 +4620,11 @@ export const withDbId=(items,item,row)=>items.map(i=>i===item?{...i,id:row.id}:i
 // used to leave a stale entry in an append-only list that then persisted.
 export const setWeightOf=(setStr)=>parseFloat(String(setStr).split("×")[1])||0;
 export const bestDoneWeight=(ex)=>Math.max(0,...(ex.sets||[]).filter(s=>s.done).map(s=>parseFloat(s.actualWeight)||0));
-export const computePRs=(sets,prHistory={})=>(sets||[]).filter(ex=>{const w=bestDoneWeight(ex);const best=prHistory[ex.name]||0;return w>0&&best>0&&w>best;}).map(ex=>ex.name);
-export const bestsFromSessions=(sessions)=>{const ph={};(sessions||[]).forEach(s=>(s.exercises||[]).forEach(ex=>(ex.sets||[]).forEach(setStr=>{const w=setWeightOf(setStr);if(w>0&&w>(ph[ex.name]||0))ph[ex.name]=w;})));return ph;};
+export const computePRs=(sets,bests={})=>(sets||[]).filter(ex=>{const w=bestDoneWeight(ex);const best=bests[ex.name]||0;return w>0&&best>0&&w>best;}).map(ex=>ex.name);
+// Structured per-set data stored ALONGSIDE the display strings, so the PR
+// baseline (the exercise_bests view) never depends on render format.
+export const setsDataOf=(ex)=>(ex.sets||[]).filter(s=>s.done).map(s=>({reps:parseFloat(s.actualReps)||0,weight:parseFloat(s.actualWeight)||0}));
+export const bestsFromView=(rows)=>Object.fromEntries((rows||[]).map(r=>[r.name,Number(r.best_lbs)||0]));
 
 export const foodDeleteFilter=(item,uid)=>hasDbId(item)&&uid?"id=eq."+item.id+"&user_id=eq."+uid:null;
 
@@ -6587,13 +6583,13 @@ export default function App(){
         }
         // Workout history
         // selectAuth, not select: a failed read must NOT become an empty
-        // history. Empty prHistory means every lift is "a first" and a genuine
+        // history. Empty bests means every lift is "a first" and a genuine
         // PR is persisted as isPR:false — worse than no value. On failure the
         // status is "failed" and WorkoutTab blocks Start behind a Retry.
         const {authError:histErr,rows:sessions}=await sb.selectAuth("workout_sessions","user_id=eq."+uid,{order:"created_at.desc",limit:20});
-        setHistoryStatus(histErr?"failed":"ready");
+        const bestsOk=!histErr&&await loadBests(uid);
+        setHistoryStatus(histErr||!bestsOk?"failed":"ready");
         if(sessions?.length>0){
-          setPrHistory(bestsFromSessions(sessions));
           setHistory(sessions.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[],prs:s.prs||[]})));
         }
         // Water intake today
@@ -6765,14 +6761,6 @@ export default function App(){
     const wname=(session?.workoutName||"").trim();
     if(!wname){showError("Couldn't save workout — it has no name.");return;}
     setHistory(p=>[session,...p]);
-    setPrHistory(prev=>{
-      const updated={...prev};
-      (session.exercises||[]).forEach(ex=>(ex.sets||[]).forEach(setStr=>{
-        const w=setWeightOf(setStr);
-        if(w>0&&w>(updated[ex.name]||0))updated[ex.name]=w;
-      }));
-      return updated;
-    });
     if(!uid)return;
     try{
       // completed_date is the day the work STARTED, carried on the session, not
@@ -6781,6 +6769,9 @@ export default function App(){
       const completedDate=session.startedAt?localDate(new Date(session.startedAt)):today;
       const row=await sb.insert("workout_sessions",{user_id:uid,workout_name:wname,completed_date:completedDate,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises||[],prs:session.prs||[]});
       if(!row)throw new Error("insert returned no row");
+      // The row is the source of truth for bests; re-read the view rather than
+      // bumping a client copy. A failed re-read pauses Start like any other.
+      await loadBests(uid);
     }catch{
       setHistory(p=>p.filter(s=>s!==session));
       showError("Workout couldn't be saved. Check your connection.");
@@ -6788,16 +6779,26 @@ export default function App(){
   };
 
   const [workouts,setWorkouts]=useState(INITIAL_WORKOUTS);
-  const [prHistory,setPrHistory]=useState({});
+  // bests is assigned ONLY from the exercise_bests view (mount, retry, after a
+  // finish lands). No code path derives it from session data on the client —
+  // a cache with its own writer is what made the PR bugs possible. A failed
+  // read is "failed", never {}: {} means "new lifter" and would stamp a
+  // genuine PR as false, permanently.
+  const [bests,setBests]=useState({});
   const [historyStatus,setHistoryStatus]=useState("loading"); // loading | ready | failed
+  const loadBests=async(u)=>{
+    const {authError,rows}=await sb.selectAuth("exercise_bests","user_id=eq."+u+"&select=name,best_lbs",{limit:1000});
+    if(authError){setHistoryStatus("failed");return false;}
+    setBests(bestsFromView(rows));
+    return true;
+  };
   const retryHistory=async()=>{
     const u=sb.getUser()?.id; if(!u)return;
     setHistoryStatus("loading");
     const {authError,rows}=await sb.selectAuth("workout_sessions","user_id=eq."+u,{order:"created_at.desc",limit:20});
     if(authError){setHistoryStatus("failed");return;}
-    setPrHistory(bestsFromSessions(rows));
     setHistory(rows.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[],prs:s.prs||[]})));
-    setHistoryStatus("ready");
+    if(await loadBests(u))setHistoryStatus("ready");
   };
   // Drives the dot on the Train nav item. WorkoutTab keeps this in sync while
   // the app is running; this effect covers the case WorkoutTab cannot — after a
@@ -6936,7 +6937,7 @@ export default function App(){
         todayPlan={todayPlanFor(workouts)} todayPlanSeeded={workouts===INITIAL_WORKOUTS} onStartPlan={(id)=>{setPendingStartPlanId(id);setTab("workout");}}
         toggleSuppTaken={toggleSuppTaken} weekHistory={weekHistory} onRetryWeek={()=>loadWeekHistory()} profileCreatedAt={profileCreatedAt}/>}
       {tab==="food"&&<FoodTab log={log} setLog={setLog} uid={uid} onDeleteFailed={showError} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/>}
-      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} onSessionComplete={saveWorkoutSession} prHistory={prHistory} setPrHistory={setPrHistory} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress} historyStatus={historyStatus} onRetryHistory={retryHistory} pendingStartPlanId={pendingStartPlanId} onPendingConsumed={()=>setPendingStartPlanId(null)}/>}
+      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} onSessionComplete={saveWorkoutSession} bests={bests} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress} historyStatus={historyStatus} onRetryHistory={retryHistory} pendingStartPlanId={pendingStartPlanId} onPendingConsumed={()=>setPendingStartPlanId(null)}/>}
       {tab==="supps"&&<SuppsTab suppList={suppList} setSuppList={setSuppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} taken={taken} total={total} uid={uid} addSuppToList={addSuppToList}/>}
       {tab==="calendar"&&<CalendarTab uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz}/>}
       {tab==="progress"&&<ProgressPage uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz} weightLog={weightLog} logWeight={logWeight} onProfileOpen={()=>setProfileMenuOpen(true)}/>}

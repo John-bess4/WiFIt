@@ -265,6 +265,20 @@ Edge function to authenticate these queries with the caller's own JWT instead of
 service-role key. Verified as the `authenticated` role: SELECT saw 2 rows, DELETE
 removed 0, UPDATE changed 0.
 
+### exercise_bests — VIEW (2026-09-07)
+
+```
+exercise_bests   user_id, name, best_lbs        security_invoker = true
+                 = max((setsData[].weight)) per exercise over workout_sessions
+                 GRANT select TO authenticated; nothing to anon (verified)
+```
+
+The PR baseline. Read with `sb.selectAuth` at mount, on Retry, and after a
+session insert lands; never derived on the client. `workout_sessions.exercises[]`
+now carries `setsData: [{reps, weight}]` alongside the display `sets` strings —
+backfilled once by `20260907_exercise_bests_view_and_sets_data.sql`, written by
+`finishWorkout` since. See `DECISIONS.md` §"Derived values belong in the database".
+
 ### workouts — LEGACY, DO NOT USE
 `id, user_id, name, tag, level, est_min, exercises, created_at, updated_at`. Zero rows.
 The application never references it. Plans live in `workout_plans`.
@@ -769,11 +783,11 @@ Anthropic response formats are unchanged and out of scope for security work:
       live against a seeded 23-session history (true best 80, app showed
       "Best: 30", 40 persisted as a PR). See #24 for the fix decision.
 
-24. **`prHistory` completeness (F4) — decision pending.** Options: raise the
-    rebuild's limit (simple, still a ceiling); or a server-side per-exercise
-    max via a SQL view over `workout_sessions.exercises` jsonb (correct by
-    construction, one migration, RLS-scoped). Recommendation in the session
-    report; not implemented until signed off.
+24. ~~**`prHistory` completeness (F4).**~~ **RESOLVED 2026-09-07** — the
+    client cache is gone; `bests` is read from the `exercise_bests` view
+    (§schema) at mount, on Retry and after each finish, via `selectAuth`, and a
+    failed read pauses Start. Verified against a seeded 23-session history:
+    "Best: 80" where the old code showed 30, and 40 not a PR.
 
     Logged, not fixed, from the same audit: `workout_plans.sort_order` is
     written as `0` by the coach path and `workouts.length` by the manual path
