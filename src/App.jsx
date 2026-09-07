@@ -349,6 +349,31 @@ function searchLocalSupp(query){
     .map(({_score,...s})=>s);
 }
 
+// USDA reports servingSize with a UNIT, and it is not always grams: "ml" and
+// "MLT" for drinks, "IU" for vitamins, "oz" for some branded packs. The number
+// used to be taken regardless, so a 414 ml shake became 414 g and a 5000 IU
+// vitamin D became 5000 g/serving in the supplement list.
+//
+// Grams pass through and ounces convert, because 1 oz IS 28.3495 g — that is a
+// unit conversion, not a guess. Millilitres do NOT convert: ml→g needs a
+// density, which is a property of the food, and the custom-food form already
+// refuses to guess exactly this (it makes the user supply grams for
+// food-dependent units). Two parts of the app disagreeing about what a
+// millilitre weighs is how known issue #3 happened; this side does not add a
+// third position.
+//
+// null means "unknown", which the food UI already handles honestly — it falls
+// back to 100 g and SAYS SO ("1 serving = 100g"). A disclosed default beats a
+// silent wrong number.
+const USDA_GRAM_UNITS={g:1,grm:1,gram:1,grams:1,oz:28.3495};
+export function usdaServingGrams(f){
+  const qty=parseFloat(f&&f.servingSize);
+  if(!qty||qty<=0)return null;
+  const factor=USDA_GRAM_UNITS[String((f&&f.servingSizeUnit)||"").trim().toLowerCase()];
+  if(!factor)return null;
+  return Math.round(qty*factor*10)/10;
+}
+
 async function searchUSDA(query){
   try{
     const url="https://api.nal.usda.gov/fdc/v1/foods/search?query="+encodeURIComponent(query)+"&dataType=Branded,Foundation,SR%20Legacy&pageSize=10&api_key="+USDA_API_KEY;
@@ -371,7 +396,7 @@ async function searchUSDA(query){
         return{
           name:f.description,
           brand:f.brandOwner||f.brandName||f.publishedDate||"",
-          servingG:f.servingSize||null,
+          servingG:usdaServingGrams(f),
           per100:{
             cal:Math.round(cal),
             protein:Math.round((byId[1003]||byName["protein"]||0)*10)/10,
@@ -468,7 +493,7 @@ async function searchSupp(query){
         const cal=byId[1008]||byId[1062]||0;
         return{
           name:f.description,brand:f.brandOwner||"",
-          category:"Supplement",servingG:f.servingSize||null,isSupp:true,
+          category:"Supplement",servingG:usdaServingGrams(f),isSupp:true,
           per100:{
             cal:Math.round(cal),
             protein:Math.round((byId[1003]||0)*10)/10,
@@ -493,21 +518,6 @@ function CheckIcon({done,size=12}){
   return done
     ?<svg width={size} height={size} viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round"/></svg>
     :<svg width={size} height={size} viewBox="0 0 12 12"><line x1="3" y1="3" x2="9" y2="9" stroke="#E24B4A" strokeWidth="1.5" strokeLinecap="round"/><line x1="9" y1="3" x2="3" y2="9" stroke="#E24B4A" strokeWidth="1.5" strokeLinecap="round"/></svg>;
-}
-
-function GoalDots({dd,size=6}){
-  const T=useTheme();
-  if(!dd)return null;
-  if(dd.food&&dd.workout&&dd.supp)return(
-    <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#2ECC8F"/><polyline points="4,8 7,11 12,5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>
-  );
-  return(
-    <div style={{display:"flex",gap:2,flexWrap:"wrap",justifyContent:"center"}}>
-      {dd.food&&<div style={{width:size,height:size,borderRadius:"50%",background:"#2ECC8F"}}/>}
-      {dd.workout&&<div style={{width:size,height:size,borderRadius:"50%",background:"#5B8DEF"}}/>}
-      {dd.supp&&<div style={{width:size,height:size,borderRadius:"50%",background:"#F5A623"}}/>}
-    </div>
-  );
 }
 
 // Derived from SUPP_DB, not hand-maintained. The browse filter used its own
@@ -3474,6 +3484,11 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapK
   const [restTotal,setRestTotal]=useState(90);   // configured duration
   const [restDuration,setRestDuration]=useState(90); // picker value
   const [newPRs,setNewPRs]=useState(()=>restore?.newPRs||[]); // ["Bench Press",…]
+  const [confirmCancel,setConfirmCancel]=useState(false);
+  // Only meaningful on a restored session, and only until dismissed. A resumed
+  // workout is otherwise indistinguishable from a fresh one that inexplicably
+  // has sets ticked and a running clock.
+  const [showResumed,setShowResumed]=useState(!!restore);
   const timerRef=useRef();
   const audioCtx=useRef(null);
   // Both timers are derived from wall-clock timestamps, not from counting ticks.
@@ -3604,9 +3619,36 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapK
 
   return(
     <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:T.bg,zIndex:190,overflowY:"auto",paddingBottom:80}}>
+
+      {/* Cancel confirmation. Cancel is the only exit that destroys work: it
+          clears the snapshot as well as the session, so nothing survives it —
+          not a reload, not the nav dot. It is also a small target in the corner
+          a back-swipe thumb reaches for. zIndex sits above the 190 of this view
+          for the same reason that 190 is what hides the bottom nav. */}
+      {confirmCancel&&(
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.6)",backdropFilter:"blur(4px)",zIndex:210,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 16px"}}>
+          <div style={{background:T.card,borderRadius:20,width:"100%",maxWidth:400,padding:"22px 20px 20px",boxShadow:"0 24px 64px rgba(0,0,0,0.35)",display:"flex",flexDirection:"column",gap:14}}>
+            <div>
+              <div style={{fontSize:17,fontWeight:700,color:T.text}}>Discard this workout?</div>
+              <div style={{fontSize:13,color:T.subtext,marginTop:6,lineHeight:1.45}}>
+                {doneSets} of {totalSets} sets, {fmt(elapsed)} elapsed{newPRs.length>0?(", "+newPRs.length+" PR"+(newPRs.length===1?"":"s")):""}. This cannot be undone — nothing is saved and the session will not come back after a reload.
+              </div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              <button onClick={()=>setConfirmCancel(false)} style={{width:"100%",background:T.accent,border:"none",borderRadius:12,padding:"13px",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer"}}>
+                Keep going
+              </button>
+              <button onClick={()=>{setConfirmCancel(false);onClose();}} style={{width:"100%",background:"transparent",border:("1px solid "+T.border),borderRadius:12,padding:"13px",color:T.red,fontSize:15,fontWeight:600,cursor:"pointer"}}>
+                Discard workout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{background:T.card,padding:"16px 16px 12px",borderBottom:("1px solid "+T.border),display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:10}}>
-        <div onClick={onClose} style={{fontSize:13,color:T.muted,cursor:"pointer"}}>✕ Cancel</div>
+        <div onClick={()=>doneSets>0?setConfirmCancel(true):onClose()} style={{fontSize:13,color:T.muted,cursor:"pointer"}}>✕ Cancel</div>
         <div style={{textAlign:"center"}}>
           <div style={{fontSize:14,fontWeight:700,color:T.text}}>{workout.name}</div>
           <div style={{fontSize:12,color:T.accent,fontWeight:600}}>{fmt(elapsed)}</div>
@@ -3618,6 +3660,19 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapK
       <div style={{height:3,background:T.border}}>
         <div style={{height:"100%",width:(pct+"%"),background:("linear-gradient(90deg,"+T.accent+","+T.accentSoft+")"),transition:"width 0.4s"}}/>
       </div>
+
+      {/* Resumed-session banner. The restore has already happened by the time
+          this renders — it reports, it does not ask. The nav dot is what brings
+          the user back here after a reload; this is what tells them the sets and
+          the clock they are looking at were carried over rather than invented. */}
+      {showResumed&&(
+        <div style={{background:T.accentPill,borderBottom:("1px solid "+T.accent),padding:"9px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+          <div style={{fontSize:12,color:T.accent,fontWeight:600}}>
+            Resumed · started {new Date(startedAtRef.current).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}
+          </div>
+          <div onClick={()=>setShowResumed(false)} style={{fontSize:12,color:T.accent,fontWeight:700,cursor:"pointer",flexShrink:0,padding:"0 4px"}}>✕</div>
+        </div>
+      )}
 
       {/* Rest timer — ring version */}
       {restSecs!==null&&(

@@ -30,8 +30,8 @@ at `wifit.vercel.app`, backed by Supabase (Postgres + Auth, RLS on all 11 tables
 npm run dev       # vite → http://localhost:5173
 npm run build     # vite build
 npm run preview   # serve the production build
-npm run lint      # eslint 9, flat config; 27 known no-unused-vars warnings, 0 errors
-npm test          # vitest, node env; 59 tests, ~650ms. TZ pinned for localDate.
+npm run lint      # eslint 9, flat config; 25 known no-unused-vars warnings, 0 errors
+npm test          # vitest, node env; 65 tests, ~650ms. TZ pinned for localDate.
 ```
 
 Package manager is **npm** (`package-lock.json`). `npm test` is a deliberately
