@@ -6478,12 +6478,12 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
                 <div style={{padding:"10px 12px",background:T.surface,borderRadius:10,marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
                   <div style={{fontSize:18}}>{stats.bestChange<0?"📉":"📈"}</div>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:12,fontWeight:700,color:T.text}}>Best weight change</div>
+                    <div style={{fontSize:12,fontWeight:700,color:T.text}}>Best weight change · all time</div>
                     <div style={{fontSize:10,color:T.muted}}>{stats.bestMonth} · {stats.bestChange>0?"+":""}{stats.bestChange.toFixed(1)} lbs</div>
                   </div>
                 </div>
               ):(
-                <div style={{padding:"10px 12px",background:T.surface,borderRadius:10,marginBottom:10,fontSize:11,color:T.muted}}>Log weight regularly to track monthly changes</div>
+                <div style={{padding:"10px 12px",background:T.surface,borderRadius:10,marginBottom:10,fontSize:11,color:T.muted}}>Log weight regularly to track monthly changes (all time)</div>
               )}
               {/* PRs this month */}
               <div style={{fontSize:11,fontWeight:600,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>🏆 Workout PRs · this month</div>
