@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { searchStatus } from "../App.jsx";
+import { searchStatus, USDA_ENABLED } from "../App.jsx";
 
 // A non-ok USDA/OFF response must never render as "no results". DEMO_KEY's
 // 429 did exactly that for months and looked like a plausible empty state.
@@ -16,4 +16,10 @@ describe("searchStatus", () => {
   it("is 'ok' when results came back and nothing failed", () => {
     expect(searchStatus({ results: [{ name: "x" }], failed: [] })).toBe("ok");
   });
+});
+
+// USDA is gated off by design. The flag exists so the proxy and the failure UI
+// can be re-enabled without a rewrite; this pins the default.
+describe("USDA gate", () => {
+  it("is off by default", () => { expect(USDA_ENABLED).toBe(false); });
 });

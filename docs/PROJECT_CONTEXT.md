@@ -701,6 +701,10 @@ Anthropic response formats are unchanged and out of scope for security work:
     unreachable through OFF, and a user searching a food OFF lacks sees foreign
     junk instead. Log only. **The fix is a name-match filter on OFF results, not
     dropping OFF** — it is also the barcode source.
+    With USDA off (#21) this now matters more: OFF is the only remote source, so
+    **the "No results" empty state is unreachable through search** — every
+    nonsense query returns the same three products. Verified 2026-09-07 at
+    390 px with `qwzxjvkplm` and `zzzqqqxx`.
 
 19. ~~**The built-in food catalogue (`LOCAL_FOOD_DB`) has no sugar field.**~~
     **RESOLVED 2026-09-07.** Every one of the 43 entries now carries `sugar`
@@ -723,6 +727,24 @@ Anthropic response formats are unchanged and out of scope for security work:
     queue, the write is lost and the user is told; no `[sb.*]` line in any run.
     Not exercised: barcode (needs a camera), USDA→log (needs `USDA_API_KEY` on
     Vercel), quantity edit and slot change (do not exist).
+
+21. **USDA search is OFF by design (2026-09-07), not broken.** `USDA_ENABLED =
+    false` in `App.jsx` gates the fan-out: the proxy is never called and search
+    reports only the sources that ran, so an empty result is an empty state. The
+    branded dataset's search relevance was not worth the dependency. `api/usda.js`,
+    the client, the `USDA_API_KEY` env contract and the honest failed-search UI
+    are all kept — flip the flag to re-enable, or point the same proxy at another
+    provider. `searchSupp` returns the local catalogue only while off.
+
+22. **Long-tail and restaurant foods have no source.** With USDA off, search is
+    the 43-entry local catalogue, the user's custom foods, and Open Food Facts
+    (packaged goods; v2 relevance is poor, see #18). Anything else — a
+    restaurant meal, a regional brand, a home recipe — has nowhere to come from
+    except the coach's estimate. Four candidate routes, **no decision taken**:
+    grow the local catalogue; Nutritionix (restaurant + branded, paid);
+    FatSecret (broad, free tier, attribution); coach-as-lookup (the model
+    estimates per-100 g and the app labels it as an estimate). The redesign's
+    search surface should be planned against whichever is chosen.
 
 ---
 

@@ -254,6 +254,13 @@ function useLongPress(onLongPress, ms=500){
 // to be the literal "DEMO_KEY": 30 requests per IP per hour, shared by every
 // user behind the same NAT, and a 429 rendered as "No results" — search died
 // silently for anyone on a carrier IP. Launch blocker, fixed 2026-09-07.
+// USDA is OFF by design (2026-09-07), not broken. FoodData Central's Branded
+// dataset ranks results badly enough that it was not worth the dependency. The
+// proxy (api/usda.js), this client, and the honest failed-search UI are kept
+// intact: flip this flag to re-enable, or point the same proxy at another
+// provider. When off, the proxy is never called and search reports only the
+// sources that actually ran, so an empty result reads as empty, not failed.
+export const USDA_ENABLED = false;
 async function usdaSearch(q, { dataType, pageSize } = {}) {
   const qs = "q=" + encodeURIComponent(q) + (dataType ? "&dataType=" + encodeURIComponent(dataType) : "") + (pageSize ? "&pageSize=" + pageSize : "");
   const res = await fetch("/api/usda?" + qs, { headers: coachHeaders() });
@@ -529,10 +536,11 @@ async function searchFood(query,customFoods=[]){
   ).map(f=>({...f,isCustom:true}));
   const local=searchLocalFood(query);
   // Always fire external APIs in parallel — don't short-circuit on local hits
-  const [usdaR,offR]=await Promise.allSettled([searchUSDA(query),searchOFF(query)]);
+  const [usdaR,offR]=await Promise.allSettled([USDA_ENABLED?searchUSDA(query):Promise.resolve({ok:true,results:[],skipped:true}),searchOFF(query)]);
   const usda=usdaR.status==="fulfilled"?usdaR.value:{ok:false,results:[]};
   const off=offR.status==="fulfilled"?offR.value:{ok:false,results:[]};
-  const failed=[!usda.ok&&"USDA",!off.ok&&"Open Food Facts"].filter(Boolean);
+  // A source that did not run cannot fail; only sources that ran are reported.
+  const failed=[USDA_ENABLED&&!usda.ok&&"USDA",!off.ok&&"Open Food Facts"].filter(Boolean);
   // Priority: custom → local → USDA → OFF
   return {results:dedup([...custom,...local,...usda.results,...off.results]).slice(0,10),failed};
 }
@@ -548,6 +556,7 @@ export function searchStatus({results,failed}){
 async function searchSupp(query){
   if(!query||!query.trim())return[];
   const local=searchLocalSupp(query).map(s=>({...s,isSupp:true}));
+  if(!USDA_ENABLED)return local;
   try{
     const data=await usdaSearch(query,{dataType:"Branded",pageSize:8});
     const usdaSupps=(data.foods||[])
