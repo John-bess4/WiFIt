@@ -797,6 +797,17 @@ Anthropic response formats are unchanged and out of scope for security work:
     the Food delete bug the moment one exists (in `HANDOFF.md`); a plan
     restored after a failed delete reappears at the top of the list.
 
+25. **REQUIRED PRE-LAUNCH — edit / delete a logged workout session.** Train
+    inventory path #8 "does not exist", and with F4 the `exercise_bests` view is
+    the PR baseline with **no window that ages out a bad row**: a test session
+    carrying a 500 lb bench (2026-08-29) is now the owner's permanent bench PR
+    baseline and no real bench will ever register. The only correction path
+    today is SQL. Whatever the redesign ships for sessions, it must include
+    delete (and ideally set-level edit) with the same checked-result discipline
+    as the food delete — and the session's uuid must be written back into state
+    (the local-id note in #24), or the delete will have the food bug on day one.
+    See `DECISIONS.md` §"Derived values…", second corollary.
+
 ---
 
 ## Current data state (2026-08-13)

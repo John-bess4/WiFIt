@@ -235,6 +235,20 @@ indistinguishable from a new lifter, and that branch stamps a genuine PR as
 `false` — permanently, since nothing recomputes it. Use `selectAuth` and
 surface the failure, per the laundering entry.
 
+**Second corollary — a derived source of truth inherits the quality of its
+source; there is no window that ages out a bad row.** The old cache had an
+accidental safety valve: rebuilt from the last 20 sessions, a bad value fell
+out of the baseline eventually. The view has no window. A test session with a
+500 lb bench, left in `workout_sessions`, is now the user's permanent bench
+PR baseline — no real bench will ever register as a PR again, and nothing in
+the app can change that, because path #8 of the Train inventory (edit or
+delete a logged session) does not exist. Product consequence, promoted to a
+**required pre-launch item** (`PROJECT_CONTEXT` #25): a PR baseline with no
+correction path is a permanent wrong number in the user's face. More
+generally: the moment a derived value becomes the source of truth, every
+write path into its source becomes a write path into the derived value, and
+the user must be able to correct each one.
+
 **One more thing it exposed.** `workout_sessions.exercises[].sets` stored each
 set as its *display string* (`"10×80lbs"`), so any baseline computed from the
 rows had to regex a render format. The migration adds `setsData: [{reps,
