@@ -70,6 +70,7 @@ splitting `App.jsx`: it is its own deliberate piece of work.
 |---|---|
 | `src/App.jsx` | The entire app — ~7,200 lines, one file. All components, the `sb` client, auth, parsers. |
 | `src/themes.js` | The 12 mode-locked home palettes (design export) + `hexA`/`luminance`. |
+| `src/TabBar.jsx` | The bottom tab bar + quick-add fan (2026-09-07), rendered once by App for every tab. Keys are App's tab keys. |
 | `src/HomeTab.jsx` | The redesigned Home tab (2026-09-06). Reads theme via `useTheme`; every write goes through App's existing handlers. |
 | `src/lib/weekSummary.js` | Pure helpers for the Home week rail: Mon–Sun builder, on-target rule, streak, `todayPlanFor`. |
 | `src/lib/paletteToTheme.js` | Turns a palette into a full theme object with the legacy keys plus the extended Home keys. |
@@ -669,6 +670,17 @@ Anthropic response formats are unchanged and out of scope for security work:
     or on an incomplete run and nothing requires `name` at the database. Logged
     2026-09-06, not fixed: needs either a NOT NULL + default, or a single write
     at wizard completion. Check this row before trusting any per-user report.
+
+17. **The coach can emit the same action twice in one reply, and the client
+    applies both.** Observed 2026-09-07 with the bar-lift verify: "log 16 oz of
+    water" produced two `water 16` actions (one carrying the message, one a bare
+    "Water logged!"), so `water_log` got 32; "100g of chicken breast" produced
+    two identical food items, two `food_log` rows 6 ms apart. Not a client
+    double-apply — `send` returns after `applyActions`, and `generateSuggestions`
+    never applies actions — the model hedged. `applyActions` has no in-reply
+    dedup. Whether identical actions in one reply should collapse is a contract
+    decision ("two 8 oz glasses" is a legitimate pair), so logged rather than
+    changed. The two extra rows from the verify are still in the tables.
 
 ---
 

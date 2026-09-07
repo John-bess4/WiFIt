@@ -1,8 +1,9 @@
 
 import React, { useState, useRef, useEffect, useContext, createContext, useMemo } from "react";
-import { THEME_META, THEME_ORDER, DEFAULT_THEME } from "./themes.js";
+import { THEME_META, THEME_ORDER, DEFAULT_THEME, KEYFRAMES } from "./themes.js";
 import { paletteToTheme, legacyExtended } from "./lib/paletteToTheme.js";
 import HomeTab from "./HomeTab.jsx";
+import TabBar from "./TabBar.jsx";
 import { weekDays, reduceWeekRows, todayPlanFor } from "./lib/weekSummary.js";
 
 // ── THEME SYSTEM ──────────────────────────────────────────────
@@ -193,7 +194,7 @@ const GLOBAL_CSS=`
   @keyframes spin{to{transform:rotate(360deg);}}
   @keyframes bounce{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
   @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none !important;}}
-`;
+`+KEYFRAMES;
 function GlobalStyle(){
   useEffect(()=>{
     const el=document.createElement("style");
@@ -1994,7 +1995,7 @@ const cfGramsFor=(qty,unit)=>{
   return String(Math.round(n*f*10)/10);
 };
 
-function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,addSuppToList,customFoods,addCustomFood,waterOz=0,setWaterOz,initialMode="food"}){
+function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,addSuppToList,customFoods,addCustomFood,waterOz=0,setWaterOz,initialMode="food",initialAction=null}){
   const T=useTheme();
   // initialMode is applied each time the panel opens (see the open effect), so
   // Home's quick-add fan can land on Water or Supplements directly.
@@ -2071,7 +2072,7 @@ function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,a
 
   // Reset when panel opens
   useEffect(()=>{
-    if(open){setMode(initialMode);setQuery("");setResults([]);setSelected(null);setError("");setAdded(false);setGrams("100");setServings("1");setFoodView("search");}
+    if(open){setMode(initialMode);setScannerOpen(initialAction==="scan");setQuery("");setResults([]);setSelected(null);setError("");setAdded(false);setGrams("100");setServings("1");setFoodView("search");}
   },[open]);
 
   const doSearch=async()=>{
@@ -5963,14 +5964,6 @@ function readWorkoutSnapshot(key){
 }
 function clearWorkoutSnapshot(key){if(key){try{localStorage.removeItem(key);}catch{}}}
 
-const NAV_LEFT=[
-  ["home","Home",<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8.5L10 2L18 8.5V18H13V13H7V18H2V8.5Z"/></svg>],
-  ["food","Food",<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="8"/><path d="M10 6v4l3 3"/></svg>],
-];
-const NAV_RIGHT=[
-  ["workout","Train",<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="8" width="3" height="4" rx="1"/><rect x="16" y="8" width="3" height="4" rx="1"/><rect x="4" y="6" width="3" height="8" rx="1"/><rect x="13" y="6" width="3" height="8" rx="1"/><line x1="7" y1="10" x2="13" y2="10"/></svg>],
-  ["supps","Supps",<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><ellipse cx="10" cy="6" rx="5" ry="4"/><path d="M5 6s-1 3-1 6c0 3 2.5 5 6 5s6-2 6-5c0-3-1-6-1-6"/><line x1="5" y1="10" x2="15" y2="10"/></svg>],
-];
 const INITIAL_SUPPS=[
   {k:"a",name:"Whey Protein",sub:"30g · Post-workout",dot:"#A855F7"},
   {k:"b",name:"Creatine",sub:"5g · With breakfast",dot:"#06B6D4"},
@@ -6332,9 +6325,13 @@ export default function App(){
     if(f.authError||w.authError||sl.authError){setWeekHistory(null);return;}
     setWeekHistory(reduceWeekRows({food:f.rows,water:w.rows,supp:sl.rows}));
   };
+  const [quickAction,setQuickAction]=useState(null);
   const onAddOpen=(key)=>{
-    if(key==="workout"){setTab("workout");return;} // QuickAddPanel has no workout section
+    // Fan items that navigate: honest as long as they land where the user can act.
+    if(key==="workout"||key==="session"){setTab("workout");return;} // QuickAddPanel has no workout section
+    if(key==="newsupp"){setTab("supps");return;}
     setQuickMode(key==="water"?"water":key==="supp"?"supps":"food");
+    setQuickAction(key==="scan"?"scan":null); // "Scan" opens the panel WITH the scanner up, not the search view
     setQuickOpen(true);
   };
   const [customFoods,setCustomFoods]=useState([]);
@@ -6769,30 +6766,7 @@ export default function App(){
       {tab==="calendar"&&<CalendarTab uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz}/>}
       {tab==="progress"&&<ProgressPage uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz} weightLog={weightLog} logWeight={logWeight} onProfileOpen={()=>setProfileMenuOpen(true)}/>}
 
-      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:T.navBg,borderTop:("1px solid "+T.border),display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 8px 18px",zIndex:99,transition:"background 0.25s"}}>
-        <div style={{display:"flex",flex:1,justifyContent:"space-around"}}>
-          {NAV_LEFT.map(([t,label,icon])=>(
-            <div key={t} onClick={()=>setTab(t)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,cursor:"pointer",minWidth:44,color:tab===t?T.accent:T.muted,position:"relative"}}>
-              {icon}<div style={{fontSize:10,fontWeight:500}}>{label}</div>
-              {t==="workout"&&workoutInProgress&&<div style={{position:"absolute",top:-2,right:6,width:8,height:8,borderRadius:"50%",background:T.accent,boxShadow:("0 0 6px "+T.accentGlow)}}/>}
-            </div>
-          ))}
-        </div>
-        <div onClick={()=>setQuickOpen(true)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,cursor:"pointer",flexShrink:0,margin:"0 4px"}}>
-          <div style={{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",display:"flex",alignItems:"center",justifyContent:"center",marginTop:-24,border:("4px solid "+T.card),boxSizing:"border-box",boxShadow:("0 4px 16px "+T.accentGlow)}}>
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><line x1="11" y1="4" x2="11" y2="18" stroke="white" strokeWidth="2.5" strokeLinecap="round"/><line x1="4" y1="11" x2="18" y2="11" stroke="white" strokeWidth="2.5" strokeLinecap="round"/></svg>
-          </div>
-          <div style={{fontSize:10,fontWeight:600,color:T.accent}}>Quick add</div>
-        </div>
-        <div style={{display:"flex",flex:1,justifyContent:"space-around"}}>
-          {NAV_RIGHT.map(([t,label,icon])=>(
-            <div key={t} onClick={()=>setTab(t)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,cursor:"pointer",minWidth:44,color:tab===t?T.accent:T.muted,position:"relative"}}>
-              {icon}<div style={{fontSize:10,fontWeight:500}}>{label}</div>
-              {t==="workout"&&workoutInProgress&&<div style={{position:"absolute",top:-2,right:6,width:8,height:8,borderRadius:"50%",background:T.accent,boxShadow:("0 0 6px "+T.accentGlow)}}/>}
-            </div>
-          ))}
-        </div>
-      </div>
+      <TabBar active={tab} setTab={setTab} onAdd={onAddOpen} workoutInProgress={workoutInProgress}/>
 
       <div onClick={()=>setAiOpen(o=>!o)} style={{position:"fixed",right:aiOpen?"min(298px,80vw)":0,top:"50%",transform:"translateY(-50%)",background:"linear-gradient(180deg,"+T.accent+","+T.accentSoft+")",color:"#fff",borderRadius:"8px 0 0 8px",padding:"14px 7px",cursor:"pointer",zIndex:170,transition:"right 0.3s cubic-bezier(.4,0,.2,1)",display:"flex",flexDirection:"column",alignItems:"center",gap:6,boxShadow:"-2px 0 16px "+T.accentGlow}}>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" strokeWidth="1.5" style={{transform:"rotate(90deg)"}}><rect x="1" y="3" width="14" height="10" rx="2"/><circle cx="5" cy="8" r="1.2" fill="white" stroke="none"/><circle cx="11" cy="8" r="1.2" fill="white" stroke="none"/></svg>
@@ -6818,7 +6792,7 @@ export default function App(){
           weightLog:weightLog,
         }}
         onAddSupp={addSuppToList}/>
-      <QuickAddPanel initialMode={quickMode} open={quickOpen} onClose={()=>setQuickOpen(false)} onAddItem={addFoodItem} suppList={suppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} addSuppToList={addSuppToList} customFoods={customFoods} addCustomFood={addCustomFoodDB} waterOz={waterOz} setWaterOz={setWaterOz}/>
+      <QuickAddPanel initialMode={quickMode} initialAction={quickAction} open={quickOpen} onClose={()=>setQuickOpen(false)} onAddItem={addFoodItem} suppList={suppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} addSuppToList={addSuppToList} customFoods={customFoods} addCustomFood={addCustomFoodDB} waterOz={waterOz} setWaterOz={setWaterOz}/>
     </div>
     </ThemeCtx.Provider>
   );

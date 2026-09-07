@@ -33,7 +33,7 @@ npm run dev       # vite → http://localhost:5173
 npm run build     # vite build
 npm run preview   # serve the production build
 npm run lint      # eslint 9, flat config; 25 known no-unused-vars warnings, 0 errors
-npm test          # vitest, node env (+ jsdom per file); 97 tests, ~1.5s. TZ pinned for localDate.
+npm test          # vitest, node env (+ jsdom per file); 100 tests, ~1.5s. TZ pinned for localDate.
 ```
 
 Package manager is **npm** (`package-lock.json`). `npm test` is a deliberately

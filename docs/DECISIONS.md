@@ -195,6 +195,41 @@ is part of the value. Dropping it is not simplification.
 
 ---
 
+## 2026-09-07 — A correct write with a stale literal is its own bug class
+
+`OnboardingWizard`'s profile upsert wrote `theme:"dark"` — right table, right
+column, checked payload, wrong **content**: the pre-families shape, three
+schema fixes stale. It sat through the entire data-layer audit because that
+audit was scoped to write *paths* (does the write happen, is the result
+checked, do the columns exist). This was a write *value*. Found only because a
+verify account created on the new code came back with `theme = "dark"`.
+
+**Why it is a separate class.** Every check in the archive is structural:
+column exists, NOT NULL satisfied, `on_conflict` named, return value read. A
+stale literal passes all of them. It is not caught by the type of the column,
+by the request succeeding, or by the UI — the wizard rendered under the app
+default and never read the value back. The only detector is a **reader that
+expects the current vocabulary**, and `resolveTheme` silently coerced the
+old one to a default instead of noticing.
+
+**What structurally prevents it.** Put the vocabulary in one place and write
+*through* it: the fix here is `theme: DEFAULT_THEME_KEY`, a constant every
+reader also uses, not a string. In Swift this is an enum with a raw value —
+`Theme.pastelLight.rawValue` — and a literal `"dark"` cannot be assigned to a
+`Theme` at all. In Postgres it is the CHECK constraint the category column is
+still waiting for (§Known issues #14): the database refuses the stale shape
+instead of storing it. And for the reader side, a legacy branch that keeps the
+user's intent (bare `"dark"` keeps dark) rather than a fallback that quietly
+replaces it.
+
+**How to apply.** When auditing writes, grep the *payloads* for literals, not
+just the call sites — multi-line payloads hide them from one-line greps. The
+sweep on 2026-09-07 found one other: `workout_plans` insert writes
+`sort_order:0` for every new plan. Harmless today (nothing orders by it) and
+logged rather than changed.
+
+---
+
 ## 2026-09-06 — Fire-and-forget async is a different bug from an ignored result
 
 `App.jsx:4337` is not a variant of "ignored return value". It is a distinct
@@ -341,6 +376,14 @@ installed — and Playwright's own screenshot stabiliser runs on in-page timers,
 so **every `page.screenshot()` afterwards times out** with no useful message.
 Twelve screenshots failed in a row before the cause was found. After any clock
 test, close the browser and reopen: the persistent profile keeps the session.
+
+**Second cause of the same symptom (2026-09-07):** an *occluded* tab. When
+another tab is in front, Chromium stops giving the page frames, so
+`page.screenshot()` times out AND CSS transitions never advance — the fan's
+items read `opacity: 0` forever while the FAB's inline transform said "open".
+Not a code bug either time. `await page.bringToFront()` first; then a
+screenshot takes ~90 ms. A verify run that cannot screenshot should call that
+before concluding anything about the UI.
 
 ---
 
