@@ -279,6 +279,30 @@ now carries `setsData: [{reps, weight}]` alongside the display `sets` strings �
 backfilled once by `20260907_exercise_bests_view_and_sets_data.sql`, written by
 `finishWorkout` since. See `DECISIONS.md` §"Derived values belong in the database".
 
+### daily_summary · supplement_due_from · weight_monthly — VIEWS (2026-09-07)
+
+```
+daily_summary        user_id, day, kcal, protein_g, carbs_g, fat_g, food_rows,
+                     workout_count, workout_names, supps_taken, supps_due, weight_lbs
+                     one row per (user, day) that has ANY data — no date spine
+supplement_due_from  user_id, supplement_id, name, due_from
+                     = least(created_at::date, first log_date)
+weight_monthly       user_id, month 'YYYY-MM', first_lbs, last_lbs, entries
+all three            security_invoker = true; GRANT select TO authenticated only (verified)
+```
+
+Gate 2 (Progress). The per-day numbers get one definition in Postgres instead of
+four client re-derivations (Home rail, Calendar, Progress, `calc`). kcal/macros are
+`sum(round(per100 * grams / 100))` per row — the same arithmetic as `calc()`, but
+in `numeric`: IEEE doubles disagree on 21 of 3,996 exact-.5 products (32.3 per100 ×
+500 g = 161.5 → numeric 162, double 161). **The view is the definition.** Progress
+reads it; Home/Calendar/`calc` still compute in JS and can differ by 1 kcal on such
+rows — switching them is a follow-up, and the Swift port must use `Decimal` or read
+the view. `supps_due` counts a supplement only from `due_from` (closes D2: a
+supplement added on day 29 no longer scores 29 misses); the client uses
+`supplement_due_from` for the same rule on days the view has no row for.
+Migration: `20260907_daily_summary_views.sql`. See `DECISIONS.md` §"daily_summary".
+
 ### workouts — LEGACY, DO NOT USE
 `id, user_id, name, tag, level, est_min, exercises, created_at, updated_at`. Zero rows.
 The application never references it. Plans live in `workout_plans`.
@@ -542,9 +566,9 @@ Anthropic response formats are unchanged and out of scope for security work:
    | ~~4236~~ | ~~`sb.update` supplement_stack~~ | **fixed 2026-09-07** — checked, reverted + `showError` |
    | ~~4251~~ | ~~`sb.update` supplement_stack~~ | **fixed 2026-09-07** — checked, reverted + `showError` |
    | ~~4337~~ | ~~`sb.update` supplement_stack~~ | **fixed 2026-09-07** — out of the state updater, every PATCH awaited and checked, order reverted on failure |
-   | 5259 | `sb.upsert` profiles | onboarding profile never lands |
-   | 5887 | `sb.upsert` profiles | name/gender/age edit is lost |
-   | 6623 | `sb.upsert` profiles | theme choice is lost |
+   | ~~5259~~ | ~~`sb.upsert` profiles~~ | **fixed 2026-09-07** — a failed upsert no longer calls onComplete; the wizard stays on the summary step with Retry |
+   | ~~5887~~ | ~~`sb.upsert` profiles~~ | **fixed 2026-09-07** — ✓ and local goals/name are gated on the row; failure shows a message |
+   | ~~6623~~ | ~~`sb.upsert` profiles~~ | **fixed 2026-09-07** — row checked, previous theme restored + toast; the try/catch that caught nothing is gone |
    | ~~6835~~ | ~~`sb.insert` custom_foods~~ | **fixed 2026-09-07** — returns whether the row landed; the toast waits for it |
    | ~~7017~~ | ~~`sb.delete` workout_plans~~ | **fixed 2026-09-07** — result checked, plan restored + `showError` on failure |
 
@@ -819,6 +843,9 @@ Anthropic response formats are unchanged and out of scope for security work:
     as the food delete — and the session's uuid must be written back into state
     (the local-id note in #24), or the delete will have the food bug on day one.
     See `DECISIONS.md` §"Derived values…", second corollary.
+    **Sequence (Gate 2 decision, 2026-09-07):** `daily_summary` first (done), #25
+    next, then #28 — two structural changes to session data must not land in
+    the same week without the correction UI existing.
 
 26. **REQUIRED PRE-LAUNCH (iOS) — real reminders via `UNUserNotificationCenter`.**
     The web app's "reminders" are a `setTimeout` in the open tab. As of
@@ -844,6 +871,23 @@ Anthropic response formats are unchanged and out of scope for security work:
     Also from the Supps audit: a capsule tap on a supplement still saving
     (local key at a uuid column) is refused with "still saving" instead of a
     swallowed 400; `supplement_stack.sub` stores null for blank.
+
+28. **PLANNED — `exercise_pr_events` view replaces `workout_sessions.prs`.** The
+    stored `prs` array is the last computed-and-stored value (#23): it froze
+    whatever `bests` said at finish time. A view over `setsData` with a window
+    over earlier sessions (`weight > max(previous)`) makes PR *events* a read,
+    like `exercise_bests` made the *baseline* a read, and `computePRs` stops
+    persisting. Approved in principle; **after #25** (see its sequence note).
+    Until then Progress reads `prs` through a narrow
+    `select=completed_date,prs` on this month's sessions only.
+
+29. **`body_weight_log` read was the OLDEST 30 rows** (`order=log_date.asc&limit=30`)
+    — fixed 2026-09-07: newest 30, reversed. From weigh-in #31 every weight
+    number in the app had silently frozen on the first month. The ceiling now
+    serves only what needs "latest" (Home strip, coach context, today's entry);
+    range history comes from `daily_summary` and all-time from `weight_monthly`,
+    neither bounded by a row count. The class: a `limit` is a correctness
+    ceiling on a delay — the same shape as the 20-session `prHistory` window.
 
 ---
 

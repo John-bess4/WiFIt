@@ -6200,6 +6200,7 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
   const T=useTheme();
   const [range,setRange]=useState("30d");
   const [dailyData,setDailyData]=useState([]);
+  const [monthly,setMonthly]=useState([]); // weight_monthly rows, all time
   const [loading,setLoading]=useState(true);
   const [loadError,setLoadError]=useState(false);
   const [newWeight,setNewWeight]=useState("");
@@ -6219,56 +6220,50 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
       const endStr=fmt(today);
       try{
         const okEmpty={ok:true,rows:[]};
-        const [fr,wr,sr]=await Promise.all([
-          uid?sb.selectAuth("food_log","user_id=eq."+uid+"&logged_date=gte."+startStr+"&logged_date=lte."+endStr,{limit:1000}):okEmpty,
-          uid?sb.selectAuth("workout_sessions","user_id=eq."+uid+"&completed_date=gte."+startStr+"&completed_date=lte."+endStr,{limit:200}):okEmpty,
-          uid?sb.selectAuth("supplement_log","user_id=eq."+uid+"&log_date=gte."+startStr+"&log_date=lte."+endStr+"&taken=eq.true",{limit:500}):okEmpty,
+        // One definition per number: daily_summary (kcal/macros, workouts,
+        // supps taken/due, weight) is computed in Postgres — the client only
+        // keeps the date spine and joins by day. supplement_due_from gives the
+        // denominator for days the view has no row for. weight_monthly is all
+        // time and bounded by months, never by a row ceiling. The narrow
+        // workout_sessions read is only for the stored prs array, until the
+        // exercise_pr_events view replaces it (after #25 — see PROJECT_CONTEXT).
+        const thisMonthStart=localDate().slice(0,7)+"-01";
+        const [dr,fr,mr,pr]=await Promise.all([
+          uid?sb.selectAuth("daily_summary","user_id=eq."+uid+"&day=gte."+startStr+"&day=lte."+endStr,{order:"day.asc"}):okEmpty,
+          uid?sb.selectAuth("supplement_due_from","user_id=eq."+uid):okEmpty,
+          uid?sb.selectAuth("weight_monthly","user_id=eq."+uid,{order:"month.asc"}):okEmpty,
+          uid?sb.selectAuth("workout_sessions","user_id=eq."+uid+"&completed_date=gte."+thisMonthStart+"&completed_date=lte."+endStr+"&select=completed_date,prs",{limit:200}):okEmpty,
         ]);
         if(cancel)return;
         // Failed reads must not render as "0 avg calories, 0% adherence".
-        if(!fr.ok||!wr.ok||!sr.ok){setLoadError(true);setLoading(false);return;}
+        if(!dr.ok||!fr.ok||!mr.ok||!pr.ok){setLoadError(true);setLoading(false);return;}
         setLoadError(false);
-        const foodRows=fr.rows,workoutRows=wr.rows,suppRows=sr.rows;
+        const dueFrom=fr.rows.map(r=>r.due_from);
+        const byDay=Object.fromEntries(dr.rows.map(r=>[r.day,r]));
         // Build per-day buckets
         const days=[];
         for(let i=dayCount-1;i>=0;i--){
           const d=new Date();d.setDate(today.getDate()-i);
           const key=fmt(d);
+          const r=byDay[key];
           days.push({date:key,label:d.toLocaleDateString("en-US",{month:"numeric",day:"numeric"}),
-            cal:0,protein:0,carbs:0,fat:0,workoutDone:false,workoutName:"",suppCount:0,prs:[],weight:null});
+            cal:r?r.kcal:0,protein:r?r.protein_g:0,carbs:r?r.carbs_g:0,fat:r?r.fat_g:0,
+            workoutDone:!!r&&r.workout_count>0,workoutName:r?.workout_names||"",
+            suppCount:r?r.supps_taken:0,
+            // Same rule as the view's supps_due (created_at::date or first log,
+            // whichever is earlier); the view has no row for an empty day.
+            suppDue:r?r.supps_due:dueFrom.filter(df=>df<=key).length,
+            prs:[],weight:r&&r.weight_lbs!==null&&r.weight_lbs!==undefined?Number(r.weight_lbs):null});
         }
-        // Map foods
-        (foodRows||[]).forEach(r=>{
-          const day=days.find(d=>d.date===r.logged_date);
-          if(day){
-            day.cal+=Math.round((r.per100_cal||0)*(r.grams||0)/100);
-            day.protein+=Math.round((r.per100_protein||0)*(r.grams||0)/100);
-            day.carbs+=Math.round((r.per100_carbs||0)*(r.grams||0)/100);
-            day.fat+=Math.round((r.per100_fat||0)*(r.grams||0)/100);
-          }
-        });
-        // Map workouts
-        (workoutRows||[]).forEach(r=>{
+        pr.rows.forEach(r=>{
           const day=days.find(d=>d.date===r.completed_date);
-          if(day){
-            day.workoutDone=true;
-            day.workoutName=r.workout_name||"";
-            if(Array.isArray(r.prs))day.prs=r.prs;
-          }
+          if(day&&Array.isArray(r.prs))day.prs=day.prs.concat(r.prs);
         });
-        // Map supps
-        (suppRows||[]).forEach(r=>{
-          const day=days.find(d=>d.date===r.log_date);
-          if(day)day.suppCount++;
-        });
-        // Map weights
-        (weightLog||[]).forEach(w=>{
-          const day=days.find(d=>d.date===w.date);
-          if(day)day.weight=w.lbs;
-        });
+        setMonthly(mr.rows.map(m=>({month:m.month,first:Number(m.first_lbs),last:Number(m.last_lbs),entries:m.entries})));
         setDailyData(days);
       }catch(e){
-        setDailyData([]);
+        console.error("ProgressPage load error:",e);
+        setLoadError(true);
       }
       setLoading(false);
     })();
@@ -6284,8 +6279,11 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
     const avgCal=daysWithCal>0?Math.round(totalCal/daysWithCal):0;
     const workoutDays=valid.filter(d=>d.workoutDone).length;
     const totalSuppsTaken=valid.reduce((a,d)=>a+d.suppCount,0);
-    const suppAdherence=suppList.length>0?Math.round((totalSuppsTaken/(suppList.length*dayCount))*100):0;
-    // Weight change
+    // Denominator counts a supplement only from the day it was due (D2): adding
+    // one on day 29 of a 30-day window no longer scores 29 misses.
+    const totalSuppsDue=valid.reduce((a,d)=>a+d.suppDue,0);
+    const suppAdherence=totalSuppsDue>0?Math.round((totalSuppsTaken/totalSuppsDue)*100):0;
+    // Weight change (this range)
     const weighIns=valid.filter(d=>d.weight!==null).map(d=>({date:d.date,lbs:d.weight}));
     let weightChange=null,startW=null,endW=null;
     if(weighIns.length>=2){
@@ -6293,19 +6291,12 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
       endW=weighIns[weighIns.length-1].lbs;
       weightChange=endW-startW;
     }
-    // Best (biggest) change in calendar month  
-    const monthMap={};
-    weightLog.forEach(w=>{
-      const ym=w.date.slice(0,7);
-      if(!monthMap[ym])monthMap[ym]=[];
-      monthMap[ym].push(w);
-    });
+    // Best (biggest) change in a calendar month, all time — from weight_monthly
     let bestMonth=null,bestChange=0;
-    Object.entries(monthMap).forEach(([ym,arr])=>{
-      if(arr.length>=2){
-        arr.sort((a,b)=>a.date.localeCompare(b.date));
-        const ch=arr[arr.length-1].lbs-arr[0].lbs;
-        if(Math.abs(ch)>Math.abs(bestChange)){bestChange=ch;bestMonth=ym;}
+    monthly.forEach(m=>{
+      if(m.entries>=2){
+        const ch=m.last-m.first;
+        if(Math.abs(ch)>Math.abs(bestChange)){bestChange=ch;bestMonth=m.month;}
       }
     });
     // All PRs in current month
@@ -6317,7 +6308,7 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
       }
     });
     return{avgCal,workoutDays,suppAdherence,weightChange,startW,endW,bestMonth,bestChange,monthPRs};
-  },[dailyData,suppList.length,dayCount,weightLog]);
+  },[dailyData,monthly]);
 
   // Chart bounds
   const calMax=Math.max(...dailyData.map(d=>d.cal),goals.cal||2200,1)*1.1;

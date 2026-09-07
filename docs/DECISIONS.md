@@ -576,6 +576,40 @@ error surfacing as a network error. Apply it as the first commit after C2.
 
 ---
 
+## 2026-09-07 — `daily_summary`: one definition per number, and it is numeric
+
+**Decision.** The per-day numbers Progress shows (kcal/macros, workouts, supps
+taken and due, weight) are computed by the `daily_summary` view; the client keeps
+only a date spine and joins by day. `supplement_due_from` and `weight_monthly`
+carry the two derivations that need history outside the range. The view returns
+only days with data — a view that needs a range parameter is a function, a bigger
+surface for no gain.
+
+**Why.** Four places re-derived the same day totals (Home rail, Calendar,
+Progress, `calc`), with two subtly different adherence denominators and a weight
+read whose `limit:30` froze every weight number at row 31. The Swift port would
+have reimplemented all of it. Deciding it once in SQL is what "derived values
+belong in the database" means for aggregates.
+
+**The rounding finding.** `round(per100 * grams / 100)` in Postgres `numeric` and
+in IEEE doubles disagree on 21 of 3,996 exact-.5 products in a 0.1-step grid
+(`32.3 × 500 / 100` is 161.5 exactly; the double is 161.49999999999997 → 161).
+The owner's rows all agree today; the discrepancy is a bug on the JS side, not
+the view's. Consequence: the view is the definition, the remaining JS derivations
+are provisional, and Swift must not use `Double` for this — `Decimal`, or read
+the view.
+
+**Adherence denominator.** A supplement counts as due from
+`least(created_at::date, first log_date)`. Retroactively punishing the user for
+adding a supplement (29 misses on day 29 of 30) looked like the app punishing
+them for using it; the first-log clause covers the UTC-vs-local day boundary
+for a supplement logged on the local day it was created.
+
+**Deferred on purpose.** `exercise_pr_events` (PR *events* as a read, deleting
+`workout_sessions.prs`) is approved in principle but sequenced after #25 —
+session edit/delete — so two structural changes to session data do not land in
+the same week without a correction UI.
+
 ## Standing conventions
 
 These are not dated decisions so much as long-standing ones. `AGENTS.md` is the
