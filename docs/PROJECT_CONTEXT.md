@@ -68,7 +68,9 @@ splitting `App.jsx`: it is its own deliberate piece of work.
 
 | Path | What |
 |---|---|
-| `src/App.jsx` | The entire app — ~7,100 lines, one file. All components, the `sb` client, auth, parsers. |
+| `src/App.jsx` | The entire app — ~7,200 lines, one file. All components, the `sb` client, auth, parsers. |
+| `src/themes.js` | The 12 mode-locked home palettes (design export) + `hexA`/`luminance`. |
+| `src/lib/paletteToTheme.js` | Turns a palette into a full theme object with the legacy keys plus the extended Home keys. |
 | `src/main.jsx` | Mount point. |
 | `api/coach.js` | Vercel **Edge** function proxying Anthropic. The only server-side code. |
 | `supabase/migrations/` | Applied migrations, recorded after the fact. |

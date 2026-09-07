@@ -1,8 +1,10 @@
 
 import React, { useState, useRef, useEffect, useContext, createContext, useMemo } from "react";
+import { THEME_META, THEME_ORDER, DEFAULT_THEME } from "./themes.js";
+import { paletteToTheme } from "./lib/paletteToTheme.js";
 
 // ── THEME SYSTEM ──────────────────────────────────────────────
-const THEMES = {
+const LEGACY_THEMES = {
   aurora_dark:{mode:"dark",family:"aurora",
     bg:"#020B18",surface:"#071828",card:"#0A2035",cardAlt:"#071828",
     border:"rgba(6,182,212,0.28)",borderStrong:"rgba(6,182,212,0.55)",
@@ -135,7 +137,38 @@ const THEMES = {
   },
 };
 
-const ThemeCtx = createContext(THEMES.aurora_dark);
+// The 12 mode-locked palettes register under `${key}_${mode}`, so the persisted
+// profiles.theme format is unchanged. Legacy entries gain appBg (= bg) so every
+// full-screen shell reads one key whichever kind of theme is active.
+const DEFAULT_THEME_KEY = DEFAULT_THEME + "_" + THEME_META[DEFAULT_THEME].mode; // "pastel_light"
+export const LOCKED_FAMILIES = new Set(THEME_ORDER);
+export const THEMES = {
+  ...Object.fromEntries(Object.entries(LEGACY_THEMES).map(([k, t]) => [k, { ...t, appBg: t.bg, locked: false }])),
+  ...Object.fromEntries(THEME_ORDER.map((k) => [k + "_" + THEME_META[k].mode, paletteToTheme(k)])),
+};
+
+// Resolves whatever profiles.theme holds into a usable theme. One default, one
+// branch: an unknown family on a current deploy is corrupted or legacy data,
+// not a preference, so it snaps to pastel_light whatever mode was stored.
+export function resolveTheme(stored) {
+  const str = typeof stored === "string" ? stored : "";
+  const i = str.lastIndexOf("_");
+  const family = i > 0 ? str.slice(0, i) : "";
+  let dark = i > 0 && str.slice(i + 1) === "dark";
+  if (LOCKED_FAMILIES.has(family)) dark = THEME_META[family].mode === "dark";
+  const key = family + "_" + (dark ? "dark" : "light");
+  if (THEMES[key]) return { family, dark, T: THEMES[key] };
+  return { family: DEFAULT_THEME, dark: false, T: THEMES[DEFAULT_THEME_KEY] };
+}
+
+// setIsDark accepts a value or an updater, like a React setter. The updater
+// MUST be resolved against current state before it reaches saveTheme: passed
+// through, a function is truthy and every toggle persisted "_dark".
+export function resolveDark(prev, valOrFn) {
+  return !!(typeof valOrFn === "function" ? valOrFn(prev) : valOrFn);
+}
+
+const ThemeCtx = createContext(THEMES[DEFAULT_THEME_KEY]);
 const useTheme = () => useContext(ThemeCtx);
 
 // Keep COLORS for food dot randomness
@@ -151,6 +184,7 @@ const GLOBAL_CSS=`
   .glow-card{transition:box-shadow 0.25s,border-color 0.25s,background 0.25s;}
   @keyframes spin{to{transform:rotate(360deg);}}
   @keyframes bounce{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
+  @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none !important;}}
 `;
 function GlobalStyle(){
   useEffect(()=>{
@@ -3044,7 +3078,7 @@ function HomeTab({setTab,log,suppList=[],suppTaken={},workoutHistory=[],isDark:_
   ];
 
   return(
-    <div style={{paddingBottom:80,background:T.bg,minHeight:"100vh",position:"relative",fontFamily:"-apple-system,sans-serif"}}>
+    <div style={{paddingBottom:80,minHeight:"100vh",position:"relative",fontFamily:"-apple-system,sans-serif"}}>
       {/* Background grid texture */}
       <div style={{position:"fixed",inset:0,backgroundImage:"linear-gradient("+(isDark?"rgba(124,58,237,0.025)":"rgba(79,70,229,0.03)")+" 1px,transparent 1px),linear-gradient(90deg,"+(isDark?"rgba(124,58,237,0.025)":"rgba(79,70,229,0.03)")+" 1px,transparent 1px)",backgroundSize:"22px 22px",pointerEvents:"none",zIndex:0}}/>
       {/* Top radial glow */}
@@ -3071,13 +3105,13 @@ function HomeTab({setTab,log,suppList=[],suppTaken={},workoutHistory=[],isDark:_
           {/* Streak */}
           <div style={{background:"rgba(245,158,11,0.12)",border:"1px solid rgba(245,158,11,0.28)",borderRadius:20,padding:"3px 8px",fontSize:10,fontWeight:700,color:"#FBBF24",flexShrink:0}}>🔥 7</div>
 
-          {/* Theme toggle — inline, compact */}
-          <div onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:4,background:T.accentPill,border:("1px solid "+T.border),borderRadius:18,padding:"4px 8px 4px 5px",cursor:"pointer",flexShrink:0,transition:"all 0.2s",boxShadow:T.glowShadow}}>
+          {/* Theme toggle — inline, compact. Hidden for mode-locked palettes. */}
+          {!T.locked&&<div onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:4,background:T.accentPill,border:("1px solid "+T.border),borderRadius:18,padding:"4px 8px 4px 5px",cursor:"pointer",flexShrink:0,transition:"all 0.2s",boxShadow:T.glowShadow}}>
             <div style={{width:16,height:16,borderRadius:"50%",background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,flexShrink:0}}>
               {isDark?"🌙":"☀️"}
             </div>
             <span style={{fontSize:10,fontWeight:600,color:T.accent}}>{isDark?"Dark":"Light"}</span>
-          </div>
+          </div>}
 
           {/* Avatar */}
           <div style={{width:32,height:32,borderRadius:9,background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:11,fontWeight:700,boxShadow:("0 3px 10px "+T.accentGlow),flexShrink:0,cursor:"pointer"}} onClick={onProfileOpen}>{initials}</div>
@@ -3618,7 +3652,7 @@ function ActiveWorkout({workout,onFinish,onClose,prHistory={},restore=null,snapK
   const ringPct=restSecs!==null&&restTotal>0?restSecs/restTotal:0;
 
   return(
-    <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:T.bg,zIndex:190,overflowY:"auto",paddingBottom:80}}>
+    <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:T.appBg,zIndex:190,overflowY:"auto",paddingBottom:80}}>
 
       {/* Cancel confirmation. Cancel is the only exit that destroys work: it
           clears the snapshot as well as the session, so nothing survives it —
@@ -5096,7 +5130,7 @@ function AuthScreen({onAuth}){
   };
 
   return(
-    <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 20px",fontFamily:"-apple-system,sans-serif",position:"relative",overflow:"hidden"}}>
+    <div style={{minHeight:"100vh",background:T.appBg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 20px",fontFamily:"-apple-system,sans-serif",position:"relative",overflow:"hidden"}}>
       <div style={{position:"absolute",top:-80,right:-60,width:260,height:260,borderRadius:"50%",background:T.accentGlow,filter:"blur(60px)",pointerEvents:"none"}}/>
       <div style={{position:"absolute",bottom:-60,left:-60,width:200,height:200,borderRadius:"50%",background:(T.accentSoft+"22"),filter:"blur(40px)",pointerEvents:"none"}}/>
       <div style={{textAlign:"center",marginBottom:36}}>
@@ -5460,7 +5494,7 @@ function OnboardingWizard({userId,onComplete}){
   };
 
   return(
-    <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",fontFamily:"-apple-system,sans-serif",maxWidth:480,margin:"0 auto",position:"relative",overflow:"hidden"}}>
+    <div style={{minHeight:"100vh",background:T.appBg,display:"flex",flexDirection:"column",fontFamily:"-apple-system,sans-serif",maxWidth:480,margin:"0 auto",position:"relative",overflow:"hidden"}}>
       {/* Glow */}
       <div style={{position:"absolute",top:-80,right:-60,width:220,height:220,borderRadius:"50%",background:T.accentGlow,filter:"blur(60px)",pointerEvents:"none"}}/>
 
@@ -5503,7 +5537,7 @@ function OnboardingWizard({userId,onComplete}){
 // ── SHARED COMPONENTS ────────────────────────────────────────────
 function SectionHeader({label}){
   const T=useTheme();
-  return <div style={{fontSize:11,fontWeight:700,color:T.muted,textTransform:"uppercase",letterSpacing:1.2,padding:"20px 20px 8px",background:T.bg}}>{label}</div>;
+  return <div style={{fontSize:11,fontWeight:700,color:T.muted,textTransform:"uppercase",letterSpacing:1.2,padding:"20px 20px 8px"}}>{label}</div>;
 }
 function SettingRow({label,sub,right,onClick,danger}){
   const T=useTheme();
@@ -5530,7 +5564,7 @@ function Toggle({value,onChange}){
 function PageShell({title,onBack,children,footer}){
   const T=useTheme();
   return(
-    <div style={{position:"fixed",inset:0,zIndex:310,background:T.bg,display:"flex",flexDirection:"column",animation:"slideInRight 0.22s cubic-bezier(.4,0,.2,1)"}}>
+    <div style={{position:"fixed",inset:0,zIndex:310,background:T.appBg,display:"flex",flexDirection:"column",animation:"slideInRight 0.22s cubic-bezier(.4,0,.2,1)"}}>
       <style>{`@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
       <div style={{background:T.card,borderBottom:("1px solid "+T.border),padding:"14px 16px",display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
         <div onClick={onBack} style={{width:34,height:34,borderRadius:"50%",background:T.surface,border:("1px solid "+T.border),display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
@@ -5738,7 +5772,7 @@ function SettingsPage({onBack,isDark,setIsDark,onSignOut,userName}){
     </>);
     if(section==="appearance")return(<>
       <SectionHeader label="Theme"/>
-      <SettingRow label="Dark mode" sub={isDark?"Midnight Purple":"Clean Slate"} right={<Toggle value={isDark} onChange={setIsDark}/>}/>
+      {!T.locked&&<SettingRow label="Dark mode" sub={isDark?"Midnight Purple":"Clean Slate"} right={<Toggle value={isDark} onChange={setIsDark}/>}/>}
       <SectionHeader label="Display"/>
       <SettingRow label="Compact mode" sub="Denser layout with smaller cards" right={<Toggle value={false} onChange={()=>{}}/>}/>
       <SettingRow label="Large text" sub="Increase font sizes throughout the app" right={<Toggle value={false} onChange={()=>{}}/>}/>
@@ -5785,7 +5819,7 @@ function SettingsPage({onBack,isDark,setIsDark,onSignOut,userName}){
     </>);
   };
   return(
-    <div style={{position:"fixed",inset:0,zIndex:310,background:T.bg,display:"flex",flexDirection:"column",animation:"slideInRight 0.22s cubic-bezier(.4,0,.2,1)"}}>
+    <div style={{position:"fixed",inset:0,zIndex:310,background:T.appBg,display:"flex",flexDirection:"column",animation:"slideInRight 0.22s cubic-bezier(.4,0,.2,1)"}}>
       <style>{`@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
       <div style={{background:T.card,borderBottom:("1px solid "+T.border),padding:"14px 16px",display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
         <div onClick={onBack} style={{width:34,height:34,borderRadius:"50%",background:T.surface,border:("1px solid "+T.border),display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
@@ -6035,7 +6069,7 @@ function PersonalizationPage({onBack,isDark,themeFam,setThemeFam}){
       <SectionHeader label="App theme"/>
       <div style={{padding:"0 16px 8px"}}>
         <div style={{fontSize:12,color:T.muted,marginBottom:12}}>
-          Choose a colour family. The dark/light variant follows your Dark Mode toggle in Settings.
+          {LOCKED_FAMILIES.has(pendingFam)?"This palette has a fixed light or dark mode; the Dark Mode toggle is hidden while it is active.":"Choose a colour family. The dark/light variant follows your Dark Mode toggle in Settings."}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           {THEME_FAMILIES.map(tf=>{
@@ -6047,7 +6081,7 @@ function PersonalizationPage({onBack,isDark,themeFam,setThemeFam}){
                 style={{
                   display:"flex",alignItems:"center",gap:12,
                   padding:"12px 14px",borderRadius:14,cursor:"pointer",
-                  border:("2px solid "+isActive?T.accent:T.border),
+                  border:("2px solid "+(isActive?T.accent:T.border)),
                   background:isActive?T.accentPill:T.surface,
                   transition:"all 0.15s",
                 }}>
@@ -6085,9 +6119,36 @@ function PersonalizationPage({onBack,isDark,themeFam,setThemeFam}){
             );
           })}
         </div>
+        {/* Mode-locked palettes: one swatch each, grouped by the mode they lock to. */}
+        {[["dark","Dark palettes"],["light","Light palettes"]].map(([mode,title])=>(
+          <div key={mode} style={{marginTop:14}}>
+            <div style={{fontSize:11,fontWeight:700,color:T.muted,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>{title}</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {THEME_ORDER.filter(k=>THEME_META[k].mode===mode).map(k=>{
+                const th=THEMES[k+"_"+mode];
+                const isActive=pendingFam===k;
+                return(
+                  <div key={k} onClick={()=>setPendingFam(k)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:14,cursor:"pointer",border:("2px solid "+(isActive?T.accent:T.border)),background:isActive?T.accentPill:T.surface,transition:"all 0.15s"}}>
+                    <div style={{width:42,height:42,borderRadius:10,background:th.appBg,border:("1.5px solid "+th.border),flexShrink:0,overflow:"hidden",position:"relative"}}>
+                      <div style={{position:"absolute",top:6,left:6,right:6,height:8,borderRadius:2,background:th.accent,opacity:0.9}}/>
+                      <div style={{position:"absolute",bottom:6,left:6,right:6,display:"flex",gap:2}}>
+                        {th.macro.slice(0,3).map((c,i)=><div key={i} style={{flex:1,height:4,borderRadius:2,background:c}}/>)}
+                      </div>
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:14,fontWeight:700,color:isActive?T.accent:T.text}}>{THEME_META[k].label}</div>
+                      <div style={{fontSize:11,color:T.muted,marginTop:2}}>{THEME_META[k].blurb}</div>
+                    </div>
+                    {isActive&&(<svg width="18" height="18" viewBox="0 0 18 18" style={{flexShrink:0}}><circle cx="9" cy="9" r="8" fill={T.accent}/><polyline points="4.5,9 7.5,12 13.5,6" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round"/></svg>)}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
         {pendingFam!==themeFam&&(
           <button onClick={handleSave} style={{width:"100%",marginTop:14,background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",border:"none",borderRadius:12,padding:"13px",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:("0 4px 16px "+T.accentGlow)}}>
-            Apply {THEME_FAMILIES.find(f=>f.id===pendingFam)?.name} theme
+            Apply {THEME_FAMILIES.find(f=>f.id===pendingFam)?.name||THEME_META[pendingFam]?.label} theme
           </button>
         )}
         {saved&&<div style={{textAlign:"center",fontSize:13,color:T.green,marginTop:8,fontWeight:600}}>✓ Theme applied!</div>}
@@ -6445,7 +6506,7 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
   };
 
   return(
-    <div style={{paddingBottom:80,background:T.bg,minHeight:"100vh",fontFamily:"-apple-system,sans-serif"}}>
+    <div style={{paddingBottom:80,minHeight:"100vh",fontFamily:"-apple-system,sans-serif"}}>
       {/* Sticky header */}
       <div style={{position:"sticky",top:0,zIndex:50,background:T.bg+"e8",backdropFilter:"blur(20px)",borderBottom:("1px solid "+T.border),padding:"16px 16px 12px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -6613,9 +6674,9 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
 // ── APP ───────────────────────────────────────────────────────────
 export default function App(){
   const [authState,setAuthState]=useState("loading");
-  const [isDark,setIsDarkState]=useState(true);
-  const [themeFam,setThemeFamState]=useState("aurora");
-  const T=THEMES[themeFam+"_"+(isDark?"dark":"light")]||THEMES["aurora_dark"];
+  const [isDark,setIsDarkState]=useState(false);
+  const [themeFam,setThemeFamState]=useState(DEFAULT_THEME);
+  const T=resolveTheme(themeFam+"_"+(isDark?"dark":"light")).T;
 
   const saveTheme=async(fam,dark)=>{
     const uid=sb.getUser()?.id;
@@ -6623,8 +6684,17 @@ export default function App(){
     try{await sb.upsert("profiles",{id:uid,theme:fam+"_"+(dark?"dark":"light"),updated_at:new Date().toISOString()});}catch{}
   };
 
-  const setIsDark=(val)=>{setIsDarkState(val);saveTheme(themeFam,val);};
-  const setThemeFam=(val)=>{setThemeFamState(val);saveTheme(val,isDark);};
+  // Mode-locked palettes ignore the toggle entirely: the toggles are hidden,
+  // but a stale closure must not be able to persist "pastel_dark".
+  const setIsDark=(valOrFn)=>{
+    if(LOCKED_FAMILIES.has(themeFam))return;
+    const next=resolveDark(isDark,valOrFn);
+    setIsDarkState(next);saveTheme(themeFam,next);
+  };
+  const setThemeFam=(fam)=>{
+    const next=LOCKED_FAMILIES.has(fam)?THEME_META[fam].mode==="dark":isDark;
+    setThemeFamState(fam);setIsDarkState(next);saveTheme(fam,next);
+  };
   const [tab,setTab]=useState("home");
   const [log,setLog]=useState(SEED);
   const [aiOpen,setAiOpen]=useState(false);
@@ -6696,13 +6766,9 @@ export default function App(){
         setUserName(p.name||"");
         setGoals({cal:p.cal_goal||2200,protein:p.protein_goal||140,carbs:p.carbs_goal||180,fat:p.fat_goal||78});
         if(p.theme){
-          if(p.theme.includes("_")){
-            const parts=p.theme.split("_");
-            setThemeFamState(parts[0]);
-            setIsDarkState(parts[parts.length-1]==="dark");
-          }else{
-            setIsDarkState(p.theme!=="light");
-          }
+          const r=resolveTheme(p.theme);
+          setThemeFamState(r.family);
+          setIsDarkState(r.dark);
         }
         // Food log for today
         const foodRows=await sb.select("food_log","user_id=eq."+uid+"&logged_date=eq."+today);
@@ -6796,8 +6862,8 @@ export default function App(){
     setWeightLog([]);
     setUserName("");
     setGoals({cal:2200,protein:140,carbs:180,fat:78});
-    setIsDarkState(true);
-    setThemeFamState("aurora");
+    setIsDarkState(false);
+    setThemeFamState(DEFAULT_THEME);
     setWorkouts(INITIAL_WORKOUTS);
     closeAll();
   };
@@ -7024,7 +7090,7 @@ export default function App(){
   // Loading state
   if(authState==="loading")return(
     <ThemeCtx.Provider value={T}>
-      <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,fontFamily:"-apple-system,sans-serif"}}>
+      <div style={{minHeight:"100vh",background:T.appBg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,fontFamily:"-apple-system,sans-serif"}}>
         <div style={{width:56,height:56,borderRadius:16,background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:("0 8px 28px "+T.accentGlow)}}>
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round"><path d="M6 14L11 19L22 9"/><circle cx="14" cy="14" r="12"/></svg>
         </div>
@@ -7043,7 +7109,7 @@ export default function App(){
 
   return(
     <ThemeCtx.Provider value={T}>
-    <div style={{background:T.bg,maxWidth:480,margin:"0 auto",minHeight:"100vh",fontFamily:"-apple-system,sans-serif",color:T.text,position:"relative",overflow:"hidden",transition:"background 0.25s,color 0.25s"}}>
+    <div style={{background:T.appBg,maxWidth:480,margin:"0 auto",minHeight:"100vh",fontFamily:"-apple-system,sans-serif",color:T.text,position:"relative",overflow:"hidden",transition:"background 0.25s,color 0.25s"}}>
       <GlobalStyle/>
       {errorBanner&&<div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",background:T.red,color:"#fff",borderRadius:10,padding:"10px 18px",fontSize:13,fontWeight:600,zIndex:999,maxWidth:340,textAlign:"center",boxShadow:"0 4px 20px rgba(0,0,0,0.3)",pointerEvents:"none"}}>{errorBanner}</div>}
       {profileMenuOpen&&<ProfileMenu userName={userName} isDark={isDark} onClose={()=>setProfileMenuOpen(false)} onOpenProfile={()=>{closeAll();setProfilePageOpen(true);}} onOpenSettings={()=>{closeAll();setSettingsPageOpen(true);}} onOpenPersonalization={()=>{closeAll();setPersonalizationPageOpen(true);}} onOpenUpgrade={()=>{closeAll();setUpgradePageOpen(true);}} onOpenHelp={()=>{closeAll();setHelpPageOpen(true);}} onSignOut={handleSignOut}/>}
@@ -7069,7 +7135,7 @@ export default function App(){
           ))}
         </div>
         <div onClick={()=>setQuickOpen(true)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,cursor:"pointer",flexShrink:0,margin:"0 4px"}}>
-          <div style={{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",display:"flex",alignItems:"center",justifyContent:"center",marginTop:-24,border:("4px solid "+T.bg),boxSizing:"border-box",boxShadow:("0 4px 16px "+T.accentGlow)}}>
+          <div style={{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,"+T.accent+","+T.accentSoft+")",display:"flex",alignItems:"center",justifyContent:"center",marginTop:-24,border:("4px solid "+T.card),boxSizing:"border-box",boxShadow:("0 4px 16px "+T.accentGlow)}}>
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><line x1="11" y1="4" x2="11" y2="18" stroke="white" strokeWidth="2.5" strokeLinecap="round"/><line x1="4" y1="11" x2="18" y2="11" stroke="white" strokeWidth="2.5" strokeLinecap="round"/></svg>
           </div>
           <div style={{fontSize:10,fontWeight:600,color:T.accent}}>Quick add</div>

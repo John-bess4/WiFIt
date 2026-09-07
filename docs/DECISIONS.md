@@ -334,6 +334,14 @@ pre-fix code would have written `2026-09-07`.
 The arithmetic is pinned in `src/__tests__/sessionDate.test.js` so it keeps
 running in CI; the wiring is what needed the browser.
 
+**Playwright clock gotcha, learned the expensive way.** `page.clock.install()`
+is **context**-level and has no `uninstall()` in this version. `setSystemTime`
++ `resume()` makes `Date` read correctly again, but the fake timers stay
+installed — and Playwright's own screenshot stabiliser runs on in-page timers,
+so **every `page.screenshot()` afterwards times out** with no useful message.
+Twelve screenshots failed in a row before the cause was found. After any clock
+test, close the browser and reopen: the persistent profile keeps the session.
+
 ---
 
 ## 2026-08-29 — Snapshot keys are per-uid, and no uid means no key
