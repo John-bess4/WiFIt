@@ -478,6 +478,18 @@ async function searchUSDA(query){
   }
 }
 
+// Open Food Facts' v2 search returns unrelated products for a query that
+// matches nothing (known issue #18) — the same three for any nonsense string —
+// which made the "No results" state unreachable once USDA was gated off. Keep
+// only products whose name contains a query token. Barcode lookup is exempt:
+// that is an exact-id fetch in BarcodeScanner, not a search.
+const foldText=(t)=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim();
+export function nameMatchesQuery(name,query){
+  const n=foldText(name); if(!n)return false;
+  const tokens=foldText(query).split(" ").filter(t=>t.length>=2);
+  if(!tokens.length)return false;
+  return tokens.some(t=>n.includes(t));
+}
 async function searchOFF(query){
   let anyOk=false;
   // Try two OFF endpoints — v2 search is more reliable for CORS
@@ -493,6 +505,7 @@ async function searchOFF(query){
       const products=data.products||data.foods||[];
       const results=products
         .filter(p=>p.product_name&&p.nutriments&&(p.nutriments["energy-kcal_100g"]>0||p.nutriments["energy_100g"]>0))
+        .filter(p=>nameMatchesQuery(p.product_name,query))
         .slice(0,6)
         .map(p=>({
           name:p.product_name.trim(),
