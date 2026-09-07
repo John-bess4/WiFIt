@@ -6703,8 +6703,12 @@ export default function App(){
         const waterRows=await read("water","water_log","user_id=eq."+uid+"&log_date=eq."+today);
         if(waterRows?.length>0)setWaterOzState(waterRows[0].oz||0);
         // Weight log (last 30 days)
-        const weightRows=await read("weight","body_weight_log","user_id=eq."+uid,{order:"log_date.asc",limit:30});
-        if(weightRows?.length>0)setWeightLog(weightRows.map(w=>({date:w.log_date,lbs:w.weight_lbs})));
+        // Newest 30, then reversed: asc+limit returned the OLDEST 30, so from
+        // weigh-in #31 on, Home's strip and the coach froze on old data. This
+        // read serves today's entry; range/all-time history is read where it
+        // is displayed (Progress), never through a row ceiling.
+        const weightRows=await read("weight","body_weight_log","user_id=eq."+uid,{order:"log_date.desc",limit:30});
+        if(weightRows?.length>0)setWeightLog(weightRows.map(w=>({date:w.log_date,lbs:w.weight_lbs})).reverse());
         // Workout plans
         const planRows=await read("plans","workout_plans","user_id=eq."+uid,{order:"sort_order.asc"});
         // A failed plans read must NOT leave the INITIAL_WORKOUTS seed on screen
