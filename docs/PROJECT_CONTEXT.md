@@ -10,7 +10,7 @@ production, because `sb.insert`/`sb.upsert` swallow non-2xx responses. **Every
 statement below was verified against the live schema or the current code. If you
 change the schema, change this file in the same commit.**
 
-**Decisions with their reasons live in `DECISIONS.md`** at the repo root — the
+**Decisions with their reasons live in `docs/DECISIONS.md`** — the
 cases where the obvious thing to do differs from what the code does. This file
 is schema, architecture and open bugs; that file is why the code is the way it
 is. Cross-references go both ways.
@@ -55,6 +55,12 @@ on the web platform, not merely awkward:
    `@discardableResult`, where the compiler makes ignoring a failure a
    deliberate, visible choice instead of an accident.
 
+**`docs/HANDOFF.md` is the migration brief.** It carries the bug archive
+organised by *class* rather than chronology, the verification discipline, the
+live schema, what survives the rewrite untouched (schema, RLS, `/api/coach`, the
+`ACTIONS:` contract), and the known issues deliberately left unfixed because
+they disappear in the rewrite. Read it before planning any rewrite work.
+
 Do **not** start the rewrite as a side effect of another task. Same rule as
 splitting `App.jsx`: it is its own deliberate piece of work.
 
@@ -62,7 +68,7 @@ splitting `App.jsx`: it is its own deliberate piece of work.
 
 | Path | What |
 |---|---|
-| `src/App.jsx` | The entire app — ~6,600 lines, one file. All components, the `sb` client, auth, parsers. |
+| `src/App.jsx` | The entire app — ~7,100 lines, one file. All components, the `sb` client, auth, parsers. |
 | `src/main.jsx` | Mount point. |
 | `api/coach.js` | Vercel **Edge** function proxying Anthropic. The only server-side code. |
 | `supabase/migrations/` | Applied migrations, recorded after the fact. |
@@ -281,7 +287,7 @@ on failure — that logging is the only reason the schema mismatches above were 
 ### The two rules that matter
 
 1. **`select` collapses every error into `[]`.** A 401, a 500, and "no rows" are
-   indistinguishable. 16 call sites depend on this contract and are `[]`-guarded, and
+   indistinguishable. 15 call sites depend on this contract and are `[]`-guarded, and
    several sit inside `Promise.all` batches where a throw would propagate differently.
    **Do not change it.**
 
@@ -601,10 +607,10 @@ Anthropic response formats are unchanged and out of scope for security work:
     and set to `error` — it is what would have caught the `RecipeCard` crash, where
     a `useState` inside `renderMsg` (called from a `.map`) made the hook count
     depend on how many recipe messages existed and blank-screened the app.
-    `exhaustive-deps` reports **7 advisory warnings** in `App.jsx` (lines ~675,
-    890, 1794, 4345, 4350, 5692, 6458 — missing deps such as `loadUserData`,
+    `exhaustive-deps` reports **7 advisory warnings** in `App.jsx` (lines ~740,
+    955, 1861, 4533, 4538, 5880, 6679 — missing deps such as `loadUserData`,
     `callClaude`, `fetchMonthData`). Turning it on would move the documented
-    28-warning baseline for no correctness gain today, so it is a decision, not
+    25-warning baseline for no correctness gain today, so it is a decision, not
     an oversight. Revisit if a stale-closure bug ever shows up.
 
 12. ~~**Two category vocabularies share `supplement_stack.category`.**~~

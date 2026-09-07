@@ -18,12 +18,13 @@ at `wifit.vercel.app`, backed by Supabase (Postgres + Auth, RLS on all 11 tables
 
 | Path | What |
 |---|---|
-| `src/App.jsx` | The entire app — ~6,800 lines, one file. Components, the `sb` client, auth, parsers. |
+| `src/App.jsx` | The entire app — ~7,100 lines, one file. Components, the `sb` client, auth, parsers. |
 | `src/main.jsx` | Mount point. |
 | `api/coach.js` | Vercel Edge function proxying Anthropic. The only server-side code. |
 | `supabase/migrations/` | Applied migrations, recorded after the fact. |
 | `docs/PROJECT_CONTEXT.md` | Verified schema + architecture reference. |
-| `DECISIONS.md` | Why the code is the way it is, when the obvious thing differs. |
+| `docs/HANDOFF.md` | **Migration brief for the SwiftUI rewrite.** Bug archive by class, what survives, what is deliberately unfixed. |
+| `docs/DECISIONS.md` | Why the code is the way it is, when the obvious thing differs. |
 
 ## Commands
 
@@ -32,7 +33,7 @@ npm run dev       # vite → http://localhost:5173
 npm run build     # vite build
 npm run preview   # serve the production build
 npm run lint      # eslint 9, flat config; 25 known no-unused-vars warnings, 0 errors
-npm test          # vitest, node env; 65 tests, ~650ms. TZ pinned for localDate.
+npm test          # vitest, node env; 69 tests, ~700ms. TZ pinned for localDate.
 ```
 
 Package manager is **npm** (`package-lock.json`). `npm test` is a deliberately
@@ -47,7 +48,7 @@ verification rules below are not optional.
 `sb` is a hand-rolled Supabase REST client. **None of its methods throw.**
 
 - `select` returns `[]` on *any* non-2xx — a 401, a 500, and "no rows" are
-  indistinguishable. 16 call sites depend on this. **Do not change it.**
+  indistinguishable. 15 call sites depend on this. **Do not change it.**
 - `insert` / `upsert` return `null` on failure. A `try/catch` around them catches
   nothing. **Callers must check the return value** and surface the failure:
 

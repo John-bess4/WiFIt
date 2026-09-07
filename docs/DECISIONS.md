@@ -5,10 +5,10 @@ when the *obvious* thing to do is different from what the code does, so that the
 next person does not "fix" it back.
 
 This is not a changelog and not a bug list. Bugs live in
-`docs/PROJECT_CONTEXT.md` §Known issues; the schema lives there too. Entries are
+`PROJECT_CONTEXT.md` §Known issues; the schema lives there too. Entries are
 newest first and dated absolutely.
 
-**A native SwiftUI rewrite is planned** (see `docs/PROJECT_CONTEXT.md` §Where
+**A native SwiftUI rewrite is planned** (see `PROJECT_CONTEXT.md` §Where
 this is going). That is the main reason this file exists: the rewrite should
 inherit these lessons rather than rediscover them. So entries say what would
 **structurally prevent** a problem, not that someone should have been more
@@ -296,7 +296,7 @@ put failure in the type — `Result`, a typed `throws`, an optional the compiler
 forces you to unwrap — so that "I did not handle this" becomes something the
 build says out loud.
 
-See `docs/PROJECT_CONTEXT.md` §Known issues #1 for the full table of all 10
+See `PROJECT_CONTEXT.md` §Known issues #1 for the full table of all 10
 sites. Both classes are documented there, not fixed.
 
 ---
@@ -356,7 +356,7 @@ gap in what browser verification can cover without credentials.
 
 ## 2026-08-29 — `react-hooks/exhaustive-deps` is off on purpose
 
-See `docs/PROJECT_CONTEXT.md` §Known issues #11 for the full entry.
+See `PROJECT_CONTEXT.md` §Known issues #11 for the full entry.
 `rules-of-hooks` is on as an **error** — it is what would have caught the
 `RecipeCard` blank-screen. `exhaustive-deps` produces 7 advisory warnings and no
 correctness gain today. Revisit if a stale-closure bug ever appears.
@@ -365,7 +365,7 @@ correctness gain today. Revisit if a stale-closure bug ever appears.
 
 ## 2026-08-29 — The `supplement_stack.category` CHECK constraint is deferred
 
-See `docs/PROJECT_CONTEXT.md` §Known issues #14 for the SQL and the trigger to
+See `PROJECT_CONTEXT.md` §Known issues #14 for the SQL and the trigger to
 apply it. Short version: the unvalidated legacy `ADD_SUPP` path is live until C2
 retires it, so the constraint today would turn a model's out-of-enum response
 into a failed insert that the user reads as "check your connection" — a database
