@@ -1,0 +1,3802 @@
+{
+  "captured_on": "2026-09-08",
+  "purpose": "Metadata inventory only. NOT a database backup or restore artifact.",
+  "project": {
+    "id": "vghqqksbjpgdzmvfmnru",
+    "ref": "vghqqksbjpgdzmvfmnru",
+    "organization_id": "xleddtzmvcobycxiolqi",
+    "organization_slug": "xleddtzmvcobycxiolqi",
+    "name": "WiFit",
+    "region": "us-east-1",
+    "status": "ACTIVE_HEALTHY",
+    "database": {
+      "host": "db.vghqqksbjpgdzmvfmnru.supabase.co",
+      "version": "17.6.1.111",
+      "postgres_engine": "17",
+      "release_channel": "ga"
+    },
+    "created_at": "2026-05-02T22:14:38.10859Z"
+  },
+  "canonical_repository": {
+    "path": "/Users/johnbessemer/Documents/wifit",
+    "remote": "https://github.com/John-bess4/WiFIt.git",
+    "head": "3415ab1664bb3e2eb94abfecc79aa86cff4779f3"
+  },
+  "tables": [
+    {
+      "name": "public.profiles",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "age",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "weight_lbs",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "height_in",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "activity_level",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "'moderate'::text"
+        },
+        {
+          "name": "goal",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "'maintain'::text"
+        },
+        {
+          "name": "cal_goal",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "2200"
+        },
+        {
+          "name": "protein_goal",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "140"
+        },
+        {
+          "name": "carbs_goal",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "180"
+        },
+        {
+          "name": "fat_goal",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "78"
+        },
+        {
+          "name": "theme",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "'dark'::text"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "gender",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "bmr",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "tdee",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "goal_rate",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "profiles_id_fkey",
+          "source_table": "public.profiles",
+          "source_columns": [
+            "id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.food_log",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "logged_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "CURRENT_DATE"
+        },
+        {
+          "name": "meal_slot",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "food_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "brand",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "grams",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "per100_cal",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "per100_protein",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "per100_carbs",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "per100_fat",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "per100_fiber",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "per100_sodium",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "color",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "per100_sugar",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "food_log_user_id_fkey",
+          "source_table": "public.food_log",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.custom_foods",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "brand",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "serving_g",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "per100_cal",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "per100_protein",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "per100_carbs",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "per100_fat",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "per100_fiber",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "per100_sugar",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "per100_sodium",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "serving_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "serving_unit",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "custom_foods_user_id_fkey",
+          "source_table": "public.custom_foods",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.workouts",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "tag",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "level",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "est_min",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "exercises",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "'[]'::jsonb"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "workouts_user_id_fkey",
+          "source_table": "public.workouts",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.workout_sessions",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "workout_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "completed_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "CURRENT_DATE"
+        },
+        {
+          "name": "duration_secs",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "sets_completed",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "total_sets",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "exercises",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "'[]'::jsonb"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "prs",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'[]'::jsonb"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "workout_sessions_user_id_fkey",
+          "source_table": "public.workout_sessions",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.supplement_stack",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "sub",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "dot_color",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "'#888888'::text"
+        },
+        {
+          "name": "reminder_time",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "reminder_enabled",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "false"
+        },
+        {
+          "name": "sort_order",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "category",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "note",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "supplement_stack_user_id_fkey",
+          "source_table": "public.supplement_stack",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "supplement_log_supplement_id_fkey",
+          "source_table": "public.supplement_log",
+          "source_columns": [
+            "supplement_id"
+          ],
+          "target_table": "public.supplement_stack",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.supplement_log",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "supplement_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "log_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "CURRENT_DATE"
+        },
+        {
+          "name": "taken",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "false"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "supplement_log_supplement_id_fkey",
+          "source_table": "public.supplement_log",
+          "source_columns": [
+            "supplement_id"
+          ],
+          "target_table": "public.supplement_stack",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "supplement_log_user_id_fkey",
+          "source_table": "public.supplement_log",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.body_weight_log",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "weight_lbs",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "log_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "CURRENT_DATE"
+        },
+        {
+          "name": "note",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "body_weight_log_user_id_fkey",
+          "source_table": "public.body_weight_log",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.water_log",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "log_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "CURRENT_DATE"
+        },
+        {
+          "name": "cups",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "oz",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "water_log_user_id_fkey",
+          "source_table": "public.water_log",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.workout_plans",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "tag",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "level",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "est_min",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "scheduled_day",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "exercises",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'[]'::jsonb"
+        },
+        {
+          "name": "sort_order",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "workout_plans_user_id_fkey",
+          "source_table": "public.workout_plans",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.coach_usage",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "coach_usage_user_id_fkey",
+          "source_table": "public.coach_usage",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "schema": "public",
+      "name": "body_weight_log",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "view_definition": null
+    },
+    {
+      "schema": "public",
+      "name": "coach_usage",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "view_definition": null
+    },
+    {
+      "schema": "public",
+      "name": "custom_foods",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "view_definition": null
+    },
+    {
+      "schema": "public",
+      "name": "daily_summary",
+      "kind": "v",
+      "rls": false,
+      "options": [
+        "security_invoker=true"
+      ],
+      "view_definition": " WITH food AS (\n         SELECT food_log.user_id,\n            food_log.logged_date AS day,\n            sum(round(COALESCE(food_log.per100_cal, 0::numeric) * COALESCE(food_log.grams, 0::numeric) / 100::numeric)) AS kcal,\n            sum(round(COALESCE(food_log.per100_protein, 0::numeric) * COALESCE(food_log.grams, 0::numeric) / 100::numeric)) AS protein_g,\n            sum(round(COALESCE(food_log.per100_carbs, 0::numeric) * COALESCE(food_log.grams, 0::numeric) / 100::numeric)) AS carbs_g,\n            sum(round(COALESCE(food_log.per100_fat, 0::numeric) * COALESCE(food_log.grams, 0::numeric) / 100::numeric)) AS fat_g,\n            count(*) AS food_rows\n           FROM food_log\n          GROUP BY food_log.user_id, food_log.logged_date\n        ), workouts AS (\n         SELECT workout_sessions.user_id,\n            workout_sessions.completed_date AS day,\n            count(*) AS workout_count,\n            string_agg(COALESCE(workout_sessions.workout_name, ''::text), ', '::text ORDER BY workout_sessions.created_at) AS workout_names\n           FROM workout_sessions\n          GROUP BY workout_sessions.user_id, workout_sessions.completed_date\n        ), supps AS (\n         SELECT supplement_log.user_id,\n            supplement_log.log_date AS day,\n            count(*) FILTER (WHERE supplement_log.taken) AS supps_taken\n           FROM supplement_log\n          GROUP BY supplement_log.user_id, supplement_log.log_date\n        ), weight AS (\n         SELECT body_weight_log.user_id,\n            body_weight_log.log_date AS day,\n            body_weight_log.weight_lbs\n           FROM body_weight_log\n        ), days AS (\n         SELECT food.user_id,\n            food.day\n           FROM food\n        UNION\n         SELECT workouts.user_id,\n            workouts.day\n           FROM workouts\n        UNION\n         SELECT supps.user_id,\n            supps.day\n           FROM supps\n        UNION\n         SELECT weight.user_id,\n            weight.day\n           FROM weight\n        )\n SELECT d.user_id,\n    d.day,\n    COALESCE(f.kcal, 0::numeric)::integer AS kcal,\n    COALESCE(f.protein_g, 0::numeric)::integer AS protein_g,\n    COALESCE(f.carbs_g, 0::numeric)::integer AS carbs_g,\n    COALESCE(f.fat_g, 0::numeric)::integer AS fat_g,\n    COALESCE(f.food_rows, 0::bigint)::integer AS food_rows,\n    COALESCE(w.workout_count, 0::bigint)::integer AS workout_count,\n    w.workout_names,\n    COALESCE(s.supps_taken, 0::bigint)::integer AS supps_taken,\n    (( SELECT count(*) AS count\n           FROM supplement_due_from df\n          WHERE df.user_id = d.user_id AND df.due_from <= d.day))::integer AS supps_due,\n    wt.weight_lbs\n   FROM days d\n     LEFT JOIN food f ON f.user_id = d.user_id AND f.day = d.day\n     LEFT JOIN workouts w ON w.user_id = d.user_id AND w.day = d.day\n     LEFT JOIN supps s ON s.user_id = d.user_id AND s.day = d.day\n     LEFT JOIN weight wt ON wt.user_id = d.user_id AND wt.day = d.day;"
+    },
+    {
+      "schema": "public",
+      "name": "exercise_bests",
+      "kind": "v",
+      "rls": false,
+      "options": [
+        "security_invoker=true"
+      ],
+      "view_definition": " SELECT w.user_id,\n    e.value ->> 'name'::text AS name,\n    max((s.value ->> 'weight'::text)::numeric) AS best_lbs\n   FROM workout_sessions w,\n    LATERAL jsonb_array_elements(w.exercises) e(value),\n    LATERAL jsonb_array_elements(COALESCE(e.value -> 'setsData'::text, '[]'::jsonb)) s(value)\n  WHERE ((s.value ->> 'weight'::text)::numeric) > 0::numeric\n  GROUP BY w.user_id, (e.value ->> 'name'::text);"
+    },
+    {
+      "schema": "public",
+      "name": "exercise_pr_events",
+      "kind": "v",
+      "rls": false,
+      "options": [
+        "security_invoker=true"
+      ],
+      "view_definition": " WITH lifts AS (\n         SELECT w.user_id,\n            w.id AS session_id,\n            w.completed_date,\n            w.created_at,\n            e.value ->> 'name'::text AS name,\n            max((s.value ->> 'weight'::text)::numeric) AS top_lbs\n           FROM workout_sessions w,\n            LATERAL jsonb_array_elements(w.exercises) e(value),\n            LATERAL jsonb_array_elements(COALESCE(e.value -> 'setsData'::text, '[]'::jsonb)) s(value)\n          WHERE jsonb_typeof(w.exercises) = 'array'::text AND ((s.value ->> 'weight'::text)::numeric) > 0::numeric\n          GROUP BY w.user_id, w.id, w.completed_date, w.created_at, (e.value ->> 'name'::text)\n        ), ranked AS (\n         SELECT lifts.user_id,\n            lifts.session_id,\n            lifts.completed_date,\n            lifts.created_at,\n            lifts.name,\n            lifts.top_lbs,\n            max(lifts.top_lbs) OVER (PARTITION BY lifts.user_id, lifts.name ORDER BY lifts.completed_date, lifts.created_at, lifts.session_id ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS prev_best\n           FROM lifts\n        )\n SELECT user_id,\n    session_id,\n    completed_date,\n    name,\n    top_lbs AS lbs,\n    prev_best\n   FROM ranked\n  WHERE prev_best IS NOT NULL AND top_lbs > prev_best;"
+    },
+    {
+      "schema": "public",
+      "name": "food_log",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "view_definition": null
+    },
+    {
+      "schema": "public",
+      "name": "profiles",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "view_definition": null
+    },
+    {
+      "schema": "public",
+      "name": "supplement_due_from",
+      "kind": "v",
+      "rls": false,
+      "options": [
+        "security_invoker=true"
+      ],
+      "view_definition": " SELECT s.user_id,\n    s.id AS supplement_id,\n    s.name,\n    LEAST(s.created_at::date, min(l.log_date)) AS due_from\n   FROM supplement_stack s\n     LEFT JOIN supplement_log l ON l.supplement_id = s.id\n  GROUP BY s.user_id, s.id, s.name, s.created_at;"
+    },
+    {
+      "schema": "public",
+      "name": "supplement_log",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "view_definition": null
+    },
+    {
+      "schema": "public",
+      "name": "supplement_stack",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "view_definition": null
+    },
+    {
+      "schema": "public",
+      "name": "water_log",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "view_definition": null
+    },
+    {
+      "schema": "public",
+      "name": "weight_monthly",
+      "kind": "v",
+      "rls": false,
+      "options": [
+        "security_invoker=true"
+      ],
+      "view_definition": " SELECT user_id,\n    to_char(log_date::timestamp with time zone, 'YYYY-MM'::text) AS month,\n    (array_agg(weight_lbs ORDER BY log_date))[1] AS first_lbs,\n    (array_agg(weight_lbs ORDER BY log_date DESC))[1] AS last_lbs,\n    count(*)::integer AS entries\n   FROM body_weight_log\n  GROUP BY user_id, (to_char(log_date::timestamp with time zone, 'YYYY-MM'::text));"
+    },
+    {
+      "schema": "public",
+      "name": "workout_plans",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "view_definition": null
+    },
+    {
+      "schema": "public",
+      "name": "workout_sessions",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "view_definition": null
+    },
+    {
+      "schema": "public",
+      "name": "workouts",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "view_definition": null
+    }
+  ],
+  "policies": [
+    {
+      "schemaname": "public",
+      "tablename": "body_weight_log",
+      "policyname": "Users can manage their own weight log",
+      "permissive": "PERMISSIVE",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "coach_usage",
+      "policyname": "coach_usage_insert_own",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "coach_usage",
+      "policyname": "coach_usage_select_own",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "custom_foods",
+      "policyname": "Users can manage their own custom foods",
+      "permissive": "PERMISSIVE",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "food_log",
+      "policyname": "Users can manage their own food log",
+      "permissive": "PERMISSIVE",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "profiles",
+      "policyname": "Users can manage their own profile",
+      "permissive": "PERMISSIVE",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(auth.uid() = id)",
+      "with_check": "(auth.uid() = id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "supplement_log",
+      "policyname": "Users can manage their own supplement log",
+      "permissive": "PERMISSIVE",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "supplement_stack",
+      "policyname": "Users can manage their own supplement stack",
+      "permissive": "PERMISSIVE",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "water_log",
+      "policyname": "Users can manage their own water log",
+      "permissive": "PERMISSIVE",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "workout_plans",
+      "policyname": "users manage own plans",
+      "permissive": "PERMISSIVE",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "workout_sessions",
+      "policyname": "Users can manage their own workout sessions",
+      "permissive": "PERMISSIVE",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "workouts",
+      "policyname": "Users can manage their own workouts",
+      "permissive": "PERMISSIVE",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": "(auth.uid() = user_id)"
+    }
+  ],
+  "constraints": [
+    {
+      "schema": "public",
+      "table_name": "body_weight_log",
+      "conname": "body_weight_log_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "schema": "public",
+      "table_name": "body_weight_log",
+      "conname": "body_weight_log_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "schema": "public",
+      "table_name": "body_weight_log",
+      "conname": "body_weight_log_user_id_log_date_key",
+      "definition": "UNIQUE (user_id, log_date)"
+    },
+    {
+      "schema": "public",
+      "table_name": "coach_usage",
+      "conname": "coach_usage_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "schema": "public",
+      "table_name": "coach_usage",
+      "conname": "coach_usage_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "schema": "public",
+      "table_name": "custom_foods",
+      "conname": "custom_foods_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "schema": "public",
+      "table_name": "custom_foods",
+      "conname": "custom_foods_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "schema": "public",
+      "table_name": "food_log",
+      "conname": "food_log_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "schema": "public",
+      "table_name": "food_log",
+      "conname": "food_log_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "schema": "public",
+      "table_name": "profiles",
+      "conname": "profiles_id_fkey",
+      "definition": "FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "schema": "public",
+      "table_name": "profiles",
+      "conname": "profiles_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "schema": "public",
+      "table_name": "supplement_log",
+      "conname": "supplement_log_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "schema": "public",
+      "table_name": "supplement_log",
+      "conname": "supplement_log_supplement_id_fkey",
+      "definition": "FOREIGN KEY (supplement_id) REFERENCES supplement_stack(id) ON DELETE CASCADE"
+    },
+    {
+      "schema": "public",
+      "table_name": "supplement_log",
+      "conname": "supplement_log_supplement_id_log_date_key",
+      "definition": "UNIQUE (supplement_id, log_date)"
+    },
+    {
+      "schema": "public",
+      "table_name": "supplement_log",
+      "conname": "supplement_log_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "schema": "public",
+      "table_name": "supplement_stack",
+      "conname": "supplement_stack_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "schema": "public",
+      "table_name": "supplement_stack",
+      "conname": "supplement_stack_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "schema": "public",
+      "table_name": "water_log",
+      "conname": "water_log_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "schema": "public",
+      "table_name": "water_log",
+      "conname": "water_log_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "schema": "public",
+      "table_name": "water_log",
+      "conname": "water_log_user_id_log_date_key",
+      "definition": "UNIQUE (user_id, log_date)"
+    },
+    {
+      "schema": "public",
+      "table_name": "workout_plans",
+      "conname": "workout_plans_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "schema": "public",
+      "table_name": "workout_plans",
+      "conname": "workout_plans_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "schema": "public",
+      "table_name": "workout_sessions",
+      "conname": "workout_sessions_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "schema": "public",
+      "table_name": "workout_sessions",
+      "conname": "workout_sessions_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "schema": "public",
+      "table_name": "workouts",
+      "conname": "workouts_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "schema": "public",
+      "table_name": "workouts",
+      "conname": "workouts_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    }
+  ],
+  "indexes": [
+    {
+      "schemaname": "public",
+      "tablename": "body_weight_log",
+      "indexname": "body_weight_log_pkey",
+      "indexdef": "CREATE UNIQUE INDEX body_weight_log_pkey ON public.body_weight_log USING btree (id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "body_weight_log",
+      "indexname": "body_weight_log_user_id_log_date_key",
+      "indexdef": "CREATE UNIQUE INDEX body_weight_log_user_id_log_date_key ON public.body_weight_log USING btree (user_id, log_date)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "coach_usage",
+      "indexname": "coach_usage_pkey",
+      "indexdef": "CREATE UNIQUE INDEX coach_usage_pkey ON public.coach_usage USING btree (id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "coach_usage",
+      "indexname": "coach_usage_user_created_idx",
+      "indexdef": "CREATE INDEX coach_usage_user_created_idx ON public.coach_usage USING btree (user_id, created_at DESC)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "custom_foods",
+      "indexname": "custom_foods_pkey",
+      "indexdef": "CREATE UNIQUE INDEX custom_foods_pkey ON public.custom_foods USING btree (id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "food_log",
+      "indexname": "food_log_pkey",
+      "indexdef": "CREATE UNIQUE INDEX food_log_pkey ON public.food_log USING btree (id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "food_log",
+      "indexname": "food_log_user_date",
+      "indexdef": "CREATE INDEX food_log_user_date ON public.food_log USING btree (user_id, logged_date)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "profiles",
+      "indexname": "profiles_pkey",
+      "indexdef": "CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "supplement_log",
+      "indexname": "supplement_log_pkey",
+      "indexdef": "CREATE UNIQUE INDEX supplement_log_pkey ON public.supplement_log USING btree (id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "supplement_log",
+      "indexname": "supplement_log_supplement_id_log_date_key",
+      "indexdef": "CREATE UNIQUE INDEX supplement_log_supplement_id_log_date_key ON public.supplement_log USING btree (supplement_id, log_date)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "supplement_log",
+      "indexname": "supplement_log_user_date",
+      "indexdef": "CREATE INDEX supplement_log_user_date ON public.supplement_log USING btree (user_id, log_date)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "supplement_stack",
+      "indexname": "supplement_stack_pkey",
+      "indexdef": "CREATE UNIQUE INDEX supplement_stack_pkey ON public.supplement_stack USING btree (id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "water_log",
+      "indexname": "water_log_pkey",
+      "indexdef": "CREATE UNIQUE INDEX water_log_pkey ON public.water_log USING btree (id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "water_log",
+      "indexname": "water_log_user_id_log_date_key",
+      "indexdef": "CREATE UNIQUE INDEX water_log_user_id_log_date_key ON public.water_log USING btree (user_id, log_date)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "workout_plans",
+      "indexname": "workout_plans_pkey",
+      "indexdef": "CREATE UNIQUE INDEX workout_plans_pkey ON public.workout_plans USING btree (id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "workout_sessions",
+      "indexname": "workout_sessions_pkey",
+      "indexdef": "CREATE UNIQUE INDEX workout_sessions_pkey ON public.workout_sessions USING btree (id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "workout_sessions",
+      "indexname": "workout_sessions_user_date",
+      "indexdef": "CREATE INDEX workout_sessions_user_date ON public.workout_sessions USING btree (user_id, completed_date)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "workouts",
+      "indexname": "workouts_pkey",
+      "indexdef": "CREATE UNIQUE INDEX workouts_pkey ON public.workouts USING btree (id)"
+    }
+  ],
+  "public_functions": [],
+  "triggers": [
+    {
+      "name": "enforce_bucket_name_length_trigger",
+      "schema": "storage",
+      "table_name": "buckets",
+      "definition": "CREATE TRIGGER enforce_bucket_name_length_trigger BEFORE INSERT OR UPDATE OF name ON storage.buckets FOR EACH ROW EXECUTE FUNCTION storage.enforce_bucket_name_length()"
+    },
+    {
+      "name": "protect_buckets_delete",
+      "schema": "storage",
+      "table_name": "buckets",
+      "definition": "CREATE TRIGGER protect_buckets_delete BEFORE DELETE ON storage.buckets FOR EACH STATEMENT EXECUTE FUNCTION storage.protect_delete()"
+    },
+    {
+      "name": "protect_objects_delete",
+      "schema": "storage",
+      "table_name": "objects",
+      "definition": "CREATE TRIGGER protect_objects_delete BEFORE DELETE ON storage.objects FOR EACH STATEMENT EXECUTE FUNCTION storage.protect_delete()"
+    },
+    {
+      "name": "update_objects_updated_at",
+      "schema": "storage",
+      "table_name": "objects",
+      "definition": "CREATE TRIGGER update_objects_updated_at BEFORE UPDATE ON storage.objects FOR EACH ROW EXECUTE FUNCTION storage.update_updated_at_column()"
+    }
+  ],
+  "table_grants": [
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "anon",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "anon",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "anon",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "anon",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "anon",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "anon",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "authenticated",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "authenticated",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "body_weight_log",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "anon",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "anon",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "anon",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "anon",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "anon",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "anon",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "authenticated",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "authenticated",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "coach_usage",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "anon",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "anon",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "anon",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "anon",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "anon",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "anon",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "authenticated",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "authenticated",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "custom_foods",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "daily_summary",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "daily_summary",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "daily_summary",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "daily_summary",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "daily_summary",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "daily_summary",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "daily_summary",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "daily_summary",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_bests",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_bests",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_bests",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_bests",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_bests",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_bests",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_bests",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_bests",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_pr_events",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_pr_events",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_pr_events",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_pr_events",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_pr_events",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_pr_events",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_pr_events",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exercise_pr_events",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "anon",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "anon",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "anon",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "anon",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "anon",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "anon",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "authenticated",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "authenticated",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "food_log",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "anon",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "anon",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "anon",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "anon",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "anon",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "anon",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "authenticated",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "authenticated",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "profiles",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_due_from",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_due_from",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_due_from",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_due_from",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_due_from",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_due_from",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_due_from",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_due_from",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "anon",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "anon",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "anon",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "anon",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "anon",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "anon",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "authenticated",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "authenticated",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_log",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "anon",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "anon",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "anon",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "anon",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "anon",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "anon",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "authenticated",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "authenticated",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "supplement_stack",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "anon",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "anon",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "anon",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "anon",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "anon",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "anon",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "authenticated",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "authenticated",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "water_log",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "weight_monthly",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "weight_monthly",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "weight_monthly",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "weight_monthly",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "weight_monthly",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "weight_monthly",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "weight_monthly",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "weight_monthly",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "anon",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "anon",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "anon",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "anon",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "anon",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "anon",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "authenticated",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "authenticated",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_plans",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "anon",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "anon",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "anon",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "anon",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "anon",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "anon",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "authenticated",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "authenticated",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workout_sessions",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "anon",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "anon",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "anon",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "anon",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "anon",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "anon",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "authenticated",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "authenticated",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "workouts",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    }
+  ],
+  "default_privileges": [
+    {
+      "schema": "auth",
+      "owner": "supabase_auth_admin",
+      "object_type": "S",
+      "privileges": "{postgres=rwU/supabase_auth_admin,dashboard_user=rwU/supabase_auth_admin}"
+    },
+    {
+      "schema": "auth",
+      "owner": "supabase_auth_admin",
+      "object_type": "f",
+      "privileges": "{postgres=X/supabase_auth_admin,dashboard_user=X/supabase_auth_admin}"
+    },
+    {
+      "schema": "auth",
+      "owner": "supabase_auth_admin",
+      "object_type": "r",
+      "privileges": "{postgres=arwdDxtm/supabase_auth_admin,dashboard_user=arwdDxtm/supabase_auth_admin}"
+    },
+    {
+      "schema": "extensions",
+      "owner": "supabase_admin",
+      "object_type": "S",
+      "privileges": "{postgres=r*w*U*/supabase_admin}"
+    },
+    {
+      "schema": "extensions",
+      "owner": "supabase_admin",
+      "object_type": "f",
+      "privileges": "{postgres=X*/supabase_admin}"
+    },
+    {
+      "schema": "extensions",
+      "owner": "supabase_admin",
+      "object_type": "r",
+      "privileges": "{postgres=a*r*w*d*D*x*t*m*/supabase_admin}"
+    },
+    {
+      "schema": "graphql",
+      "owner": "supabase_admin",
+      "object_type": "S",
+      "privileges": "{postgres=rwU/supabase_admin,anon=rwU/supabase_admin,authenticated=rwU/supabase_admin,service_role=rwU/supabase_admin}"
+    },
+    {
+      "schema": "graphql",
+      "owner": "supabase_admin",
+      "object_type": "f",
+      "privileges": "{postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}"
+    },
+    {
+      "schema": "graphql",
+      "owner": "supabase_admin",
+      "object_type": "r",
+      "privileges": "{postgres=arwdDxtm/supabase_admin,anon=arwdDxtm/supabase_admin,authenticated=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin}"
+    },
+    {
+      "schema": "graphql_public",
+      "owner": "supabase_admin",
+      "object_type": "S",
+      "privileges": "{postgres=rwU/supabase_admin,anon=rwU/supabase_admin,authenticated=rwU/supabase_admin,service_role=rwU/supabase_admin}"
+    },
+    {
+      "schema": "graphql_public",
+      "owner": "supabase_admin",
+      "object_type": "f",
+      "privileges": "{postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}"
+    },
+    {
+      "schema": "graphql_public",
+      "owner": "supabase_admin",
+      "object_type": "r",
+      "privileges": "{postgres=arwdDxtm/supabase_admin,anon=arwdDxtm/supabase_admin,authenticated=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin}"
+    },
+    {
+      "schema": "public",
+      "owner": "postgres",
+      "object_type": "S",
+      "privileges": "{postgres=rwU/postgres,anon=rwU/postgres,authenticated=rwU/postgres,service_role=rwU/postgres}"
+    },
+    {
+      "schema": "public",
+      "owner": "postgres",
+      "object_type": "f",
+      "privileges": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "owner": "postgres",
+      "object_type": "r",
+      "privileges": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+    },
+    {
+      "schema": "public",
+      "owner": "supabase_admin",
+      "object_type": "S",
+      "privileges": "{postgres=rwU/supabase_admin,anon=rwU/supabase_admin,authenticated=rwU/supabase_admin,service_role=rwU/supabase_admin}"
+    },
+    {
+      "schema": "public",
+      "owner": "supabase_admin",
+      "object_type": "f",
+      "privileges": "{postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}"
+    },
+    {
+      "schema": "public",
+      "owner": "supabase_admin",
+      "object_type": "r",
+      "privileges": "{postgres=arwdDxtm/supabase_admin,anon=arwdDxtm/supabase_admin,authenticated=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin}"
+    },
+    {
+      "schema": "realtime",
+      "owner": "supabase_admin",
+      "object_type": "S",
+      "privileges": "{postgres=rwU/supabase_admin,dashboard_user=rwU/supabase_admin}"
+    },
+    {
+      "schema": "realtime",
+      "owner": "supabase_admin",
+      "object_type": "f",
+      "privileges": "{postgres=X/supabase_admin,dashboard_user=X/supabase_admin}"
+    },
+    {
+      "schema": "realtime",
+      "owner": "supabase_admin",
+      "object_type": "r",
+      "privileges": "{postgres=arwdDxtm/supabase_admin,dashboard_user=arwdDxtm/supabase_admin}"
+    },
+    {
+      "schema": "storage",
+      "owner": "postgres",
+      "object_type": "S",
+      "privileges": "{postgres=rwU/postgres,anon=rwU/postgres,authenticated=rwU/postgres,service_role=rwU/postgres}"
+    },
+    {
+      "schema": "storage",
+      "owner": "postgres",
+      "object_type": "f",
+      "privileges": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "storage",
+      "owner": "postgres",
+      "object_type": "r",
+      "privileges": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+    }
+  ],
+  "schema_grants": [
+    {
+      "nspname": "auth",
+      "grants": "{supabase_admin=UC/supabase_admin,anon=U/supabase_admin,authenticated=U/supabase_admin,service_role=U/supabase_admin,supabase_auth_admin=UC/supabase_admin,dashboard_user=UC/supabase_admin,postgres=U/supabase_admin}"
+    },
+    {
+      "nspname": "extensions",
+      "grants": "{postgres=UC/postgres,anon=U/postgres,authenticated=U/postgres,service_role=U/postgres,dashboard_user=UC/postgres}"
+    },
+    {
+      "nspname": "graphql",
+      "grants": "{supabase_admin=UC/supabase_admin,postgres=U*/supabase_admin,anon=U/supabase_admin,authenticated=U/supabase_admin,service_role=U/supabase_admin}"
+    },
+    {
+      "nspname": "graphql_public",
+      "grants": "{supabase_admin=UC/supabase_admin,postgres=U*/supabase_admin,anon=U/supabase_admin,authenticated=U/supabase_admin,service_role=U/supabase_admin}"
+    },
+    {
+      "nspname": "public",
+      "grants": "{pg_database_owner=UC/pg_database_owner,=U/pg_database_owner,postgres=U/pg_database_owner,anon=U/pg_database_owner,authenticated=U/pg_database_owner,service_role=U/pg_database_owner}"
+    },
+    {
+      "nspname": "realtime",
+      "grants": "{supabase_admin=UC/supabase_admin,postgres=U*/supabase_admin,anon=U/supabase_admin,authenticated=U/supabase_admin,service_role=U/supabase_admin,supabase_realtime_admin=UC/supabase_admin}"
+    },
+    {
+      "nspname": "storage",
+      "grants": "{supabase_admin=UC/supabase_admin,postgres=U*/supabase_admin,anon=U/supabase_admin,authenticated=U/supabase_admin,service_role=U/supabase_admin,supabase_storage_admin=U*C*/supabase_admin,dashboard_user=UC/supabase_admin}"
+    },
+    {
+      "nspname": "supabase_migrations",
+      "grants": null
+    },
+    {
+      "nspname": "vault",
+      "grants": "{supabase_admin=UC/supabase_admin,postgres=U*/supabase_admin,service_role=U/supabase_admin}"
+    }
+  ],
+  "migrations": [
+    {
+      "version": "20260729021658",
+      "name": "add_prs_to_workout_sessions",
+      "statements_md5": "3789f82bad719b45497e17feb9f9b2cb"
+    },
+    {
+      "version": "20260729030729",
+      "name": "add_serving_unit_to_custom_foods",
+      "statements_md5": "634e2e677bf8bcc2621e80dc5bcbd8b0"
+    },
+    {
+      "version": "20260805084912",
+      "name": "add_per100_sugar_to_food_log",
+      "statements_md5": "d70d2030191bb52b545ae585fcf2eab8"
+    },
+    {
+      "version": "20260805085026",
+      "name": "add_category_note_to_supplement_stack",
+      "statements_md5": "e08bd0b85ba34c90903586147a764027"
+    },
+    {
+      "version": "20260812192709",
+      "name": "add_coach_usage_rate_limit",
+      "statements_md5": "c1dbb05d6f00d82e8777c408594fdc94"
+    },
+    {
+      "version": "20260829143045",
+      "name": "normalize_supplement_stack_category",
+      "statements_md5": "4ebf95d47eb9f5c25758490006e069f3"
+    },
+    {
+      "version": "20260907203105",
+      "name": "exercise_bests_view_and_sets_data",
+      "statements_md5": "cf442ee6d6ffe6691362010caa209c5f"
+    },
+    {
+      "version": "20260907214853",
+      "name": "daily_summary_views",
+      "statements_md5": "0835fb5825638b9fc61c8c9b086e0a3f"
+    },
+    {
+      "version": "20260908020248",
+      "name": "exercise_pr_events_view",
+      "statements_md5": "b6dbe72a58cf149c5faaa3f63a7d3c4f"
+    }
+  ],
+  "storage_summary": [
+    {
+      "bucket_count": 0,
+      "object_count": 0
+    }
+  ],
+  "edge_functions": {
+    "functions": []
+  },
+  "branches": {
+    "branches": []
+  },
+  "publication": [
+    {
+      "pubname": "supabase_realtime",
+      "puballtables": false,
+      "pubinsert": true,
+      "pubupdate": true,
+      "pubdelete": true,
+      "pubtruncate": true
+    }
+  ],
+  "publication_tables": [],
+  "extensions": [
+    {
+      "extname": "pg_stat_statements",
+      "extversion": "1.11",
+      "schema": "extensions"
+    },
+    {
+      "extname": "pgcrypto",
+      "extversion": "1.3",
+      "schema": "extensions"
+    },
+    {
+      "extname": "plpgsql",
+      "extversion": "1.0",
+      "schema": "pg_catalog"
+    },
+    {
+      "extname": "supabase_vault",
+      "extversion": "0.3.1",
+      "schema": "vault"
+    },
+    {
+      "extname": "uuid-ossp",
+      "extversion": "1.1",
+      "schema": "extensions"
+    }
+  ],
+  "security_advisors": {
+    "lints": [
+      {
+        "name": "auth_leaked_password_protection",
+        "title": "Leaked Password Protection Disabled",
+        "level": "WARN",
+        "facing": "EXTERNAL",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Leaked password protection is currently disabled.",
+        "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection",
+        "count": 1,
+        "findings": [
+          {
+            "detail": "Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.",
+            "metadata": {
+              "type": "auth",
+              "entity": "Auth"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "database_baseline": [
+    {
+      "result": "passed",
+      "assertions": 22,
+      "cleanup": "All synthetic accounts and logs rolled back; no existing rows modified"
+    }
+  ]
+}
+

@@ -1,0 +1,56 @@
+[
+  {
+    "file": "20260729021658_add_prs_to_workout_sessions.sql",
+    "sha256": "54daf93a76cca349b3c24a486389c8888d0be0b56be41395139b969a79ab93dd",
+    "local_version": "20260729021658",
+    "name": "add_prs_to_workout_sessions"
+  },
+  {
+    "file": "20260729034512_add_serving_unit_to_custom_foods.sql",
+    "sha256": "405200912a5690b2a8647fdf41bb4f6e16886a2c6df3afee63bd62f0599fffb0",
+    "local_version": "20260729034512",
+    "name": "add_serving_unit_to_custom_foods"
+  },
+  {
+    "file": "20260805_add_category_note_to_supplement_stack.sql",
+    "sha256": "4b0fc8b02f379a0a120ba36634396211408c004412ed072fd75d0cfdc4057faa",
+    "local_version": "20260805",
+    "name": "add_category_note_to_supplement_stack"
+  },
+  {
+    "file": "20260805_add_per100_sugar_to_food_log.sql",
+    "sha256": "38f963f5825885559c70b51c719bf1211d093c2cec64501cadd15fb77ffae1f4",
+    "local_version": "20260805",
+    "name": "add_per100_sugar_to_food_log"
+  },
+  {
+    "file": "20260812_add_coach_usage_rate_limit.sql",
+    "sha256": "f99412bb8453cb55b06caa66f1f785f4954309697e953f8cf2e742af484fbe90",
+    "local_version": "20260812",
+    "name": "add_coach_usage_rate_limit"
+  },
+  {
+    "file": "20260829_normalize_supplement_stack_category.sql",
+    "sha256": "af67e835df05d70320f61489c4711f09d1aff7bc6935450953b4702af81ee136",
+    "local_version": "20260829",
+    "name": "normalize_supplement_stack_category"
+  },
+  {
+    "file": "20260907_daily_summary_views.sql",
+    "sha256": "64891033db02ed02dda5f86873d7394ff1bf30be0a778f29b7094f747336e51b",
+    "local_version": "20260907",
+    "name": "daily_summary_views"
+  },
+  {
+    "file": "20260907_exercise_bests_view_and_sets_data.sql",
+    "sha256": "29525eef6645a59377f9fbe35d76535eda4c6c11c02aa8386675327271927c33",
+    "local_version": "20260907",
+    "name": "exercise_bests_view_and_sets_data"
+  },
+  {
+    "file": "20260907_exercise_pr_events_view.sql",
+    "sha256": "494e780a8ccd631e5c08a0a56c8535cead484bcf419e0ba513550e5e99387863",
+    "local_version": "20260907",
+    "name": "exercise_pr_events_view"
+  }
+]
