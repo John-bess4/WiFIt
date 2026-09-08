@@ -14,7 +14,7 @@ begin
   insert into public.food_log(user_id,meal_slot,food_name,grams,logged_date) values(c1,'Breakfast','Fixture',100,'2099-01-01');
   p:=jsonb_build_object('operation_id',gen_random_uuid(),'display_name','Trainer 1');
   x:=trainerhq_private.api(t1,s1,'trainer.apply',p);
-  if x->>'approval_status'<>'pending' then raise exception 'Self signup elevated privilege';end if;n:=n+1;
+  if x->>'approval_status' is distinct from 'pending' then raise exception 'Self signup elevated privilege';end if;n:=n+1;
   begin
    perform trainerhq_private.api(t1,s1,'trainer.review',jsonb_build_object('operation_id',gen_random_uuid(),'trainer_id',t1,'decision','approved','reason','Self'));
    raise exception 'Self approval allowed'; exception when insufficient_privilege then n:=n+1;end;
@@ -27,7 +27,7 @@ begin
   p:=jsonb_build_object('operation_id',gen_random_uuid(),'email',c1||'@example.invalid');
   invite:=trainerhq_private.api(t1,s1,'invitation.create',p);r1:=(invite->>'relationship_id')::uuid;
   x:=trainerhq_private.api(t1,s1,'invitation.create',p);
-  if x<>invite then raise exception 'Invite retry duplicated';end if;n:=n+1;
+  if x is distinct from invite then raise exception 'Invite retry duplicated';end if;n:=n+1;
   begin
    perform trainerhq_private.api(t1,s1,'invitation.create',p||jsonb_build_object('email',c2||'@example.invalid'));
    raise exception 'Operation ID reused with different data';exception when unique_violation then n:=n+1;end;
@@ -35,15 +35,15 @@ begin
    perform trainerhq_private.api(c2,sc2,'invitation.review',jsonb_build_object('token',invite->>'token'));
    raise exception 'Wrong recipient reviewed invite';exception when insufficient_privilege then n:=n+1;end;
   x:=trainerhq_private.api(c1,sc1,'invitation.review',jsonb_build_object('token',invite->>'token'));
-  if x->'trainer'->>'display_name'<>'Trainer 1' then raise exception 'Trainer identity missing';end if;n:=n+1;
+  if x->'trainer'->>'display_name' is distinct from 'Trainer 1' then raise exception 'Trainer identity missing';end if;n:=n+1;
   perform trainerhq_private.api(c1,sc1,'invitation.respond',jsonb_build_object('operation_id',gen_random_uuid(),'token',invite->>'token','decision','accept','activate',true,'scopes',jsonb_build_array('nutrition','messaging')));
   x:=trainerhq_private.api(t1,s1,'clients.list','{}');
-  if jsonb_array_length(x)<>1 or x->0->>'client_id'<>c1::text then raise exception 'Authorized roster wrong';end if;n:=n+1;
+  if jsonb_array_length(x) is distinct from 1 or x->0->>'client_id' is distinct from c1::text then raise exception 'Authorized roster wrong';end if;n:=n+1;
   x:=trainerhq_private.api(t2,s2,'clients.list','{}');
-  if jsonb_array_length(x)<>0 then raise exception 'Other trainer roster leak';end if;n:=n+1;
+  if jsonb_array_length(x) is distinct from 0 then raise exception 'Other trainer roster leak';end if;n:=n+1;
   p:=jsonb_build_object('relationship_id',r1,'category','nutrition','from','2099-01-01','until','2099-01-02');
   x:=trainerhq_private.api(t1,s1,'client.logs',p);
-  if jsonb_array_length(x)<>1 then raise exception 'Consented nutrition unavailable';end if;n:=n+1;
+  if jsonb_array_length(x) is distinct from 1 then raise exception 'Consented nutrition unavailable';end if;n:=n+1;
   begin perform trainerhq_private.api(t2,s2,'client.logs',p);raise exception 'Cross trainer access';exception when insufficient_privilege then n:=n+1;end;
   begin perform trainerhq_private.api(t1,s1,'client.logs',p||'{"category":"supplements"}');raise exception 'Unshared category leak';exception when insufficient_privilege then n:=n+1;end;
   invite2:=trainerhq_private.api(t2,s2,'invitation.create',jsonb_build_object('operation_id',gen_random_uuid(),'email',c1||'@example.invalid'));
