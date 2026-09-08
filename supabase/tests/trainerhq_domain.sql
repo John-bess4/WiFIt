@@ -67,9 +67,13 @@ begin
   perform trainerhq_private.api(c1,sc1,'relationship.update',jsonb_build_object('operation_id',gen_random_uuid(),'relationship_id',r1,'version',v,'state','active','scopes',jsonb_build_array('messaging','sessions','workouts','nutrition')));
   set constraints all immediate;set constraints all deferred;
   if not trainerhq_private.message_access(t1,group_id) then raise exception 'Scope replacement removed unchanged messaging';end if;n:=n+1;
+  -- An invitation that was never joined must not leak even its title after revocation.
+  perform trainerhq_private.api(c1,sc1,'messages.create_group',jsonb_build_object('operation_id',gen_random_uuid(),'title','Pending private group','relationship_ids',jsonb_build_array(r1,r2)));
+  if jsonb_array_length(trainerhq_private.api(t1,s1,'messages.invitations','{}')) is distinct from 1 then raise exception 'Authorized group invitation missing';end if;n:=n+1;
   select version into v from public.trainer_client_relationships where id=r1;
   perform trainerhq_private.api(c1,sc1,'relationship.update',jsonb_build_object('operation_id',gen_random_uuid(),'relationship_id',r1,'version',v,'state','revoked'));
   set constraints all immediate;set constraints all deferred;
+  if jsonb_array_length(trainerhq_private.api(t1,s1,'messages.invitations','{}')) is distinct from 0 then raise exception 'Revoked group invitation metadata leak';end if;n:=n+1;
   if trainerhq_private.message_access(t1,group_id) or trainerhq_private.message_access(t1,cid) then raise exception 'Revoked trainer history access';end if;n:=n+1;
   if not trainerhq_private.message_access(t2,group_id) or not trainerhq_private.message_access(c1,group_id) then raise exception 'Other group members lost access';end if;n:=n+1;
   if (select count(*) from public.trainer_messages where conversation_id=group_id) is distinct from 1 then raise exception 'History deleted';end if;n:=n+1;
