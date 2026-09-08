@@ -18,7 +18,9 @@ at `wifit.vercel.app`, backed by Supabase (Postgres + Auth, RLS on all 11 tables
 
 | Path | What |
 |---|---|
-| `src/App.jsx` | Almost the entire app — ~7,000 lines. Components, the `sb` client, auth, parsers. `HomeTab.jsx` and `src/lib/` are the first pieces outside it. |
+| `src/App.jsx` | The React components — ~6,000 lines, one file. Being replaced by the Swift rewrite; do not decompose it. |
+| `src/lib/` | **The port layer.** `supabase.js` (the `sb` client + auth), `nutrition.js`, `dates.js`, `coach.js`, `constants.js`, `workouts.js`, `search.js`, `theme.js`, `weekSummary.js`. Zero JSX, no imports of App.jsx, no cycles. See PROJECT_CONTEXT §The port layer. |
+| `src/HomeTab.jsx`, `TabBar.jsx`, `TabErrorBoundary.jsx` | The first screens outside App.jsx; they import from `src/lib/` only. |
 | `src/main.jsx` | Mount point. |
 | `api/coach.js` | Vercel Edge function proxying Anthropic. The only server-side code. |
 | `supabase/migrations/` | Applied migrations, recorded after the fact. |
@@ -32,8 +34,8 @@ at `wifit.vercel.app`, backed by Supabase (Postgres + Auth, RLS on all 11 tables
 npm run dev       # vite → http://localhost:5173
 npm run build     # vite build
 npm run preview   # serve the production build
-npm run lint      # eslint 9, flat config; 25 known no-unused-vars warnings, 0 errors
-npm test          # vitest, node env (+ jsdom per file); 107 tests, ~1.5s. TZ pinned for localDate.
+npm run lint      # eslint 9, flat config; 22 known no-unused-vars warnings, 0 errors
+npm test          # vitest, node env (+ jsdom per file); 158 tests, ~2s. TZ pinned for localDate.
 ```
 
 Package manager is **npm** (`package-lock.json`). `npm test` is a deliberately
@@ -45,7 +47,7 @@ verification rules below are not optional.
 
 ## The one rule that causes real bugs
 
-`sb` is a hand-rolled Supabase REST client. **None of its methods throw.**
+`sb` (`src/lib/supabase.js`) is a hand-rolled Supabase REST client. **None of its methods throw.**
 
 - `select` returns `[]` on *any* non-2xx — a 401, a 500, and "no rows" are
   indistinguishable. 15 call sites depend on this. **Do not change it.**

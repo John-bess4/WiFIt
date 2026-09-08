@@ -64,6 +64,36 @@ they disappear in the rewrite. Read it before planning any rewrite work.
 Do **not** start the rewrite as a side effect of another task. Same rule as
 splitting `App.jsx`: it is its own deliberate piece of work.
 
+### The port layer — `src/lib/` (extracted 2026-09-08)
+
+The non-UI layer the Swift client must reimplement now lives in named files, so
+the port is a translation of this list rather than an excavation of App.jsx.
+Every module has zero JSX; none imports App.jsx; there are no cycles
+(HomeTab ↔ App was broken by `theme.js` — `useTheme` was the actual edge).
+The React components stay in App.jsx on purpose: they are being replaced, and
+splitting them would be wasted work (`DECISIONS.md` §"Extract the port layer").
+
+| Module | Swift reimplements | Header carries |
+|---|---|---|
+| `lib/supabase.js` | the REST client: nothing throws; `select`→`[]`; `selectAuth`→`{ok, authError, status, rows}`; `insert/upsert`→row or null; `update/delete`→bool; one 401 retry; per-table `on_conflict`; row identity (`hasDbId`, `withDbId`) | the failure contract and the per-read treatment ladder |
+| `lib/nutrition.js` | `calc`, `totals`, `per100From`, custom-food serving→grams | **Decimal, not Double** (21 of 3,996 exact-.5 products differ) and the still-provisional JS derivations |
+| `lib/dates.js` | `localDate` — every `*_date` column is the LOCAL day | the created_at-as-UTC bug |
+| `lib/coach.js` | `buildSystem`/`buildContextBlock`, `buildRequestMessages` (user turn exactly once), `parseActions` (corrupt fails closed, invalid actions fail open and are named), `applyActions`, `callCoach` | the `liveContext` params shape |
+| `lib/constants.js` | catalogues and contracts: `SEED`/`MEAL_SLOTS`, `GOAL_OZ`, gram ceilings, the supplement category enum and type→purpose map, `ACTIVITY` (one table for onboarding and profile), `GOAL_RATES` | which values are contracts vs catalogues |
+| `lib/workouts.js` | `normalizeExercises`/`sessionFromRow` (read-boundary guard), `editSet`, `computePRs` — the only client-side PR logic, deliberately | why `computePRs` survives the views |
+| `lib/search.js` | source merge order, the #18 name-match filter (barcode exempt), the ok/partial/none/failed ladder, USDA gate | what the UI must not collapse |
+| `lib/theme.js` | not for the port — the theme registry and context; here because it was the cycle edge | — |
+| `lib/weekSummary.js` | `reduceWeekRows` (provisional — read `daily_summary`), `summarizeWeek`, `streakFrom` | — |
+
+**Next extraction candidate — BMR/TDEE (highest value remaining).** The
+Mifflin/Harris-Benedict math still lives inside `OnboardingWizard.calcGoals`
+and `ProfilePage.calcTDEE` (plus `calcCalFromRate`, already in constants).
+It is the only place in the app where a formula produces a number the user
+then lives by for months — every calorie target, every "kcal left", every
+on-target day derives from it. A Swift divergence there is worse than a
+divergence anywhere else, which is why it should be extracted with a
+value-for-value test (the way `ACTIVITY` was) before the port begins.
+
 ## Stack and layout
 
 | Path | What |

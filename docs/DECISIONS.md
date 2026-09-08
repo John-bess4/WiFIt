@@ -664,6 +664,49 @@ columns. All three are a second surface; none is the correction path
 stored derived value to maintain: with `prs` unwritten, an edit has nothing to
 recompute and nothing to leave stale.
 
+## 2026-09-08 — Extract the port layer, not the components
+
+**Decision.** The non-UI layer the Swift client must reimplement — the REST
+client, nutrition arithmetic, dates, the coach contract, constants, workout
+shapes, search — was extracted from App.jsx into `src/lib/`, one module per
+commit, with zero JSX and no imports of App.jsx. The React components stay in
+App.jsx.
+
+**Why not decompose App.jsx.** The React UI is being replaced. Splitting
+components we are about to rewrite is wasted work; what the port needs is a
+named file list for the logic, so translation replaces excavation.
+
+**Why now, before the Food/Train/Supps redesigns.** Each redesigned screen
+imports the shared layer. Done screen by screen, the HomeTab ↔ App circular
+import would have been fixed four times — and `useTheme` was the actual edge,
+not any of the six modules first proposed: `theme.js` had to be in the set or
+every later extraction still cycled.
+
+**The one closure that was not a straight cut.** The coach's `buildSystem`,
+`callClaude` and `applyActions` closed over the panel's props and state. They
+take an explicit params object now (`{liveContext, userName}`; handlers for
+`applyActions`, which returns `{messages, hasSupp}` and leaves `setMessages`
+to the component). The `liveContext` shape is the contract the Swift client
+builds — it was implicit before.
+
+**Verification technique for a no-behaviour-change refactor.** Full suite,
+lint count unchanged, and a byte-compare of 390×844 screenshots of all six
+tabs against a baseline taken before the first commit, repeated after every
+commit. Two things the technique had to learn: CSS *transitions* are not
+covered by the reduced-motion rule (only animations), so the settle is 1.5 s;
+and the same code renders the Home page gradient in two states that differ by
+≤3 channel levels (GPU compositing), so the compare passes max delta ≤4 and
+prints the numbers rather than being silent. A real change is 50–255. The
+first commit's Food diff and the second's Home diff were both this, and both
+were proved so before the commit went in — one by re-shooting three times,
+one by decoding the PNGs and locating the pixels.
+
+**A refactor's worst outcome.** `ACTIVITY` existed twice — the onboarding
+array and ProfilePage's literal multipliers. Deduplicating them was approved
+only with a test that keeps the old literal as the expected value and asserts
+all seven, value for value: a silent TDEE change would have moved the number
+the user lives by, inside a commit labelled "no behaviour change".
+
 ## Standing conventions
 
 These are not dated decisions so much as long-standing ones. `AGENTS.md` is the
