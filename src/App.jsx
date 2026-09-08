@@ -3598,7 +3598,7 @@ function ExercisePreviewList({exercises}){
 }
 
 // ── WORKOUT TAB ──────────────────────────────────────────────────
-function WorkoutTab({workouts,setWorkouts,history=[],prEvents={},onSessionComplete,bests,onSavePlan,onDeletePlan,uid,onActiveChange,historyStatus="ready",onRetryHistory,pendingStartPlanId=null,onPendingConsumed}){
+function WorkoutTab({workouts,setWorkouts,history=[],prEvents={},onSessionComplete,bests,onReadSession,onSaveSession,onDeleteSession,onSavePlan,onDeletePlan,uid,onActiveChange,historyStatus="ready",onRetryHistory,pendingStartPlanId=null,onPendingConsumed}){
   const T=useTheme();
   const [createOpen,setCreateOpen]=useState(false);
   const [editWorkout,setEditWorkout]=useState(null);
@@ -3621,6 +3621,32 @@ function WorkoutTab({workouts,setWorkouts,history=[],prEvents={},onSessionComple
   // No session may start against an unloaded history: its PRs would persist
   // as false. Retry re-reads; the banner is the only thing that unblocks Start.
   const canStart=historyStatus!=="failed";
+  // #25 editor state. editing = {id, exercises} (a normalised copy re-read
+  // from the row when the editor opened); confirmDelete = session id.
+  const [editing,setEditing]=useState(null);
+  const [confirmDelete,setConfirmDelete]=useState(null);
+  const [mutating,setMutating]=useState(false);
+  const openEditor=async(h)=>{
+    if(mutating||!onReadSession)return;
+    setMutating(true);
+    const exercises=await onReadSession(h.id);
+    setMutating(false);
+    if(exercises)setEditing({id:h.id,exercises});
+  };
+  const saveEditor=async()=>{
+    if(!editing||mutating)return;
+    setMutating(true);
+    const ok=await onSaveSession(editing.id,editing.exercises);
+    setMutating(false);
+    if(ok)setEditing(null); // on failure App said why; the editor keeps the user's numbers
+  };
+  const doDelete=async(id)=>{
+    if(mutating)return;
+    setMutating(true);
+    const ok=await onDeleteSession(id);
+    setMutating(false);
+    if(ok)setConfirmDelete(null);
+  };
   const startPlan=(plan)=>{if(canStart)setActiveWorkout(plan);};
 
   const cancelWorkout=()=>{clearWorkoutSnapshot(snapKey);setActiveWorkout(null);};
@@ -3797,7 +3823,15 @@ function WorkoutTab({workouts,setWorkouts,history=[],prEvents={},onSessionComple
       {/* ── HISTORY VIEW ── */}
       {view==="history"&&(
         <div style={{padding:"12px 16px 0"}}>
-          {history.length===0?(
+          {historyStatus==="failed"?(
+            // The list in state may predate a mutation that succeeded before
+            // the re-read failed — a stale list rendered as truth. Say so.
+            <div data-testid="history-list-failed" style={{textAlign:"center",padding:"40px 0"}}>
+              <div style={{fontSize:16,fontWeight:600,color:T.text,marginBottom:6}}>Couldn't load your history</div>
+              <div style={{fontSize:13,color:T.muted,marginBottom:12}}>What was shown before may be out of date, so it isn't shown.</div>
+              <div onClick={onRetryHistory} style={{display:"inline-block",fontSize:13,fontWeight:700,color:T.accent,cursor:"pointer"}}>Retry</div>
+            </div>
+          ):history.length===0?(
             <div style={{textAlign:"center",padding:"40px 0"}}>
               <div style={{fontSize:40,marginBottom:12}}>📊</div>
               <div style={{fontSize:16,fontWeight:600,color:T.text,marginBottom:6}}>No workout history yet</div>
@@ -3825,9 +3859,48 @@ function WorkoutTab({workouts,setWorkouts,history=[],prEvents={},onSessionComple
                   <div style={{fontSize:11,color:T.muted,marginTop:1}}>{h.setsCompleted}/{h.totalSets} sets</div>
                 </div>
               </div>
+              {hasDbId(h)&&editing?.id!==h.id&&(
+                <div style={{display:"flex",gap:8,marginBottom:8}}>
+                  {confirmDelete===h.id?(
+                    <>
+                      <span style={{fontSize:12,color:T.text,alignSelf:"center"}}>Delete this session?</span>
+                      <button type="button" data-testid={"session-delete-confirm-"+h.id} disabled={mutating} onClick={()=>doDelete(h.id)} style={{background:T.red,color:"#fff",border:"none",borderRadius:8,padding:"5px 10px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Delete</button>
+                      <button type="button" disabled={mutating} onClick={()=>setConfirmDelete(null)} style={{background:"transparent",color:T.text,border:("1px solid "+T.border),borderRadius:8,padding:"5px 10px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Keep</button>
+                    </>
+                  ):(
+                    <>
+                      <button type="button" data-testid={"session-edit-"+h.id} disabled={mutating} onClick={()=>openEditor(h)} style={{background:"transparent",color:T.accent,border:("1px solid "+T.border),borderRadius:8,padding:"5px 10px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Edit sets</button>
+                      <button type="button" data-testid={"session-delete-"+h.id} disabled={mutating} onClick={()=>setConfirmDelete(h.id)} style={{background:"transparent",color:T.red,border:("1px solid "+T.border),borderRadius:8,padding:"5px 10px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Delete</button>
+                    </>
+                  )}
+                </div>
+              )}
+              {editing?.id===h.id&&(
+                <div data-testid={"session-editor-"+h.id} style={{background:T.surface,border:("1px solid "+T.border),borderRadius:10,padding:10,marginBottom:8}}>
+                  <div style={{fontSize:11,color:T.muted,marginBottom:8}}>Correct reps / weight. Exercise names, dates and set counts can't change here.</div>
+                  {editing.exercises.map((ex,ei)=>(
+                    <div key={ei} style={{marginBottom:8}}>
+                      <div style={{fontSize:12,fontWeight:600,color:T.text,marginBottom:4}}>{ex.name}</div>
+                      {ex.setsData.map((d,si)=>(
+                        <div key={si} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                          <span style={{fontSize:11,color:T.muted,width:34}}>Set {si+1}</span>
+                          <input type="number" inputMode="decimal" value={d.reps} data-testid={"edit-reps-"+ei+"-"+si} onChange={e=>setEditing(ed=>({...ed,exercises:editSet(ed.exercises,ei,si,{reps:e.target.value,weight:d.weight})}))} style={{width:60,background:T.inputBg||T.card,color:T.text,border:("1px solid "+T.border),borderRadius:8,padding:"6px 8px",fontSize:13}}/>
+                          <span style={{fontSize:11,color:T.muted}}>reps ×</span>
+                          <input type="number" inputMode="decimal" value={d.weight} data-testid={"edit-weight-"+ei+"-"+si} onChange={e=>setEditing(ed=>({...ed,exercises:editSet(ed.exercises,ei,si,{reps:d.reps,weight:e.target.value})}))} style={{width:70,background:T.inputBg||T.card,color:T.text,border:("1px solid "+T.border),borderRadius:8,padding:"6px 8px",fontSize:13}}/>
+                          <span style={{fontSize:11,color:T.muted}}>lbs</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                  <div style={{display:"flex",gap:8}}>
+                    <button type="button" data-testid={"session-save-"+h.id} disabled={mutating} onClick={saveEditor} style={{background:T.accent,color:"#fff",border:"none",borderRadius:8,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>{mutating?"Saving…":"Save"}</button>
+                    <button type="button" disabled={mutating} onClick={()=>setEditing(null)} style={{background:"transparent",color:T.text,border:("1px solid "+T.border),borderRadius:8,padding:"7px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+                  </div>
+                </div>
+              )}
               <div style={{display:"flex",flexDirection:"column",gap:5}}>
                 {(h.exercises||[]).filter(e=>(e.sets||[]).length>0).map((ex,i)=>(
-                  <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:prs.includes(ex.name)?"rgba(245,158,11,0.08)":T.surface,borderRadius:8,border:ex.isPR?"1px solid rgba(245,158,11,0.2)":"1px solid transparent"}}>
+                  <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:prs.includes(ex.name)?"rgba(245,158,11,0.08)":T.surface,borderRadius:8,border:prs.includes(ex.name)?"1px solid rgba(245,158,11,0.2)":"1px solid transparent"}}>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
                       {prs.includes(ex.name)&&<span style={{fontSize:11}}>🏆</span>}
                       <div style={{fontSize:12,fontWeight:500,color:T.text}}>{ex.name}</div>
@@ -4687,6 +4760,15 @@ export const normalizeExercises=(arr)=>{
     return{name,sets,setsData:data};
   });
 };
+// Session edit (#25): one set's numbers change; BOTH representations are
+// rewritten from the same numbers by normalizeExercises. Name and set count
+// are never touched — name is the views' group key, count changes the
+// stored sets_completed/total_sets (out of scope for v1).
+export const editSet=(exercises,exIdx,setIdx,{reps,weight})=>normalizeExercises(exercises).map((ex,i)=>{
+  if(i!==exIdx)return ex;
+  const setsData=ex.setsData.map((d,j)=>j===setIdx?{reps:numOr0(reps),weight:numOr0(weight)}:d);
+  return{name:ex.name,sets:setsData.map(setLabel),setsData};
+});
 export const sessionFromRow=(s)=>({id:s?.id,workoutName:typeof s?.workout_name==="string"&&s.workout_name?s.workout_name:"Workout",date:s?.completed_date||"",duration:numOr0(s?.duration_secs),setsCompleted:numOr0(s?.sets_completed),totalSets:numOr0(s?.total_sets),exercises:normalizeExercises(s?.exercises)});
 
 export const bestsFromView=(rows)=>Object.fromEntries((rows||[]).map(r=>[r.name,Number(r.best_lbs)||0]));
@@ -6948,6 +7030,34 @@ export default function App(){
     setHistory(rows.map(sessionFromRow));
     if(await loadBests(u))setHistoryStatus("ready");
   };
+  // ── Session edit / delete (#25) ──
+  // Refresh contract: after any successful mutation, retryHistory() re-reads
+  // history + exercise_bests + exercise_pr_events with the same ok-keyed
+  // selectAuth; if that re-read fails, historyStatus is "failed" (Start
+  // paused, list hidden) rather than a stale list rendered as truth. No
+  // optimistic delete: a local filter would leave 19 rows while row 21 exists.
+  const readSessionExercises=async(id)=>{
+    const u=sb.getUser()?.id; if(!u||!hasDbId({id}))return null;
+    // Re-read before editing so the editor starts from the current row, not
+    // the mount-time copy (whole-array PATCH, last writer wins — see DECISIONS).
+    const {ok,rows}=await sb.selectAuth("workout_sessions","id=eq."+id+"&user_id=eq."+u+"&select=exercises");
+    if(!ok||!rows[0]){showError("Couldn't load that session to edit. Check your connection.");return null;}
+    return normalizeExercises(rows[0].exercises);
+  };
+  const saveSessionExercises=async(id,exercises)=>{
+    const u=sb.getUser()?.id; if(!u||!hasDbId({id}))return false;
+    const ok=await sb.update("workout_sessions",{exercises:normalizeExercises(exercises)},{filter:"id=eq."+id+"&user_id=eq."+u});
+    if(!ok){showError("Session couldn't be saved. Check your connection.");return false;}
+    await retryHistory();
+    return true;
+  };
+  const deleteSession=async(id)=>{
+    const u=sb.getUser()?.id; if(!u||!hasDbId({id}))return false;
+    const ok=await sb.delete("workout_sessions","id=eq."+id+"&user_id=eq."+u);
+    if(!ok){showError("Session couldn't be deleted. Check your connection.");return false;}
+    await retryHistory();
+    return true;
+  };
   // Drives the dot on the Train nav item. WorkoutTab keeps this in sync while
   // the app is running; this effect covers the case WorkoutTab cannot — after a
   // reload the user lands on Home, and without it the only tell that a session
@@ -7092,7 +7202,7 @@ export default function App(){
         todayPlan={todayPlanFor(workouts)} todayPlanSeeded={workouts===INITIAL_WORKOUTS} onStartPlan={(id)=>{setPendingStartPlanId(id);setTab("workout");}}
         toggleSuppTaken={toggleSuppTaken} weekHistory={weekHistory} onRetryWeek={()=>loadWeekHistory()} profileCreatedAt={profileCreatedAt}/></TabErrorBoundary>}
       {tab==="food"&&<TabErrorBoundary T={T} name="Food"><FoodTab log={log} setLog={setLog} uid={uid} onDeleteFailed={showError} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/></TabErrorBoundary>}
-      {tab==="workout"&&<TabErrorBoundary T={T} name="Train"><WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} prEvents={prEvents} onSessionComplete={saveWorkoutSession} bests={bests} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress} historyStatus={sectionFailed("plans")?"failed":historyStatus} onRetryHistory={()=>{const u=sb.getUser()?.id;if(sectionFailed("plans")&&u)loadUserData(u);else retryHistory();}} pendingStartPlanId={pendingStartPlanId} onPendingConsumed={()=>setPendingStartPlanId(null)}/></TabErrorBoundary>}
+      {tab==="workout"&&<TabErrorBoundary T={T} name="Train"><WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} prEvents={prEvents} onSessionComplete={saveWorkoutSession} bests={bests} onReadSession={readSessionExercises} onSaveSession={saveSessionExercises} onDeleteSession={deleteSession} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress} historyStatus={sectionFailed("plans")?"failed":historyStatus} onRetryHistory={()=>{const u=sb.getUser()?.id;if(sectionFailed("plans")&&u)loadUserData(u);else retryHistory();}} pendingStartPlanId={pendingStartPlanId} onPendingConsumed={()=>setPendingStartPlanId(null)}/></TabErrorBoundary>}
       {tab==="supps"&&<TabErrorBoundary T={T} name="Supps"><SuppsTab suppList={suppList} setSuppList={setSuppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} taken={taken} total={total} uid={uid} addSuppToList={addSuppToList} onWriteFailed={showError}/></TabErrorBoundary>}
       {tab==="calendar"&&<TabErrorBoundary T={T} name="Calendar"><CalendarTab uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz}/></TabErrorBoundary>}
       {tab==="progress"&&<TabErrorBoundary T={T} name="Progress"><ProgressPage uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz} weightLog={weightLog} logWeight={logWeight} onProfileOpen={()=>setProfileMenuOpen(true)}/></TabErrorBoundary>}

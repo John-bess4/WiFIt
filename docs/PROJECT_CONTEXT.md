@@ -853,21 +853,28 @@ Anthropic response formats are unchanged and out of scope for security work:
     bug; a plan restored after a failed delete reappeared at the top — **fixed**,
     restored at its original index.
 
-25. **REQUIRED PRE-LAUNCH — edit / delete a logged workout session.** Train
-    inventory path #8 "does not exist", and with F4 the `exercise_bests` view is
-    the PR baseline with **no window that ages out a bad row**: a test session
-    carrying a 500 lb bench (2026-08-29) is now the owner's permanent bench PR
-    baseline and no real bench will ever register. The only correction path
-    today is SQL. Whatever the redesign ships for sessions, it must include
-    delete (and ideally set-level edit) with the same checked-result discipline
-    as the food delete — and the session's uuid must be written back into state
-    (the local-id note in #24), or the delete will have the food bug on day one.
-    See `DECISIONS.md` §"Derived values…", second corollary.
-    **Sequence (revised 2026-09-07):** `daily_summary` (done) → #28 (done) → #25.
-    #28 went first because an edit UI built before `prs` was gone would have had
-    to maintain a stored derived value on every edit — recompute it (work #28
-    deletes) or leave it stale (an edit feature that corrupts a column). With
-    `prs` unwritten, edit/delete has nothing derived to maintain.
+25. ~~**REQUIRED PRE-LAUNCH — edit / delete a logged workout session.**~~
+    **DONE 2026-09-07.** Train history cards have **Delete** (inline confirm) and
+    **Edit sets** (reps/weight on completed sets). Scope, deliberately: no
+    add/remove set or exercise, no date edit, no exercise rename — date and
+    name are the views' ordering and group keys, and set count changes the
+    stored `sets_completed`/`total_sets`. The write is a whole-array PATCH of
+    `exercises` (partial jsonb update is not possible through PostgREST without
+    an RPC); the editor re-reads the row before opening and last-writer-wins is
+    accepted for v1 (single user, two windows). `editSet` rewrites `sets[i]`
+    and `setsData[i]` from the same numbers; `normalizeExercises` runs before
+    the write. **Refresh contract:** after any successful mutation
+    `retryHistory()` re-reads history + `exercise_bests` + `exercise_pr_events`
+    with ok-keyed `selectAuth`; if that re-read fails, `historyStatus` is
+    `failed` — Start paused, the History list replaced by "Couldn't load your
+    history — what was shown before may be out of date" — never a stale list
+    rendered as truth. No optimistic delete (a local filter leaves 19 rows while
+    row 21 exists). Verified: deleting the session that set a PR promotes the
+    later lift without a reload; forced 500 on PATCH leaves state and the row
+    unchanged with the editor open; forced 500 on the re-read after a
+    successful delete shows the failed state with Start blocked.
+    Correction path for the `exercise_bests` corollary now exists — the 500 lb
+    bench in the second corollary would be a two-tap delete.
 
 26. **REQUIRED PRE-LAUNCH (iOS) — real reminders via `UNUserNotificationCenter`.**
     The web app's "reminders" are a `setTimeout` in the open tab. As of

@@ -632,6 +632,38 @@ nothing is waiting on it. Stop the write, prove nothing reads it, drop at leisur
 (lower lift, tie, first-ever lift, same-day tie, bodyweight set); the view
 returned exactly the three. Zero sessions → zero rows. Seeds deleted.
 
+## 2026-09-07 — Session edit/delete: re-read is the state change
+
+**Decision.** A session mutation (delete, set edit) never touches client state
+directly. It writes, checks the result, and on success calls `retryHistory()`,
+which re-reads history, `exercise_bests` and `exercise_pr_events` through the
+same ok-keyed `selectAuth`. If that re-read fails, `historyStatus` is `failed`:
+Start is paused and the History list is replaced by a message — not the
+pre-mutation list, which is now wrong in a way that looks right.
+
+**Why no optimistic delete.** The list is the last 20 rows. A local filter after
+a delete leaves 19 while row 21 exists in the table — a silent wrong state,
+where the re-read gives the visible right one. And the delete is not just a
+list change: deleting the session that set a PR promotes a later lift, in a
+card the user may not be looking at. Only the views know; only a re-read shows.
+
+**Why whole-array PATCH and last-writer-wins.** PostgREST PATCH sets a column
+to a literal; `jsonb_set` needs an RPC, a new surface with its own grants for a
+race that needs two windows editing the same set in the same seconds. v1: the
+editor re-reads the row when it opens (edits the current array, not the
+mount-time copy) and `retryHistory()` after the write closes the window to the
+seconds the editor is open. Accepted, documented, revisit if it ever bites.
+
+**Scope held to reps/weight on completed sets.** Exercise name and date are the
+views' group and ordering keys — editing either moves lifts between histories.
+Adding or removing sets changes `sets_completed`/`total_sets`, which are stored
+columns. All three are a second surface; none is the correction path
+`exercise_bests` required.
+
+**Sequence with #28.** `exercise_pr_events` landed first so this UI never had a
+stored derived value to maintain: with `prs` unwritten, an edit has nothing to
+recompute and nothing to leave stale.
+
 ## Standing conventions
 
 These are not dated decisions so much as long-standing ones. `AGENTS.md` is the
