@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { customFoodFromRow } from "../lib/nutrition.js";
-import { withDbId, hasDbId } from "../App.jsx";
+import { withDbId, hasDbId } from "../lib/supabase.js";
 
 // custom_foods has no edit/delete UI yet (#5), so the only place the uuid is
 // observable is state. These pin the two paths that put it there.

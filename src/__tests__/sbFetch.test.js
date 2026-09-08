@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { sb, setAuthLostHandler } from "../App.jsx";
+import { sb, setAuthLostHandler } from "../lib/supabase.js";
 
 const res = (status, body = {}) => ({
   ok: status >= 200 && status < 300,

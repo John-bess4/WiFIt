@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { hasDbId, withDbId, foodDeleteFilter } from "../App.jsx";
+import { hasDbId, withDbId, foodDeleteFilter } from "../lib/supabase.js";
 
 // Log then delete in one session. Before the fix the item kept its local id
 // (Date.now()), the delete filter was id=eq.<number> against a uuid column,
