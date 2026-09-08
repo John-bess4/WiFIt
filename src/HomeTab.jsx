@@ -14,6 +14,7 @@ import { GOAL_OZ, SEED } from "./lib/constants.js";
 import { localDate } from "./lib/dates.js";
 import { calc, totals } from "./lib/nutrition.js";
 import { weekDays, summarizeWeek, streakFrom } from "./lib/weekSummary.js";
+import { mono, Card, SectionHeader, EmptyState, FailedState, MacroRow } from "./lib/ui.jsx";
 
 function useHomeKeyframes() {
   useEffect(() => {
@@ -24,7 +25,6 @@ function useHomeKeyframes() {
   }, []);
 }
 
-const mono = (size, spacing, weight = 600) => ({ font: weight + " " + size + "px/1 ui-monospace,Menlo,monospace", letterSpacing: spacing + "em" });
 const greeting = (h = new Date().getHours()) => (h < 12 ? "Morning" : h < 17 ? "Afternoon" : "Evening");
 const fmtTime = (hhmm) => { if (!hhmm) return ""; const [h, m] = hhmm.split(":").map(Number); const ap = h >= 12 ? "PM" : "AM"; return ((h % 12) || 12) + ":" + String(m).padStart(2, "0") + " " + ap; };
 
@@ -67,7 +67,7 @@ function WeekRail({ T, summary, calGoal, onOpen, failed, onRetry }) {
   const { days, onTarget, eligible } = summary;
   const range = days.length ? days[0].label.toUpperCase() + " " + days[0].num + " — " + days[6].label.toUpperCase() + " " + days[6].num : "";
   return (
-    <div style={{ margin: "10px 14px 0", padding: "7px 10px 6px", borderRadius: 18, background: T.homeSurface, border: "1px solid " + T.border, boxShadow: T.lift }}>
+    <Card T={T} margin="10px 14px 0" padding="7px 10px 6px" radius={18}>
       <div onClick={onOpen} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "0 6px 6px", cursor: "pointer" }}>
         <span style={{ ...mono(8.5, 0.2), color: T.muted }}>{range}</span>
         <span style={{ ...mono(9.5, 0.1), color: T.accentText }}>{onTarget} / {eligible} ON TARGET</span>
@@ -94,13 +94,8 @@ function WeekRail({ T, summary, calGoal, onOpen, failed, onRetry }) {
           );
         })}
       </div>
-      {failed && (
-        <div style={{ display: "flex", justifyContent: "center", gap: 8, padding: "7px 0 2px", ...mono(9, 0.1), color: T.muted }}>
-          <span>Couldn't load this week</span><span>·</span>
-          <span onClick={onRetry} style={{ color: T.accentText, cursor: "pointer" }}>Retry</span>
-        </div>
-      )}
-    </div>
+      {failed && <FailedState T={T} message="Couldn't load this week" onRetry={onRetry} />}
+    </Card>
   );
 }
 
@@ -132,28 +127,11 @@ function CalorieHero({ T, consumed, goal }) {
   );
 }
 
-/* ── macros ─────────────────────────────────────────────────────────────── */
-function MacroRow({ T, macros }) {
-  return (
-    <div style={{ margin: "2px 18px 0", padding: "16px 18px 14px", borderRadius: 22, background: T.accentSurface, border: "1px solid " + T.borderStrong, boxShadow: "0 0 26px " + T.glowSoft + ",inset 0 0 26px " + T.glowInner }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-        {macros.map((m, i) => (
-          <div key={m.label} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}><span style={{ fontSize: 17, fontWeight: 650, color: T.text }}>{Math.round(m.value)}</span><span style={{ fontSize: 11, color: T.muted }}>/{m.goal}g</span></div>
-            <div style={{ height: 4, borderRadius: 3, background: T.track }}><div style={{ width: Math.min(100, m.goal > 0 ? (m.value / m.goal) * 100 : 0) + "%", height: "100%", borderRadius: 3, background: "linear-gradient(90deg," + T.macroPair[i][0] + "," + T.macroPair[i][1] + ")", boxShadow: i === 0 ? "0 0 10px " + T.glow : "none", transition: "width .5s ease" }} /></div>
-            <span style={{ ...mono(8.5, 0.2), color: T.macro[i] }}>{m.label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /* ── today's session ────────────────────────────────────────────────────── */
 function SessionCard({ T, plan, seeded, onStart, onBrowse }) {
-  const card = { margin: "10px 18px 0", padding: "14px 18px", borderRadius: 22, background: T.sessionBg, border: "1px solid " + T.border, position: "relative", overflow: "hidden" };
+  const card = { T, margin: "10px 18px 0", padding: "14px 18px", background: T.sessionBg, shadow: "none", style: { position: "relative", overflow: "hidden" } };
   if (!plan) return (
-    <div style={card}>
+    <Card {...card}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span style={{ ...mono(8.5, 0.2), color: T.accentText }}>TODAY</span>
@@ -161,13 +139,13 @@ function SessionCard({ T, plan, seeded, onStart, onBrowse }) {
         </div>
         <div onClick={onBrowse} style={{ padding: "10px 16px", borderRadius: 14, cursor: "pointer", background: T.pillBg, color: T.accentText, fontSize: 13, fontWeight: 650 }}>Browse plans</div>
       </div>
-    </div>
+    </Card>
   );
   const sets = (plan.exercises || []).reduce((a, e) => a + (e.sets || []).length, 0);
   const moves = (plan.exercises || []).slice(0, 2).map((e) => e.name.toUpperCase() + " " + (e.sets || []).length + "×" + ((e.sets || [])[0]?.reps ?? ""));
   const more = Math.max(0, (plan.exercises || []).length - 2);
   return (
-    <div style={card}>
+    <Card {...card}>
       <div style={{ position: "absolute", right: -46, top: -56, width: 170, height: 170, borderRadius: "50%", background: "radial-gradient(circle," + T.glow + ",transparent 65%)", pointerEvents: "none" }} />
       <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
@@ -180,7 +158,7 @@ function SessionCard({ T, plan, seeded, onStart, onBrowse }) {
       <div style={{ position: "relative", display: "flex", gap: 6, marginTop: 14, flexWrap: "wrap" }}>
         {[...moves, ...(more ? ["+" + more + " MORE"] : [])].map((m) => <span key={m} style={{ ...mono(9.5, 0.06), color: T.subtext, background: T.pillBg, padding: "6px 9px", borderRadius: 9 }}>{m}</span>)}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -189,7 +167,7 @@ function WaterCard({ T, oz, onAdd }) {
   const uid = useId().replace(/[:]/g, "");
   const pct = Math.min(100, Math.round((oz / GOAL_OZ) * 100));
   return (
-    <div style={{ margin: "12px 18px 0", padding: "13px 16px", borderRadius: 22, background: T.homeSurface, border: "1px solid " + T.waterBorder, boxShadow: "0 0 22px " + T.waterGlow + "," + T.lift, display: "flex", alignItems: "center", gap: 12 }}>
+    <Card T={T} padding="13px 16px" border={T.waterBorder} shadow={"0 0 22px " + T.waterGlow + "," + T.lift} style={{ display: "flex", alignItems: "center", gap: 12 }}>
       <svg width="19" height="24" viewBox="0 0 24 30" fill="none" style={{ flex: "none" }}>
         <defs><clipPath id={"drop" + uid}><path d="M12 1C12 1 3 12 3 19a9 9 0 0 0 18 0C21 12 12 1 12 1Z" /></clipPath></defs>
         <g clipPath={"url(#drop" + uid + ")"}><rect x="0" y={(30 - 30 * (pct / 100)).toFixed(1)} width="24" height="30" fill={T.water} style={{ transition: "y .45s ease" }} /></g>
@@ -201,31 +179,25 @@ function WaterCard({ T, oz, onAdd }) {
       </div>
       <span style={{ ...mono(11, 0.06), color: T.waterText, flex: "none" }}>{oz}/{GOAL_OZ}</span>
       <span data-testid="water-add" onClick={() => onAdd(8)} style={{ fontSize: 13, fontWeight: 600, color: T.waterText, cursor: "pointer", flex: "none" }}>+8</span>
-    </div>
+    </Card>
   );
 }
 
 /* ── supplement stack ───────────────────────────────────────────────────── */
 function SuppStack({ T, supps, taken, onToggle, onLog, onEmpty }) {
-  const card = { margin: "12px 18px 0", padding: "14px 16px 13px", borderRadius: 22, background: T.homeSurface, border: "1px solid " + T.suppBorder, boxShadow: T.lift };
+  const card = { T, padding: "14px 16px 13px", border: T.suppBorder };
   if (!supps.length) return (
-    <div style={card}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: 14, fontWeight: 650, color: T.text }}>Supplement stack</span>
-        <span onClick={onEmpty} style={{ ...mono(10.5, 0.12), color: T.suppText, cursor: "pointer" }}>ADD YOUR FIRST SUPPLEMENT</span>
-      </div>
-    </div>
+    <Card {...card}>
+      <SectionHeader T={T} title="Supplement stack" titleStyle={{ letterSpacing: undefined }} align="center" marginBottom={0} right="ADD YOUR FIRST SUPPLEMENT" onRight={onEmpty} rightColor={T.suppText} />
+    </Card>
   );
   const total = supps.length;
   const done = supps.filter((s) => taken[s.k]).length;
   const pct = Math.round((done / total) * 100);
   const nextDue = supps.filter((s) => !taken[s.k] && s.reminderEnabled && s.reminderTime).sort((a, b) => a.reminderTime.localeCompare(b.reminderTime))[0];
   return (
-    <div style={card}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
-        <span style={{ fontSize: 14, fontWeight: 650, letterSpacing: "-.01em", color: T.text }}>Supplement stack</span>
-        <span style={{ ...mono(10.5, 0.1), color: T.suppText }}>{done} of {total} · {pct}%</span>
-      </div>
+    <Card {...card}>
+      <SectionHeader T={T} title="Supplement stack" right={<>{done} of {total} · {pct}%</>} rightColor={T.suppText} />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(" + Math.min(5, total) + ",1fr)", gap: 9 }}>
         {supps.slice(0, 5).map((s) => {
           const on = !!taken[s.k];
@@ -244,7 +216,7 @@ function SuppStack({ T, supps, taken, onToggle, onLog, onEmpty }) {
         <span style={{ ...mono(9, 0.14), color: T.muted }}>{total - done} LEFT{nextDue ? " · NEXT " + nextDue.name.toUpperCase() + " AT " + fmtTime(nextDue.reminderTime) : ""}</span>
         <span onClick={onLog} style={{ ...mono(10.5, 0.12), color: T.suppText, cursor: "pointer" }}>LOG</span>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -276,7 +248,7 @@ function WeightStrip({ T, weightLog, onLog }) {
   const prev = weightLog[weightLog.length - 2];
   const delta = last && prev ? last.lbs - prev.lbs : null;
   return (
-    <div style={{ margin: "12px 18px 0", padding: "11px 16px", borderRadius: 18, background: T.homeSurface, border: "1px solid " + T.border, boxShadow: T.lift }}>
+    <Card T={T} padding="11px 16px" radius={18}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span style={{ ...mono(9, 0.16), color: T.muted, flex: 1 }}>WEIGHT</span>
         {last ? <><span style={{ fontSize: 15, fontWeight: 650, color: T.text }}>{last.lbs.toFixed(1)}</span><span style={{ fontSize: 11, color: T.muted }}>lbs</span></> : <span style={{ fontSize: 12, color: T.muted }}>Not logged yet</span>}
@@ -284,24 +256,16 @@ function WeightStrip({ T, weightLog, onLog }) {
         <span onClick={() => setOpen((o) => !o)} style={{ ...mono(10.5, 0.12), color: T.accentText, cursor: "pointer" }}>{open ? "CLOSE" : "LOG"}</span>
       </div>
       {open && <WeightLogWidget T={T} weightLog={weightLog} onLog={onLog} onDone={() => setOpen(false)} />}
-    </div>
+    </Card>
   );
 }
 
 /* ── meals today ────────────────────────────────────────────────────────── */
 function MealsToday({ T, meals, more, totalKcal, onMore, onLog }) {
   return (
-    <div style={{ margin: "12px 18px 0", padding: "14px 16px 8px", borderRadius: 22, background: T.homeSurface, border: "1px solid " + T.borderStrong, boxShadow: "0 0 20px " + T.glowInner + "," + T.lift }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-        <span style={{ fontSize: 14, fontWeight: 650, letterSpacing: "-.01em", color: T.text }}>Meals today</span>
-        <span data-testid="meals-kcal" style={{ ...mono(10.5, 0.1), color: T.macro[1] }}>{totalKcal} KCAL · {meals.length + more} LOGGED</span>
-      </div>
-      {meals.length === 0 && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0 8px" }}>
-          <span style={{ fontSize: 13, color: T.muted }}>Nothing logged yet</span>
-          <span onClick={onLog} style={{ ...mono(10.5, 0.12), color: T.accentText, cursor: "pointer" }}>LOG</span>
-        </div>
-      )}
+    <Card T={T} padding="14px 16px 8px" border={T.borderStrong} shadow={"0 0 20px " + T.glowInner + "," + T.lift}>
+      <SectionHeader T={T} title="Meals today" marginBottom={6} right={<>{totalKcal} KCAL · {meals.length + more} LOGGED</>} rightColor={T.macro[1]} rightTestId="meals-kcal" />
+      {meals.length === 0 && <EmptyState T={T} message="Nothing logged yet" action="LOG" onAction={onLog} />}
       {meals.map((m, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderBottom: "1px solid " + T.border }}>
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
@@ -316,7 +280,7 @@ function MealsToday({ T, meals, more, totalKcal, onMore, onLog }) {
           <span style={{ ...mono(10, 0.14), color: T.accentText }}>+ {more} MORE LOGGED</span>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
