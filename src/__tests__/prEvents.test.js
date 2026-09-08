@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { prEventsBySession } from "../App.jsx";
+import { prEventsBySession } from "../lib/workouts.js";
 
 // exercise_pr_events rows → {session_id: [exercise names]} for the history cards.
 describe("prEventsBySession", () => {

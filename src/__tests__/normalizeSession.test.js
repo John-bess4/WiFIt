@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeExercises, sessionFromRow, setLabel, parseSetLabel } from "../App.jsx";
+import { normalizeExercises, sessionFromRow, setLabel, parseSetLabel } from "../lib/workouts.js";
 
 // The read-boundary guard. Whatever the row looks like, the reader gets
 // {name, sets[], setsData[]} with sets.length === setsData.length, and the

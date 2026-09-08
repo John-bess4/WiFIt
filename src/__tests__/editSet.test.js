@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { editSet, parseSetLabel } from "../App.jsx";
+import { editSet, parseSetLabel } from "../lib/workouts.js";
 
 // #25: an edit rewrites BOTH representations from the same numbers — the view
 // reads setsData, History shows sets. They must never disagree.

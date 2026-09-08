@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computePRs, bestDoneWeight, setWeightOf, setsDataOf, bestsFromView } from "../App.jsx";
+import { computePRs, bestDoneWeight, setWeightOf, setsDataOf, bestsFromView } from "../lib/workouts.js";
 
 const ex = (name, sets) => ({ name, sets: sets.map(([w, done]) => ({ actualWeight: w, actualReps: 8, done })) });
 
