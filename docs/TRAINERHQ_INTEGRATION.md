@@ -1,6 +1,8 @@
 # TrainerHQ integration — accepted decisions and preflight
 
-Status: **Approved implementation; blocked at the required database-backup gate.**
+Status: **Approved development integration on the existing Supabase Free project.**
+
+The user explicitly waived the managed/restorable-backup prerequisite on 2026-09-08 because current data is disposable development data. No upgrade or separate permanent database is required. Preserve users, test logs and existing objects; use small additive migrations. If a live migration fails, stop and apply the documented non-destructive disable rollback.
 Inspected 2026-09-08 against WiFit commit `3415ab1664bb3e2eb94abfecc79aa86cff4779f3`.
 No integration migrations, roles, policies, buckets or Edge Functions have been applied.
 
@@ -195,9 +197,9 @@ HealthKit remains exclusively in future WiFit. Cloud health summaries require
 separate upload consent and trainer-sharing consent. Production diagnostics
 must not contain tokens, message contents or private health values.
 
-## Resume gate and next execution order
+## Historical backup assessment and current release requirements
 
-No restorable backup has been created or verified. The current Supabase MCP
+The following original backup assessment is retained as history, not an implementation gate. No restorable backup has been created or verified. The current Supabase MCP
 connection exposes schema/SQL tools but no backup export. No database password,
 PG service/pass file, Supabase CLI credential or authenticated dashboard session
 was available. Docker/OrbStack and PostgreSQL client tools were also absent;
@@ -227,3 +229,11 @@ and a physical device. Do not infer these from an email or local filesystem owne
 No second production approval is required; the user has already authorized safe
 additive implementation subject to the stated backup/regression gates.
 
+
+## Mandatory before real-user onboarding
+
+Managed backups, a separate development/production environment strategy, tested data-recovery procedures, deletion/retention workflows and an access-control release review must be established before onboarding real users or storing meaningful client data. The development waiver does not apply to real-client operation.
+
+Existing migrations/inventory were preserved in commit cc8bb95. A private JSON export of the current public tables and Storage metadata was saved outside Git in the TrainerHQ workspace; it excludes Auth credentials and is not a complete recovery backup.
+
+Migration 1 is prepared and locally tested: protected trainer approval, invitations, independent relationships/scopes, RLS and scoped read-only projections of existing WiFit logs. See supabase/tests/trainerhq_identity.sql and supabase/rollbacks/trainerhq_disable.sql. No original WiFit policy is replaced.

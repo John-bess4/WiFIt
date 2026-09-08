@@ -970,3 +970,9 @@ the planned PR baseline with template-default weights.
 
 **No real workout, water, or body-weight entry has ever been persisted through the UI.**
 Those write paths are fixed in code but not yet runtime-confirmed.
+
+## TrainerHQ shared-backend development integration (2026-09-08)
+
+This repository is the canonical migration owner for WiFit and TrainerHQ. See [accepted decisions and migration status](TRAINERHQ_INTEGRATION.md). The user waived the backup gate only for disposable development data; managed backups, isolated environments and recovery procedures remain mandatory before real users.
+
+Prepared additive migration trainerhq_identity_and_consent introduces public.trainer_profiles, public.trainer_client_relationships, public.trainer_client_permissions, and private approval/invitation/audit/idempotency tables. New public tables use RLS and authenticated SELECT only. Mutations and category-limited reads of existing WiFit logs use the server-only trainerhq_api RPC through a secured Edge Function; original logging tables and owner policies are unchanged. All existing account IDs and logging tables remain canonical.
