@@ -60,6 +60,9 @@ begin
   begin perform trainerhq_private.api(t1,s1,'messages.list',jsonb_build_object('conversation_id',group_id));raise exception 'Unaccepted group membership';exception when insufficient_privilege then n:=n+1;end;
   perform trainerhq_private.api(t1,s1,'messages.join',jsonb_build_object('operation_id',gen_random_uuid(),'conversation_id',group_id));
   perform trainerhq_private.api(t2,s2,'messages.join',jsonb_build_object('operation_id',gen_random_uuid(),'conversation_id',group_id));
+  result:=trainerhq_private.api(t1,s1,'messages.threads','{}');
+  if not exists(select 1 from jsonb_array_elements(result) c cross join jsonb_array_elements(c->'members') m where c->>'id'=group_id::text and m->>'user_id'=t2::text and m->>'display_name'='Trainer Two') then raise exception 'Authorized group member name missing';end if;n:=n+1;
+  if exists(select 1 from jsonb_array_elements(trainerhq_private.api(c2,sc2,'messages.threads','{}')) c where c->>'id'=group_id::text) then raise exception 'Group identity disclosed to nonmember';end if;n:=n+1;
   perform trainerhq_private.api(c1,sc1,'messages.send',jsonb_build_object('operation_id',gen_random_uuid(),'conversation_id',group_id,'text','Shared group history'));
   select channel_epoch into old_epoch from public.trainer_conversations where id=group_id;
   -- Keeping messaging while replacing other scopes must not accidentally revoke a group.

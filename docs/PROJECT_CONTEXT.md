@@ -986,3 +986,5 @@ Applied trainerhq_roster_projection_contract fixes aliases in the new clients.li
 Applied trainerhq_pending_group_consent filters unaccepted group invitations through current trainer approval and active messaging consent, preventing title/creator metadata from surviving revocation.
 
 The authenticated `/trainer-consent` React route uses the existing sb session and secured trainerhq-api Edge Function. Routes are lazy loaded; the main WiFit mount/Auth and food/supplement logging are preserved. Accepted assignment origins pass through workout plan loading and session writes via assignmentOrigin, which validates UUIDs. See TRAINERHQ_INTEGRATION.md and supabase/testing for current verification/provenance.
+
+Prepared trainerhq_conversation_display_names adds only display names to the current-member-authorized messages.threads projection. Other profile attributes remain private; native group UI does not show internal account IDs.
