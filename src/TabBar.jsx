@@ -3,7 +3,7 @@
 // old fixed nav. Keys are the App's tab keys. No colour is hardcoded — every
 // value comes from the theme, including the fan's bubble surfaces.
 import { useEffect, useId, useState } from "react";
-import { useTheme } from "./App.jsx";
+import { useTheme } from "./lib/theme.js";
 
 const NAV_ITEMS = [
   { key: "home", label: "Home", path: "M4 10.4 12 4l8 6.4V20h-5.4v-5.2H9.4V20H4z", join: true },

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { paletteToTheme, BASE_THEME_KEYS, EXTENDED_THEME_KEYS } from "../lib/paletteToTheme.js";
 import { THEME_ORDER } from "../themes.js";
-import { THEMES, resolveTheme, resolveDark } from "../App.jsx";
+import { THEMES, resolveTheme, resolveDark } from "../lib/theme.js";
 
 const filled = (v) =>
   (typeof v === "string" && v.length > 0) || (Array.isArray(v) && v.length > 0);

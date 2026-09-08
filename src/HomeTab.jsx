@@ -9,7 +9,8 @@
 // before: setWaterOz, toggleSuppTaken, logWeight. Nothing here talks to sb.
 import React, { useEffect, useId, useMemo, useState } from "react";
 import { KEYFRAMES } from "./themes.js";
-import { useTheme, calc, totals, localDate, GOAL_OZ, SEED } from "./App.jsx";
+import { useTheme } from "./lib/theme.js";
+import { calc, totals, localDate, GOAL_OZ, SEED } from "./App.jsx";
 import { weekDays, summarizeWeek, streakFrom } from "./lib/weekSummary.js";
 
 function useHomeKeyframes() {
