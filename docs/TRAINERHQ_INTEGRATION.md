@@ -1,247 +1,89 @@
-# TrainerHQ integration — accepted decisions and preflight
+# TrainerHQ / WiFit shared Supabase integration
 
-Status: **Approved development integration on the existing Supabase Free project.**
+Updated 2026-09-08. **Five additive migrations and the authenticated Edge gateway are live on the existing WiFit Free project.** No upgrade, second database, destructive migration or deletion of existing records was performed. Native and consent-portal integration is implemented; real trainer onboarding and complete user workflow verification are in progress.
 
-The user explicitly waived the managed/restorable-backup prerequisite on 2026-09-08 because current data is disposable development data. No upgrade or separate permanent database is required. Preserve users, test logs and existing objects; use small additive migrations. If a live migration fails, stop and apply the documented non-destructive disable rollback.
-Inspected 2026-09-08 against WiFit commit `3415ab1664bb3e2eb94abfecc79aa86cff4779f3`.
-No integration migrations, roles, policies, buckets or Edge Functions have been applied.
+## Ownership and compatibility
 
-## Canonical ownership
+WiFit repository `John-bess4/WiFIt` is the sole canonical owner of migrations, SQL tests and Edge Functions. TrainerHQ remains a separate SwiftUI codebase consuming the same contract. The shared project is `vghqqksbjpgdzmvfmnru`, region `us-east-1`, PostgreSQL 17.6. WiFit's existing Vercel project and domain `wifit.vercel.app` remain in use. Existing Auth configuration, Auth user IDs, original tables/views/policies and Storage objects are preserved.
 
-This repository, `https://github.com/John-bess4/WiFIt.git`, is the sole canonical
-owner of shared Supabase migrations, database tests and Edge Function source.
-Local path: `/Users/johnbessemer/Documents/wifit`.
-TrainerHQ remains its separate native app at
-`/Users/johnbessemer/Downloads/TrainerHQ_Project_Source`; it consumes the API
-contract and must not maintain a competing migration directory.
+The original 11 WiFit tables and five invoker-security views remain canonical. Food, supplements, completed workouts, weight and water are never copied into TrainerHQ-owned log tables. Original owner-only RLS is unchanged. The only original-table schema additions are nullable `trainer_assignment_id` columns and ownership-enforcing foreign keys on `workout_plans` and `workout_sessions`. Normal WiFit logging omits these fields; accepted trainer workouts carry their origin through plan loading, completion and readback.
 
-The saved project at `Documents/ChatGPT/WiFit` is an empty Git repository with
-no commits or remote. The separate `training-app` repo uses a different custom
-JWT/Prisma architecture and was not modified or adopted as the backend.
+Preflight source was preserved at commit `cc8bb95`, based on WiFit `3415ab1`. Original inventories, migration checksums and rollback-only logging tests are in `supabase/preflight` and `supabase/tests`. A private JSON export of original public records and Storage metadata exists outside Git in TrainerHQ `.private-backups`; it excludes Auth credentials and is not a complete restorable backup. The user explicitly waived the backup gate for this disposable development dataset. Historical design/preflight is retained in `TRAINERHQ_PREFLIGHT_20260908.md`.
 
-Shared production project: `vghqqksbjpgdzmvfmnru`, WiFit, `us-east-1`,
-PostgreSQL 17.6.1.111. Preserve its existing Auth configuration and user IDs.
+## Migrations applied
 
-The working WiFit surface is currently React/Vite at `https://wifit.vercel.app`.
-A native Swift rewrite is planned; no native WiFit bundle ID or Apple team is
-present in this repository. Do not invent one. TrainerHQ currently declares
-`com.trainerhq.trainerhq` but has no configured development team.
+| Canonical SQL file prefix | Live version | Migration | Result after application |
+| --- | --- | --- | --- |
+| 20260908165845 | 20260908170811 | trainerhq_identity_and_consent | 22 logging + 25 authorization; 163 WiFit tests |
+| 20260908170956 | 20260908172953 | trainerhq_assignments_scheduling_messaging | 80 SQL checks; 163 WiFit tests |
+| 20260908185559 | 20260908200526 | trainerhq_adherence_realtime_push | 102 SQL checks; 163 WiFit tests |
+| 20260908200706 | 20260908200904 | trainerhq_roster_projection_contract | 102 SQL checks; 163 WiFit tests |
+| 20260908220640 | 20260908221003 | trainerhq_pending_group_consent | 104 SQL checks; 178 WiFit tests |
 
-## Evidence recorded now
+All migrations were tested in isolation and committed before application. No live migration failed. The fourth corrects roster projection aliases and a progress invalidation scope; the fifth closes revoked pending-group invitation metadata access. The complete current application suite now contains 187 tests, including Edge gateway and consent/API tests.
 
-- `supabase/preflight/2026-09-08-inventory.json`: metadata for 11 public tables,
-  5 invoker-security views, 12 existing public policies, columns, constraints,
-  indexes, grants/default grants, functions, triggers, extensions, publications,
-  migration history and Storage counts. **This is not a data backup.**
-- `supabase/tests/wifit_logging_baseline.sql`: 22 passing live database
-  assertions using temporary synthetic accounts/logs. All test writes run in
-  a deliberately rolled-back subtransaction; it also checks account cleanup.
-  No existing account or log is edited. This is a SQL/RLS test, not an
-  authenticated browser or GoTrue test.
-- Existing WiFit regression suite: **163 tests in 25 files passed**.
-- WiFit lint: **0 errors, 22 existing unused-variable warnings**.
-- WiFit production build passed; existing minified bundle exceeds 500 kB.
-- TrainerHQ build/test baseline: **64 tests passed** on iPhone 16 Pro,
-  iOS 26.5 Simulator. These cover existing local/mock/HTTP-double services,
-  not a working Supabase integration.
-- No Supabase Edge Functions or development branches were present.
-- Storage inventory: **0 buckets, 0 objects** at inspection time.
-- Security advisor: existing leaked-password protection warning. Auth settings
-  were left unchanged. See [Supabase password security](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+CLI-created timestamps precede MCP server application timestamps. Original legacy files also differ from server history and lack an initial-schema migration. The committed results JSON records actual versions. **Do not blindly run `supabase db push` or replay historical backfills.** See `supabase/testing/README.md` for isolated replay, provenance and the controlled application procedure.
 
-The installed system Node was too old for current Vitest. Tests/build passed
-using the bundled Node runtime at
-`/Users/johnbessemer/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin`.
-Initial sandbox write failures concerned Vite cache/build files, not product defects.
+Rollback is `supabase/rollbacks/trainerhq_disable.sql`: disable TrainerHQ authorization through the private integration switch without deleting users, data, schema, policies or Storage. If a future migration fails, stop, report the exact failure and use that documented compatibility rollback when needed. Do not attempt unrelated SQL repairs.
 
-## Preservation and model conflicts
+## Tables and access control
 
-Keep `src/lib/supabase.js` and WiFit authentication behavior intact. Its methods
-have deliberately different error contracts; do not replace it with an SDK as
-a side effect. The Supabase Swift SDK is for TrainerHQ's adapter layer.
+All exposed tables have RLS. New public tables grant authenticated SELECT only; clients cannot directly mutate protected approval, grants, messages, schedule or adherence records. The public `trainerhq_api` RPC is SECURITY INVOKER and executable only by service_role. Privileged implementations live in the unexposed, grant-restricted `trainerhq_private` schema and validate actor plus a currently valid Auth session before resource authorization. No user-editable metadata is trusted.
 
-Canonical user-created records remain in existing WiFit tables:
-
-| TrainerHQ information | Existing source / integration constraint |
+| New public table(s) | Read policy / mutation authorization |
 | --- | --- |
-| Account identity | `auth.users`; no duplicate TrainerHQ identities |
-| Client profile | `public.profiles`; expose a minimal identity projection only |
-| Nutrition logs | `public.food_log`; retain grams and per-100-gram columns |
-| Nutrition totals | PostgreSQL numeric arithmetic, matching `daily_summary` rounding |
-| Planned workouts | `public.workout_plans`; `public.workouts` is legacy and unused |
-| Completed workouts/sets | `public.workout_sessions.exercises`, including `setsData` |
-| Exercise performance | Existing `exercise_bests` and `exercise_pr_events` semantics |
-| Supplement regimen/logs | `public.supplement_stack` / `public.supplement_log` |
-| Body weight | `public.body_weight_log` |
-| Water | `public.water_log`; no automatic health-summary sharing |
+| trainer_profiles | Own profile; approved identity relevant to an invitation/relationship. Trainer applies pending; trusted owner/admin approves; self-approval denied. |
+| trainer_client_relationships | Matching trainer or client only. Client alone accepts/activates, pauses, revokes and changes scopes using expected version. |
+| trainer_client_permissions | Relationship participants only. Independent grants per relationship, never per client globally. |
+| trainer_workout_assignments | Owning client or authorized trainer with workouts scope. Trainer assigns; client accepts into existing WiFit plans. |
+| trainer_appointments, trainer_appointment_changes | Owning client or authorized sessions relationship. Trainer writes schedule; client requests changes. Overlap and optimistic-version checks. |
+| trainer_availability | Own trainer rows; scoped service projection for the related client. |
+| trainer_conversations, trainer_conversation_members, trainer_messages | Current member with current consent. Clients retain their own history; trainers require active authorized relationships. |
+| trainer_message_receipts, trainer_message_attachments | Visible message/current membership, with attachment Storage policy recheck. |
+| trainer_reminders | Own trainer only. |
+| client_tracking_preferences, client_nutrition_targets | Own client; trainer target projection only with nutrition permission. |
+| trainer_notification_preferences | Own account. |
 
-Do not copy food, supplement, completed-workout or weight records into new
-TrainerHQ tables. New trainer assignments, appointments, consent and messages
-are new concepts, not copies of client evidence.
+Private RLS tables: integration_control, platform_administrators, trainer_reviews, invitations, audit_events, operations, conversation_relationships, adherence_rules, adherence_summaries, push_applications, device_installations, notification_jobs and integration_diagnostics. No client policies intentionally means deny by default. Server-managed approval and current database consent, rather than JWT role claims alone, decide authorization.
 
-`profiles` combines identity with health and nutrition fields. Granting broad
-trainer SELECT would disclose unshared data. Existing owner-only policies stay
-unchanged; use narrowly authorized server projections with explicit columns and
-bounded dates. A privileged projection must check the caller's current
-relationship and each requested scope in the same database operation.
-Do not return the mixed-category `daily_summary` row wholesale.
+Scopes: workouts, nutrition, nutrition_adherence, supplements, sessions, progress_measurements, progress_photos, health_summaries and messaging. Nutrition history and derived diet adherence are independently selectable. A trainer changing a client ID cannot obtain another trainer's clients. Invitation tokens are random, stored hashed, expire after seven days and require the verified intended recipient email. No invitation email is sent by this implementation; trainers share the generated link themselves.
 
-The supplement FK binds `supplement_id` alone, not its owner. New privileged
-joins must also match `supplement_log.user_id = supplement_stack.user_id`.
-The passing baseline does not claim every possible legacy FK misuse is denied.
+Initial groups contain one client and two to eight independently authorized trainers. The client creates a group and each trainer explicitly joins. Revoking one trainer removes their access to history, new messages, attachment metadata/bytes and pending group invitation titles. Other participants and historical messages remain. All access rechecks current consent; channel epochs rotate. Multi-client groups are outside this initial consent model.
 
-WiFit stores local dates in `*_date` columns and UTC instants in timestamps.
-Do not recreate local dates by slicing UTC strings. New plans need explicit
-IANA timezone, effective dates, tracking days and cutoff rules.
+## Edge API, native services and portal
 
-Eight of the nine local migration filenames differ from the server's recorded
-version. Some local versions contain only a date; three share `20260907`.
-The initial 11-table schema is not represented by a baseline migration.
-**Do not blindly run `db push`, repair remote history, or replay the directory.**
-After backup, reconcile by recorded name/content and exact remote version,
-preserving original history, then prove an isolated restore/replay. Historical
-backfills must not run again merely because a filename differs.
+`supabase/functions/trainerhq-api` is deployed with JWT verification enabled. The handler independently verifies the bearer through Supabase Auth, checks the verified user/session, rejects caller-supplied actor/session IDs, limits request size, allow-lists actions and returns generic errors without logging tokens, health values or message text. It uses only server-runtime credentials for the restricted RPC. Browser origins are the existing WiFit domain and localhost development origins. Unauthenticated HTTP returned 401; an untrusted Origin returned 403.
 
-## Accepted authorization and consent design
+TrainerHQ pins official `supabase-swift` 2.55.1 and its Package.resolved. SDK calls remain in service/repository adapters; SwiftUI does not import Supabase. SessionManager owns the only durable session copy in Keychain; SDK session storage is transient. Device-local sign-out does not sign out WiFit sessions. Repository protocols, fixtures, previews and existing local-reminder behavior are preserved. The iOS configuration contains only the project URL and publishable key; no service-role or APNs signing secret.
 
-Create protected trainer approval records tied to existing Auth users.
-Only an owner/platform administrator can approve an application; self-approval
-and user-editable metadata can never grant privileges. Resolve authorization
-from live protected records so stale JWT claims cannot restore revoked access.
+The existing WiFit app owns `/trainer-consent`, using its unchanged hand-rolled `sb` Auth wrapper. It supports invitation review, explicit unchecked sharing choices, accept/decline, independent active trainers, pause/revoke, tracking configuration, accepting assigned plans, appointment change requests, client-led groups, messages and authenticated private attachment viewing. The main WiFit route remains intact. Routes load separately so the portal does not enlarge WiFit's initial application bundle.
 
-Use a dedicated `trainer_client_relationships` table with invited, accepted,
-active, paused, revoked and ended states. Accepting identity and activating
-chosen sharing are explicit client decisions. Declining closes the invitation.
-Keep a separate grant for each relationship and scope. Support independent
-multi-trainer relationships, not a single trainer field on the client.
+Writes show saving, saved or failed and retain an operation UUID for explicit retries. Important records persist in PostgreSQL. Server timestamps, optimistic versions, transaction locks and idempotency records handle conflicts/duplicate submissions. There is no silent offline save or complex bidirectional engine. Native protected responses are held in memory; portal text drafts use session storage scoped to user/thread. Logout and permission changes clear protected UI/drafts; private attachment previews are memory-only and clear on background/dismissal. Storage requests bypass HTTP caching.
 
-Scopes: workout information, nutrition history, supplement history, session
-history, progress measurements, progress photos, health summaries and messaging.
-Nutrition adherence is separately explicit; sharing an aggregate need not share
-meal history. No grant means no access. All exposed new tables use RLS with
-minimum explicit grants; privileged mutations go through secured Edge Functions.
+## Adherence and data accuracy
 
-The interim consent portal uses existing WiFit Auth, separate from onboarding:
-review invitation/trainer identity, accept/decline, scope selection, active
-trainers, pause/revoke. A failed read must never trigger profile onboarding.
-Use the existing controlled WiFit domain with a dedicated consent path; exact
-callback allow-list entries must be verified before deployment. Do not rewrite
-the working WiFit app or introduce a second auth system.
+Server formula version 1: calories 50%, protein minimum 30%, carbohydrates 10%, fat 10%; calories ±10% and carbs/fat ±15% tolerance ranges. Weights and tolerances are private configuration. A client explicitly confirms a dated nutrition target and tracking timezone/days; historical days before configuration are not retroactively scored. Missing eligible logs before cutoff are pending, after cutoff incomplete; unshared and unconfigured never become zero.
 
-Group conversation membership is checked on every read, send and attachment
-access. Revocation removes the affected trainer from the participant set and
-rotates the channel epoch. Other authorized members keep history and continue.
-The revoked trainer cannot read old or new messages. Preserve history server-side;
-do not archive the entire group merely because one trainer was revoked.
+Overall adherence uses equal category weights renormalized across available configured/eligible/shared categories. Coverage accompanies every score; fewer than two suppresses overall score with Insufficient Shared Data. Derived summaries retain calculation version and source hash. Workout adherence initially covers due trainer assignments with linked client-authored completions; session adherence covers appointments. Workout Completion remains completed appointments; Nutrition Compliance remains logging consistency. Native Decimal rounding mirrors WiFit's numeric per-row macro rounding. Date-only logs preserve the client's local day. Unknown frequency and supplement timing are not presented as invented zero-frequency/midnight schedules.
 
-## Accepted online-first behavior
+Progress-measurement authorization reads existing WiFit weight logs. Health summaries and progress-photo permissions reserve the future WiFit upload contract; this phase does not invent HealthKit values or a new client photo collection workflow.
 
-Server acknowledgment is required before reporting a write saved. Expose online,
-saving, saved and failed states with retry; preserve unsent text drafts locally.
-No complex bidirectional synchronization engine or automatic silent write replay.
-Use operation IDs for retryable submissions and compare row versions for edits.
-Use server-generated timestamps and transactional authorization checks.
+## Realtime and APNs preparation
 
-Cache dashboard/schedule data briefly; do not durably cache progress photos,
-detailed health data or unnecessary sensitive records. Purge protected data on
-logout, account removal and detected revocation. Foreground/reconnect must
-revalidate access before showing protected cached content. Keep repository
-interfaces independent of caching and Supabase so fuller offline support can
-be added later. Existing previews, fixtures and local reminders remain.
+Private Broadcast carries only `{refresh:true}` invalidations, never message bodies or health values. Authorized relationship/conversation topics use rotating epochs; clients refetch PostgreSQL under current authorization. Native subscription refresh and foreground refresh recover missed signals. Original WiFit logging survives trigger/Broadcast failures. Realtime is an update hint, not permanent storage.
 
-## Accepted adherence rules
+Messaging uses durable sequence numbers, sent/read/delivered timestamps, unread cursors, private Storage upload reservations and authenticated downloads. Upload retry can recognize an already-landed identical object without creating a duplicate message.
 
-Version calculations and effective plans; calculate on the server. Store the
-rule version, source/plan version, category status and coverage with each summary.
-Historical results must not silently change when the formula changes.
+APNs is **prepared, not delivering**: per-installation token tables, preferences, protected registration/unregistration and content-minimized deduplicated notification jobs exist. Applications are disabled until real Apple configuration is supplied. A protected sender, APNs signing credentials, retry/invalid-token cleanup and physical-device delivery verification remain release work. Local reminders continue independently.
 
-Diet eligibility requires a configured active target/plan, client-enabled
-tracking, an eligible local day and a nutrition-adherence sharing grant.
+## Verification and release requirements
 
-- Calorie target adherence: 50%.
-- Protein target adherence: 30%.
-- Carbohydrate and fat target adherence together: 20%.
-- Keep weights and tolerances configurable; use acceptable ranges, with protein
-  primarily a minimum. The exact initial tolerance/range values and the split
-  within the final 20% belong to the versioned plan, not hardcoded UI arithmetic.
-- After the configured local cutoff, missing expected logs mean incomplete or
-  non-adherent according to that plan. Before cutoff, the day remains pending.
-- Unshared = **Not Shared**; no target = **Not Configured**; neither is zero.
+- 104 live SQL assertions: 22 original WiFit logging, 25 identity/consent, 35 domain/Storage, 22 adherence/Realtime/APNs preparation. Same suites pass on isolated PGlite 0.5.8 / PG18.3 with all five migrations replayed.
+- 187 WiFit JavaScript/DOM tests passed. Lint: zero errors, 22 existing unused-variable warnings. Production build passed; separate route chunks remove the former >500 kB warning.
+- TrainerHQ: 72 unit tests passed on iOS 26.5; signed simulator build succeeds. Nine UI tests passed before the run was stopped to allow user account creation; a large-text Chat scroll assertion needs an undisturbed rerun. Do not claim the interrupted full suite passed.
+- Signed-in client portal successfully called the live gateway using the existing WiFit account. Trainer signup/verification, real invitation/consent, HTTP attachment transfer, socket delivery, and browser food/workout/supplement write-readback remain in-progress checks. SQL tests do not substitute for these.
+- Security advisor: no errors. Thirteen INFO notices are intentional deny-all private tables. Existing leaked-password protection warning is preserved; see https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection . Auth settings were not changed.
 
-Overall starts with equal 25% weights for workout, diet, supplement and session.
-Include only configured, eligible, shared categories and renormalize those
-weights. Return coverage, e.g. 3 of 4 categories available. Fewer than two means
-**Insufficient Shared Data**, not a numeric overall score. Period averages and
-chart exports must retain matching eligibility, source dates and denominators.
+Required values: real Apple Developer Team ID, confirmed registered TrainerHQ bundle identifier (current project value com.trainerhq.trainerhq has no team configured), APNs key ID/team/signing key in server secrets, installation environment and a physical device. Future WiFit native bundle ID is absent from this web repository. No identifiers or credentials were invented.
 
-Keep Workout Completion (appointment completion) and Nutrition Compliance
-(logging consistency) distinct from workout and diet adherence. Unknown data
-must not become zero, a no-log alert, or a fabricated fixture value.
-
-## Realtime, media, notifications and health
-
-Persist records in PostgreSQL; private Broadcast carries minimal invalidations.
-Refetch under current authorization. Channel authorization is cached, so rotate
-epochs on membership/consent changes and stop publishing to prior topics.
-Do not assume a joined socket automatically loses cached authorization.
-
-Use private Storage buckets and current membership/consent checks. Prefer
-authenticated downloads for protected content; do not embed enduring signed
-URLs in messages or avatar models. Clear in-memory images on revocation.
-
-Store APNs tokens per installation, app, user and environment. A protected
-server sender uses Apple credentials, preferences, deduplication and invalid
-token cleanup. APNs acceptance is not proof of delivery. Preserve local reminders.
-
-HealthKit remains exclusively in future WiFit. Cloud health summaries require
-separate upload consent and trainer-sharing consent. Production diagnostics
-must not contain tokens, message contents or private health values.
-
-## Historical backup assessment and current release requirements
-
-The following original backup assessment is retained as history, not an implementation gate. No restorable backup has been created or verified. The current Supabase MCP
-connection exposes schema/SQL tools but no backup export. No database password,
-PG service/pass file, Supabase CLI credential or authenticated dashboard session
-was available. Docker/OrbStack and PostgreSQL client tools were also absent;
-tool installation can proceed once a usable backup connection is supplied.
-
-Provide a local `PGSERVICEFILE`/`PGPASSFILE` configuration for the project's
-session pooler, or a current restorable backup path. Keep credentials out of
-chat, both apps and Git. The metadata JSON alone does not satisfy this gate.
-See [official backup guidance](https://supabase.com/docs/guides/platform/backups).
-
-Then:
-1. Produce and checksum a protected schema/data/Auth backup plus Storage metadata;
-   verify restore in an isolated environment. Keep production objects untouched.
-2. Reconcile migration provenance and establish reproducible baseline/replay.
-3. Add trainer approval, relationships/consent and RLS with adversarial tests.
-4. Connect the official pinned stable Supabase Swift SDK behind TrainerHQ
-   protocols, then verify real trainer/client authentication and portal consent.
-5. Expose read-only authorized WiFit data; rerun this SQL baseline and WiFit
-   browser logging flows with a designated test account.
-6. Add assignments/scheduling, messaging/private attachments, versioned adherence,
-   private Realtime and server APNs, testing each stage before rollout.
-
-Later configuration still required: owner/admin Auth user ID for protected
-bootstrap, designated test accounts, confirmed callback entries, Apple team,
-registered TrainerHQ bundle ID, future WiFit native identifier, APNs credentials
-and a physical device. Do not infer these from an email or local filesystem owner.
-No second production approval is required; the user has already authorized safe
-additive implementation subject to the stated backup/regression gates.
-
-
-## Mandatory before real-user onboarding
-
-Managed backups, a separate development/production environment strategy, tested data-recovery procedures, deletion/retention workflows and an access-control release review must be established before onboarding real users or storing meaningful client data. The development waiver does not apply to real-client operation.
-
-Existing migrations/inventory were preserved in commit cc8bb95. A private JSON export of the current public tables and Storage metadata was saved outside Git in the TrainerHQ workspace; it excludes Auth credentials and is not a complete recovery backup.
-
-Migration 1 was applied successfully on 2026-09-08: protected trainer approval, invitations, independent relationships/scopes, RLS and scoped read-only projections of existing WiFit logs. See supabase/tests/trainerhq_identity.sql and supabase/rollbacks/trainerhq_disable.sql. No original WiFit policy is replaced.
-
-After migration 1: 25 authorization assertions, 22 original logging assertions and 163 WiFit tests passed. Lint has zero errors and 22 existing warnings; the production build passes with its existing bundle-size warning.
-
-Migration 2 was applied successfully. All 33 domain authorization assertions, 25 identity assertions, 22 original logging assertions and 163 WiFit application tests passed afterward. It adds client-accepted assignments linked into existing workout_plans, optional origin IDs on workout plans/sessions, conflict-checked scheduling, client-led multi-trainer groups, durable messages/receipts, and a private attachment bucket. Deferred consent checks remove only the affected trainer, preserving group history for remaining members. Tests cover authorization, idempotency, conflicts, read receipts and immediate read denial after revocation. The non-destructive integration-disable rollback also applies to this migration.
-
-Migration 3 was applied successfully; all 102 database assertions and 163 WiFit application tests pass. It was isolated-PostgreSQL tested for adherence/coverage, target privacy, weighted numeric scores, private topics and disabled APNs preparation. New triggers publish only refresh signals, catch errors without failing WiFit logging, and never publish message bodies or health values. No APNs application identifier or secret is fabricated. Tracking targets start when a client explicitly confirms them; earlier dates remain Not Configured. The rollback is the same non-destructive integration-disable switch.
-
-Migration 4 corrects two new integration contract issues found during adapter review: roster client IDs used an uninitialized record alias, and progress invalidations used a shortened scope name. Both fixes are isolated to TrainerHQ functions. Existing NULL-comparison assertions were strengthened to reject absent values. All isolated suites pass.
+**Before any real users or meaningful client data:** establish managed backups, separate development/production environments, tested recovery procedures, retention/deletion jobs, APNs delivery operations and a security release review. Current private invitation/idempotency/audit/notification records are retained until a reviewed cleanup workflow exists; progress/media bytes are not durably cached by the new clients. Define concrete retention periods and account-removal handling before launch. Minimum-supported iOS 17 and physical-device checks remain outstanding because this environment has only iOS 26.5 simulators.

@@ -34,3 +34,6 @@ pnpm-debug.log*
 
 # Playwright MCP session output
 .playwright-mcp/
+
+# Supabase CLI transient metadata
+supabase/.temp/

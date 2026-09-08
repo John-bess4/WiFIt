@@ -983,4 +983,6 @@ Applied trainerhq_adherence_realtime_push adds client-owned tracking preferences
 
 Applied trainerhq_roster_projection_contract fixes aliases in the new clients.list response and uses the canonical progress_measurements scope for weight-log invalidations. Authorization assertions now use NULL-safe comparisons. Original WiFit table/policy definitions remain untouched.
 
-Prepared trainerhq_pending_group_consent filters unaccepted group invitations through current trainer approval and active messaging consent, preventing title/creator metadata from surviving revocation.
+Applied trainerhq_pending_group_consent filters unaccepted group invitations through current trainer approval and active messaging consent, preventing title/creator metadata from surviving revocation.
+
+The authenticated `/trainer-consent` React route uses the existing sb session and secured trainerhq-api Edge Function. Routes are lazy loaded; the main WiFit mount/Auth and food/supplement logging are preserved. Accepted assignment origins pass through workout plan loading and session writes via assignmentOrigin, which validates UUIDs. See TRAINERHQ_INTEGRATION.md and supabase/testing for current verification/provenance.

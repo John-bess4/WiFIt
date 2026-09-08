@@ -1,0 +1,83 @@
+{
+  "date": "2026-09-08",
+  "project": "vghqqksbjpgdzmvfmnru",
+  "suites": {
+    "wifit_logging_baseline": {
+      "result": "passed",
+      "assertions": 22,
+      "cleanup": "All synthetic accounts and logs rolled back; no existing rows modified"
+    },
+    "trainerhq_identity": {
+      "result": "passed",
+      "assertions": 25
+    },
+    "trainerhq_domain": {
+      "result": "passed",
+      "assertions": 35
+    },
+    "trainerhq_insights": {
+      "result": "passed",
+      "assertions": 22
+    }
+  },
+  "migrations": {
+    "migrations": [
+      {
+        "version": "20260729021658",
+        "name": "add_prs_to_workout_sessions"
+      },
+      {
+        "version": "20260729030729",
+        "name": "add_serving_unit_to_custom_foods"
+      },
+      {
+        "version": "20260805084912",
+        "name": "add_per100_sugar_to_food_log"
+      },
+      {
+        "version": "20260805085026",
+        "name": "add_category_note_to_supplement_stack"
+      },
+      {
+        "version": "20260812192709",
+        "name": "add_coach_usage_rate_limit"
+      },
+      {
+        "version": "20260829143045",
+        "name": "normalize_supplement_stack_category"
+      },
+      {
+        "version": "20260907203105",
+        "name": "exercise_bests_view_and_sets_data"
+      },
+      {
+        "version": "20260907214853",
+        "name": "daily_summary_views"
+      },
+      {
+        "version": "20260908020248",
+        "name": "exercise_pr_events_view"
+      },
+      {
+        "version": "20260908170811",
+        "name": "trainerhq_identity_and_consent"
+      },
+      {
+        "version": "20260908172953",
+        "name": "trainerhq_assignments_scheduling_messaging"
+      },
+      {
+        "version": "20260908200526",
+        "name": "trainerhq_adherence_realtime_push"
+      },
+      {
+        "version": "20260908200904",
+        "name": "trainerhq_roster_projection_contract"
+      },
+      {
+        "version": "20260908221003",
+        "name": "trainerhq_pending_group_consent"
+      }
+    ]
+  }
+}

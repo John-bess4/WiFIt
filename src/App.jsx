@@ -8,7 +8,7 @@ import { weekDays, reduceWeekRows, todayPlanFor } from "./lib/weekSummary.js";
 
 import { THEMES, LOCKED_FAMILIES, DEFAULT_THEME_KEY, resolveTheme, resolveDark, ThemeCtx, useTheme } from "./lib/theme.js";
 import { localDate } from "./lib/dates.js";
-import { computePRs, setsDataOf, setLabel, normalizeExercises, editSet, sessionFromRow, bestsFromView, prEventsBySession } from "./lib/workouts.js";
+import { assignmentOrigin, computePRs, setsDataOf, setLabel, normalizeExercises, editSet, sessionFromRow, bestsFromView, prEventsBySession } from "./lib/workouts.js";
 import { sb, setAuthLostHandler, resolveSession, hasDbId, withDbId, foodDeleteFilter } from "./lib/supabase.js";
 import { parseActions, LEGACY_PREFIXES, callCoach, applyActions as applyCoachActions, coachHeaders, coachErrorText } from "./lib/coach.js";
 import { searchFood, searchLocalFood, searchSupp, searchLocalSupp, searchStatus } from "./lib/search.js";
@@ -2703,6 +2703,7 @@ function WorkoutTab({workouts,setWorkouts,history=[],prEvents={},onSessionComple
     const entry={
       id:"h"+Date.now(),
       workoutName:activeWorkout.name,
+      trainerAssignmentID:activeWorkout.trainerAssignmentID,
       // Dated from when the work STARTED, not when Finish was tapped. An 11pm
       // session finishing at 12:30am belongs to the day it was trained, and a
       // resumed session must not take the date of whenever the app happened to
@@ -5523,6 +5524,7 @@ export default function App(){
         if(planRows?.length>0){
           setWorkouts(planRows.map(p=>({
             id:p.id,
+            trainerAssignmentID:p.trainer_assignment_id||undefined,
             name:p.name,
             tag:p.tag||"Full Body",
             level:p.level||"Intermediate",
@@ -5693,7 +5695,7 @@ export default function App(){
       // `today` — which is computed once per App mount and would stamp a resumed
       // or past-midnight session with whatever day the app last mounted on.
       const completedDate=session.startedAt?localDate(new Date(session.startedAt)):today;
-      const row=await sb.insert("workout_sessions",{user_id:uid,workout_name:wname,completed_date:completedDate,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises||[]});
+      const row=await sb.insert("workout_sessions",{...assignmentOrigin(session),user_id:uid,workout_name:wname,completed_date:completedDate,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises||[]});
       if(!row)throw new Error("insert returned no row");
       // Carry the row's uuid into state (the food-delete lesson): a session
       // edit/delete (#25) needs it, and a local "h<ts>" id would 400 at a uuid.

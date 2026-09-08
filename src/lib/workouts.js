@@ -68,7 +68,10 @@ export const editSet=(exercises,exIdx,setIdx,{reps,weight})=>normalizeExercises(
   const setsData=ex.setsData.map((d,j)=>j===setIdx?{reps:numOr0(reps),weight:numOr0(weight)}:d);
   return{name:ex.name,sets:setsData.map(setLabel),setsData};
 });
-export const sessionFromRow=(s)=>({id:s?.id,workoutName:typeof s?.workout_name==="string"&&s.workout_name?s.workout_name:"Workout",date:s?.completed_date||"",duration:numOr0(s?.duration_secs),setsCompleted:numOr0(s?.sets_completed),totalSets:numOr0(s?.total_sets),exercises:normalizeExercises(s?.exercises)});
+export const sessionFromRow=(s)=>({...(s?.trainer_assignment_id?{trainerAssignmentID:s.trainer_assignment_id}:{}),id:s?.id,workoutName:typeof s?.workout_name==="string"&&s.workout_name?s.workout_name:"Workout",date:s?.completed_date||"",duration:numOr0(s?.duration_secs),setsCompleted:numOr0(s?.sets_completed),totalSets:numOr0(s?.total_sets),exercises:normalizeExercises(s?.exercises)});
 
 export const bestsFromView=(rows)=>Object.fromEntries((rows||[]).map(r=>[r.name,Number(r.best_lbs)||0]));
 export const prEventsBySession=(rows)=>(rows||[]).reduce((m,r)=>{(m[r.session_id]||(m[r.session_id]=[])).push(r.name);return m;},{});
+
+// Optional trainer origin: keep normal WiFit logs unchanged and reject local template IDs.
+export const assignmentOrigin=(session)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(session?.trainerAssignmentID||"")?{trainer_assignment_id:session.trainerAssignmentID}:{};

@@ -1,0 +1,3108 @@
+{
+  "tables": [
+    {
+      "rls": true,
+      "name": "food_log",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "logged_date",
+          "type": "date",
+          "not_null": true
+        },
+        {
+          "name": "meal_slot",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "food_name",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "brand",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "grams",
+          "type": "numeric",
+          "not_null": true
+        },
+        {
+          "name": "per100_cal",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "per100_protein",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "per100_carbs",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "per100_fat",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "per100_fiber",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "per100_sodium",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "color",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "per100_sugar",
+          "type": "numeric",
+          "not_null": false
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "custom_foods",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "brand",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "serving_g",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "per100_cal",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "per100_protein",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "per100_carbs",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "per100_fat",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "per100_fiber",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "per100_sugar",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "per100_sodium",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "serving_qty",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "serving_unit",
+          "type": "text",
+          "not_null": false
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "workouts",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "tag",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "level",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "est_min",
+          "type": "integer",
+          "not_null": false
+        },
+        {
+          "name": "exercises",
+          "type": "jsonb",
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "supplement_stack",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "sub",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "dot_color",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "reminder_time",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "reminder_enabled",
+          "type": "boolean",
+          "not_null": false
+        },
+        {
+          "name": "sort_order",
+          "type": "integer",
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "note",
+          "type": "text",
+          "not_null": false
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "supplement_log",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "supplement_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "not_null": true
+        },
+        {
+          "name": "taken",
+          "type": "boolean",
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "body_weight_log",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "weight_lbs",
+          "type": "numeric",
+          "not_null": true
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "not_null": true
+        },
+        {
+          "name": "note",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "water_log",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "not_null": true
+        },
+        {
+          "name": "cups",
+          "type": "integer",
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "oz",
+          "type": "integer",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "workout_plans",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "tag",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "level",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "est_min",
+          "type": "integer",
+          "not_null": false
+        },
+        {
+          "name": "scheduled_day",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "exercises",
+          "type": "jsonb",
+          "not_null": true
+        },
+        {
+          "name": "sort_order",
+          "type": "integer",
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "trainer_assignment_id",
+          "type": "uuid",
+          "not_null": false
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "trainer_profiles",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "display_name",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "credentials_summary",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "approval_status",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "reviewed_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "version",
+          "type": "bigint",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "trainer_client_relationships",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "trainer_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "client_id",
+          "type": "uuid",
+          "not_null": false
+        },
+        {
+          "name": "state",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "accepted_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "activated_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "version",
+          "type": "bigint",
+          "not_null": true
+        },
+        {
+          "name": "channel_epoch",
+          "type": "uuid",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "trainer_client_permissions",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "relationship_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "scope",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "granted",
+          "type": "boolean",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "integration_control",
+      "schema": "trainerhq_private",
+      "columns": [
+        {
+          "name": "singleton",
+          "type": "boolean",
+          "not_null": true
+        },
+        {
+          "name": "enabled",
+          "type": "boolean",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "platform_administrators",
+      "schema": "trainerhq_private",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "trainer_reviews",
+      "schema": "trainerhq_private",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "trainer_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "operator_user_id",
+          "type": "uuid",
+          "not_null": false
+        },
+        {
+          "name": "operator_database_role",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "decision",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "invitations",
+      "schema": "trainerhq_private",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "relationship_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "recipient_email_hash",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "token_hash",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "audit_events",
+      "schema": "trainerhq_private",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "not_null": true
+        },
+        {
+          "name": "actor_id",
+          "type": "uuid",
+          "not_null": false
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "resource_id",
+          "type": "uuid",
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "operations",
+      "schema": "trainerhq_private",
+      "columns": [
+        {
+          "name": "actor_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "operation_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "request_hash",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "response",
+          "type": "jsonb",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "workout_sessions",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "workout_name",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "completed_date",
+          "type": "date",
+          "not_null": true
+        },
+        {
+          "name": "duration_secs",
+          "type": "integer",
+          "not_null": false
+        },
+        {
+          "name": "sets_completed",
+          "type": "integer",
+          "not_null": false
+        },
+        {
+          "name": "total_sets",
+          "type": "integer",
+          "not_null": false
+        },
+        {
+          "name": "exercises",
+          "type": "jsonb",
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "prs",
+          "type": "jsonb",
+          "not_null": true
+        },
+        {
+          "name": "trainer_assignment_id",
+          "type": "uuid",
+          "not_null": false
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "profiles",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "age",
+          "type": "integer",
+          "not_null": false
+        },
+        {
+          "name": "weight_lbs",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "height_in",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "activity_level",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "goal",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "cal_goal",
+          "type": "integer",
+          "not_null": false
+        },
+        {
+          "name": "protein_goal",
+          "type": "integer",
+          "not_null": false
+        },
+        {
+          "name": "carbs_goal",
+          "type": "integer",
+          "not_null": false
+        },
+        {
+          "name": "fat_goal",
+          "type": "integer",
+          "not_null": false
+        },
+        {
+          "name": "theme",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "gender",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "bmr",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "tdee",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "goal_rate",
+          "type": "text",
+          "not_null": false
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "coach_usage",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "trainer_workout_assignments",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "relationship_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "client_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "trainer_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "exercises",
+          "type": "jsonb",
+          "not_null": true
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "due_date",
+          "type": "date",
+          "not_null": true
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "version",
+          "type": "bigint",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "trainer_appointments",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "relationship_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "trainer_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "client_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "start_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "end_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "assignment_id",
+          "type": "uuid",
+          "not_null": false
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "rescheduled_from",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "version",
+          "type": "bigint",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "trainer_appointment_changes",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "appointment_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "client_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "resolution",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "resolved_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "trainer_availability",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "trainer_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "weekday",
+          "type": "integer",
+          "not_null": true
+        },
+        {
+          "name": "start_minute",
+          "type": "integer",
+          "not_null": true
+        },
+        {
+          "name": "end_minute",
+          "type": "integer",
+          "not_null": true
+        },
+        {
+          "name": "timezone",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "trainer_conversations",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "relationship_id",
+          "type": "uuid",
+          "not_null": false
+        },
+        {
+          "name": "creator_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "not_null": false
+        },
+        {
+          "name": "state",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "channel_epoch",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "last_sequence",
+          "type": "bigint",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "trainer_conversation_members",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "member_role",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "state",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "last_read_sequence",
+          "type": "bigint",
+          "not_null": true
+        },
+        {
+          "name": "last_delivered_sequence",
+          "type": "bigint",
+          "not_null": true
+        },
+        {
+          "name": "read_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "delivered_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "needs_follow_up",
+          "type": "boolean",
+          "not_null": true
+        },
+        {
+          "name": "joined_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "trainer_messages",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "sender_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "sender_role",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "sequence",
+          "type": "bigint",
+          "not_null": true
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "sent_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "trainer_message_receipts",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "message_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "recipient_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "delivered_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        },
+        {
+          "name": "read_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "trainer_message_attachments",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "message_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "owner_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "bucket",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "object_path",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "mime_type",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "byte_count",
+          "type": "bigint",
+          "not_null": true
+        },
+        {
+          "name": "state",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "trainer_reminders",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "trainer_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "text",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "is_completed",
+          "type": "boolean",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "conversation_relationships",
+      "schema": "trainerhq_private",
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "relationship_id",
+          "type": "uuid",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "adherence_rules",
+      "schema": "trainerhq_private",
+      "columns": [
+        {
+          "name": "version",
+          "type": "integer",
+          "not_null": true
+        },
+        {
+          "name": "effective_from",
+          "type": "date",
+          "not_null": true
+        },
+        {
+          "name": "calorie_weight",
+          "type": "numeric",
+          "not_null": true
+        },
+        {
+          "name": "protein_weight",
+          "type": "numeric",
+          "not_null": true
+        },
+        {
+          "name": "carb_weight",
+          "type": "numeric",
+          "not_null": true
+        },
+        {
+          "name": "fat_weight",
+          "type": "numeric",
+          "not_null": true
+        },
+        {
+          "name": "calorie_tolerance",
+          "type": "numeric",
+          "not_null": true
+        },
+        {
+          "name": "macro_tolerance",
+          "type": "numeric",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "adherence_summaries",
+      "schema": "trainerhq_private",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "relationship_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "day",
+          "type": "date",
+          "not_null": true
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "calculation_version",
+          "type": "integer",
+          "not_null": true
+        },
+        {
+          "name": "source_hash",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "score",
+          "type": "numeric",
+          "not_null": false
+        },
+        {
+          "name": "state",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "generated_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "push_applications",
+      "schema": "trainerhq_private",
+      "columns": [
+        {
+          "name": "app",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "bundle_id",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "enabled",
+          "type": "boolean",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "device_installations",
+      "schema": "trainerhq_private",
+      "columns": [
+        {
+          "name": "installation_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "app",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "session_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "environment",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "token",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "invalidated_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "notification_jobs",
+      "schema": "trainerhq_private",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "recipient_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "resource_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "relationship_id",
+          "type": "uuid",
+          "not_null": false
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid",
+          "not_null": false
+        },
+        {
+          "name": "resource_version",
+          "type": "bigint",
+          "not_null": true
+        },
+        {
+          "name": "state",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "attempts",
+          "type": "integer",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "sent_at",
+          "type": "timestamp with time zone",
+          "not_null": false
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "integration_diagnostics",
+      "schema": "trainerhq_private",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "not_null": true
+        },
+        {
+          "name": "component",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "error_code",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "client_tracking_preferences",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "timezone",
+          "type": "text",
+          "not_null": true
+        },
+        {
+          "name": "cutoff_minute",
+          "type": "integer",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        },
+        {
+          "name": "version",
+          "type": "bigint",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "client_nutrition_targets",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "effective_from",
+          "type": "date",
+          "not_null": true
+        },
+        {
+          "name": "enabled",
+          "type": "boolean",
+          "not_null": true
+        },
+        {
+          "name": "calories",
+          "type": "numeric",
+          "not_null": true
+        },
+        {
+          "name": "protein",
+          "type": "numeric",
+          "not_null": true
+        },
+        {
+          "name": "carbs",
+          "type": "numeric",
+          "not_null": true
+        },
+        {
+          "name": "fat",
+          "type": "numeric",
+          "not_null": true
+        },
+        {
+          "name": "weekdays",
+          "type": "integer[]",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "trainer_notification_preferences",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "not_null": true
+        },
+        {
+          "name": "messages",
+          "type": "boolean",
+          "not_null": true
+        },
+        {
+          "name": "schedule",
+          "type": "boolean",
+          "not_null": true
+        },
+        {
+          "name": "assignments",
+          "type": "boolean",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "not_null": true
+        }
+      ]
+    }
+  ],
+  "indexes": [
+    {
+      "indexdef": "CREATE UNIQUE INDEX food_log_pkey ON public.food_log USING btree (id)",
+      "indexname": "food_log_pkey",
+      "tablename": "food_log",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX food_log_user_date ON public.food_log USING btree (user_id, logged_date)",
+      "indexname": "food_log_user_date",
+      "tablename": "food_log",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX custom_foods_pkey ON public.custom_foods USING btree (id)",
+      "indexname": "custom_foods_pkey",
+      "tablename": "custom_foods",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX workouts_pkey ON public.workouts USING btree (id)",
+      "indexname": "workouts_pkey",
+      "tablename": "workouts",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX supplement_stack_pkey ON public.supplement_stack USING btree (id)",
+      "indexname": "supplement_stack_pkey",
+      "tablename": "supplement_stack",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX supplement_log_pkey ON public.supplement_log USING btree (id)",
+      "indexname": "supplement_log_pkey",
+      "tablename": "supplement_log",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX supplement_log_supplement_id_log_date_key ON public.supplement_log USING btree (supplement_id, log_date)",
+      "indexname": "supplement_log_supplement_id_log_date_key",
+      "tablename": "supplement_log",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX supplement_log_user_date ON public.supplement_log USING btree (user_id, log_date)",
+      "indexname": "supplement_log_user_date",
+      "tablename": "supplement_log",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX body_weight_log_pkey ON public.body_weight_log USING btree (id)",
+      "indexname": "body_weight_log_pkey",
+      "tablename": "body_weight_log",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX body_weight_log_user_id_log_date_key ON public.body_weight_log USING btree (user_id, log_date)",
+      "indexname": "body_weight_log_user_id_log_date_key",
+      "tablename": "body_weight_log",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX water_log_pkey ON public.water_log USING btree (id)",
+      "indexname": "water_log_pkey",
+      "tablename": "water_log",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX water_log_user_id_log_date_key ON public.water_log USING btree (user_id, log_date)",
+      "indexname": "water_log_user_id_log_date_key",
+      "tablename": "water_log",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX workout_plans_pkey ON public.workout_plans USING btree (id)",
+      "indexname": "workout_plans_pkey",
+      "tablename": "workout_plans",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainerhq_plan_assignment_unique ON public.workout_plans USING btree (trainer_assignment_id) WHERE (trainer_assignment_id IS NOT NULL)",
+      "indexname": "trainerhq_plan_assignment_unique",
+      "tablename": "workout_plans",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_profiles_pkey ON public.trainer_profiles USING btree (user_id)",
+      "indexname": "trainer_profiles_pkey",
+      "tablename": "trainer_profiles",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_client_relationships_pkey ON public.trainer_client_relationships USING btree (id)",
+      "indexname": "trainer_client_relationships_pkey",
+      "tablename": "trainer_client_relationships",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainerhq_relationship_pair ON public.trainer_client_relationships USING btree (trainer_id, client_id) WHERE ((state <> ALL (ARRAY['revoked'::text, 'ended'::text])) AND (client_id IS NOT NULL))",
+      "indexname": "trainerhq_relationship_pair",
+      "tablename": "trainer_client_relationships",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_relationship_client ON public.trainer_client_relationships USING btree (client_id, state)",
+      "indexname": "trainerhq_relationship_client",
+      "tablename": "trainer_client_relationships",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_relationship_trainer ON public.trainer_client_relationships USING btree (trainer_id, state)",
+      "indexname": "trainerhq_relationship_trainer",
+      "tablename": "trainer_client_relationships",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_client_permissions_pkey ON public.trainer_client_permissions USING btree (relationship_id, scope)",
+      "indexname": "trainer_client_permissions_pkey",
+      "tablename": "trainer_client_permissions",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX integration_control_pkey ON trainerhq_private.integration_control USING btree (singleton)",
+      "indexname": "integration_control_pkey",
+      "tablename": "integration_control",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX platform_administrators_pkey ON trainerhq_private.platform_administrators USING btree (user_id)",
+      "indexname": "platform_administrators_pkey",
+      "tablename": "platform_administrators",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_reviews_pkey ON trainerhq_private.trainer_reviews USING btree (id)",
+      "indexname": "trainer_reviews_pkey",
+      "tablename": "trainer_reviews",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX invitations_pkey ON trainerhq_private.invitations USING btree (id)",
+      "indexname": "invitations_pkey",
+      "tablename": "invitations",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX invitations_relationship_id_key ON trainerhq_private.invitations USING btree (relationship_id)",
+      "indexname": "invitations_relationship_id_key",
+      "tablename": "invitations",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX invitations_token_hash_key ON trainerhq_private.invitations USING btree (token_hash)",
+      "indexname": "invitations_token_hash_key",
+      "tablename": "invitations",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_invitation_recipient ON trainerhq_private.invitations USING btree (recipient_email_hash, status)",
+      "indexname": "trainerhq_invitation_recipient",
+      "tablename": "invitations",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX audit_events_pkey ON trainerhq_private.audit_events USING btree (id)",
+      "indexname": "audit_events_pkey",
+      "tablename": "audit_events",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_audit_actor_date ON trainerhq_private.audit_events USING btree (actor_id, created_at DESC)",
+      "indexname": "trainerhq_audit_actor_date",
+      "tablename": "audit_events",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX operations_pkey ON trainerhq_private.operations USING btree (actor_id, operation_id)",
+      "indexname": "operations_pkey",
+      "tablename": "operations",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_operation_date ON trainerhq_private.operations USING btree (created_at)",
+      "indexname": "trainerhq_operation_date",
+      "tablename": "operations",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX workout_sessions_pkey ON public.workout_sessions USING btree (id)",
+      "indexname": "workout_sessions_pkey",
+      "tablename": "workout_sessions",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX workout_sessions_user_date ON public.workout_sessions USING btree (user_id, completed_date)",
+      "indexname": "workout_sessions_user_date",
+      "tablename": "workout_sessions",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_session_assignment ON public.workout_sessions USING btree (trainer_assignment_id) WHERE (trainer_assignment_id IS NOT NULL)",
+      "indexname": "trainerhq_session_assignment",
+      "tablename": "workout_sessions",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id)",
+      "indexname": "profiles_pkey",
+      "tablename": "profiles",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX coach_usage_pkey ON public.coach_usage USING btree (id)",
+      "indexname": "coach_usage_pkey",
+      "tablename": "coach_usage",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX coach_usage_user_created_idx ON public.coach_usage USING btree (user_id, created_at DESC)",
+      "indexname": "coach_usage_user_created_idx",
+      "tablename": "coach_usage",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_workout_assignments_pkey ON public.trainer_workout_assignments USING btree (id)",
+      "indexname": "trainer_workout_assignments_pkey",
+      "tablename": "trainer_workout_assignments",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_workout_assignments_id_client_id_key ON public.trainer_workout_assignments USING btree (id, client_id)",
+      "indexname": "trainer_workout_assignments_id_client_id_key",
+      "tablename": "trainer_workout_assignments",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_assignment_relationship_date ON public.trainer_workout_assignments USING btree (relationship_id, due_date, id)",
+      "indexname": "trainerhq_assignment_relationship_date",
+      "tablename": "trainer_workout_assignments",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_assignment_client_date ON public.trainer_workout_assignments USING btree (client_id, due_date, id)",
+      "indexname": "trainerhq_assignment_client_date",
+      "tablename": "trainer_workout_assignments",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_appointments_pkey ON public.trainer_appointments USING btree (id)",
+      "indexname": "trainer_appointments_pkey",
+      "tablename": "trainer_appointments",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_appointment_trainer_start ON public.trainer_appointments USING btree (trainer_id, start_at)",
+      "indexname": "trainerhq_appointment_trainer_start",
+      "tablename": "trainer_appointments",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_appointment_client_start ON public.trainer_appointments USING btree (client_id, start_at)",
+      "indexname": "trainerhq_appointment_client_start",
+      "tablename": "trainer_appointments",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_appointment_relationship ON public.trainer_appointments USING btree (relationship_id, start_at)",
+      "indexname": "trainerhq_appointment_relationship",
+      "tablename": "trainer_appointments",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_appointment_changes_pkey ON public.trainer_appointment_changes USING btree (id)",
+      "indexname": "trainer_appointment_changes_pkey",
+      "tablename": "trainer_appointment_changes",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainerhq_pending_change ON public.trainer_appointment_changes USING btree (appointment_id) WHERE (resolution = 'pending'::text)",
+      "indexname": "trainerhq_pending_change",
+      "tablename": "trainer_appointment_changes",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_availability_pkey ON public.trainer_availability USING btree (trainer_id, weekday)",
+      "indexname": "trainer_availability_pkey",
+      "tablename": "trainer_availability",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_conversations_pkey ON public.trainer_conversations USING btree (id)",
+      "indexname": "trainer_conversations_pkey",
+      "tablename": "trainer_conversations",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainerhq_direct_conversation ON public.trainer_conversations USING btree (relationship_id) WHERE ((kind = 'direct'::text) AND (state = 'open'::text))",
+      "indexname": "trainerhq_direct_conversation",
+      "tablename": "trainer_conversations",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_conversation_members_pkey ON public.trainer_conversation_members USING btree (conversation_id, user_id)",
+      "indexname": "trainer_conversation_members_pkey",
+      "tablename": "trainer_conversation_members",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_members_user ON public.trainer_conversation_members USING btree (user_id, state, conversation_id)",
+      "indexname": "trainerhq_members_user",
+      "tablename": "trainer_conversation_members",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_messages_pkey ON public.trainer_messages USING btree (id)",
+      "indexname": "trainer_messages_pkey",
+      "tablename": "trainer_messages",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_messages_conversation_id_sequence_key ON public.trainer_messages USING btree (conversation_id, sequence)",
+      "indexname": "trainer_messages_conversation_id_sequence_key",
+      "tablename": "trainer_messages",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_message_receipts_pkey ON public.trainer_message_receipts USING btree (message_id, recipient_id)",
+      "indexname": "trainer_message_receipts_pkey",
+      "tablename": "trainer_message_receipts",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_receipt_recipient ON public.trainer_message_receipts USING btree (recipient_id, message_id)",
+      "indexname": "trainerhq_receipt_recipient",
+      "tablename": "trainer_message_receipts",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_message_attachments_pkey ON public.trainer_message_attachments USING btree (id)",
+      "indexname": "trainer_message_attachments_pkey",
+      "tablename": "trainer_message_attachments",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_message_attachments_object_path_key ON public.trainer_message_attachments USING btree (object_path)",
+      "indexname": "trainer_message_attachments_object_path_key",
+      "tablename": "trainer_message_attachments",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_attachment_message ON public.trainer_message_attachments USING btree (message_id)",
+      "indexname": "trainerhq_attachment_message",
+      "tablename": "trainer_message_attachments",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_reminders_pkey ON public.trainer_reminders USING btree (id)",
+      "indexname": "trainer_reminders_pkey",
+      "tablename": "trainer_reminders",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_reminder_trainer ON public.trainer_reminders USING btree (trainer_id, updated_at)",
+      "indexname": "trainerhq_reminder_trainer",
+      "tablename": "trainer_reminders",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX conversation_relationships_pkey ON trainerhq_private.conversation_relationships USING btree (conversation_id, relationship_id)",
+      "indexname": "conversation_relationships_pkey",
+      "tablename": "conversation_relationships",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_conversation_relationship ON trainerhq_private.conversation_relationships USING btree (relationship_id, conversation_id)",
+      "indexname": "trainerhq_conversation_relationship",
+      "tablename": "conversation_relationships",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX adherence_rules_pkey ON trainerhq_private.adherence_rules USING btree (version)",
+      "indexname": "adherence_rules_pkey",
+      "tablename": "adherence_rules",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX adherence_rules_effective_from_key ON trainerhq_private.adherence_rules USING btree (effective_from)",
+      "indexname": "adherence_rules_effective_from_key",
+      "tablename": "adherence_rules",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX adherence_summaries_pkey ON trainerhq_private.adherence_summaries USING btree (id)",
+      "indexname": "adherence_summaries_pkey",
+      "tablename": "adherence_summaries",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX adherence_summaries_relationship_id_day_category_calculatio_key ON trainerhq_private.adherence_summaries USING btree (relationship_id, day, category, calculation_version, source_hash)",
+      "indexname": "adherence_summaries_relationship_id_day_category_calculatio_key",
+      "tablename": "adherence_summaries",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_adherence_relationship_day ON trainerhq_private.adherence_summaries USING btree (relationship_id, day)",
+      "indexname": "trainerhq_adherence_relationship_day",
+      "tablename": "adherence_summaries",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX push_applications_pkey ON trainerhq_private.push_applications USING btree (app)",
+      "indexname": "push_applications_pkey",
+      "tablename": "push_applications",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX push_applications_bundle_id_key ON trainerhq_private.push_applications USING btree (bundle_id)",
+      "indexname": "push_applications_bundle_id_key",
+      "tablename": "push_applications",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX device_installations_pkey ON trainerhq_private.device_installations USING btree (installation_id, app)",
+      "indexname": "device_installations_pkey",
+      "tablename": "device_installations",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX device_installations_app_environment_token_key ON trainerhq_private.device_installations USING btree (app, environment, token)",
+      "indexname": "device_installations_app_environment_token_key",
+      "tablename": "device_installations",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_installations_user ON trainerhq_private.device_installations USING btree (user_id)",
+      "indexname": "trainerhq_installations_user",
+      "tablename": "device_installations",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX notification_jobs_pkey ON trainerhq_private.notification_jobs USING btree (id)",
+      "indexname": "notification_jobs_pkey",
+      "tablename": "notification_jobs",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX notification_jobs_recipient_id_kind_resource_id_resource_ve_key ON trainerhq_private.notification_jobs USING btree (recipient_id, kind, resource_id, resource_version)",
+      "indexname": "notification_jobs_recipient_id_kind_resource_id_resource_ve_key",
+      "tablename": "notification_jobs",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX trainerhq_notifications_delivery ON trainerhq_private.notification_jobs USING btree (state, created_at)",
+      "indexname": "trainerhq_notifications_delivery",
+      "tablename": "notification_jobs",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX integration_diagnostics_pkey ON trainerhq_private.integration_diagnostics USING btree (id)",
+      "indexname": "integration_diagnostics_pkey",
+      "tablename": "integration_diagnostics",
+      "schemaname": "trainerhq_private",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX client_tracking_preferences_pkey ON public.client_tracking_preferences USING btree (user_id)",
+      "indexname": "client_tracking_preferences_pkey",
+      "tablename": "client_tracking_preferences",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX client_nutrition_targets_pkey ON public.client_nutrition_targets USING btree (id)",
+      "indexname": "client_nutrition_targets_pkey",
+      "tablename": "client_nutrition_targets",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX client_nutrition_targets_user_id_effective_from_key ON public.client_nutrition_targets USING btree (user_id, effective_from)",
+      "indexname": "client_nutrition_targets_user_id_effective_from_key",
+      "tablename": "client_nutrition_targets",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX trainer_notification_preferences_pkey ON public.trainer_notification_preferences USING btree (user_id)",
+      "indexname": "trainer_notification_preferences_pkey",
+      "tablename": "trainer_notification_preferences",
+      "schemaname": "public",
+      "tablespace": null
+    }
+  ],
+  "policies": [
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "profiles",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own profile",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "food_log",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own food log",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "custom_foods",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own custom foods",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "workouts",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own workouts",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "workout_sessions",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own workout sessions",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "supplement_stack",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own supplement stack",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "supplement_log",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own supplement log",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "body_weight_log",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own weight log",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "trainerhq_private.request_message_access(conversation_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "trainer_messages",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_message_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "water_log",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own water log",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "workout_plans",
+      "permissive": "PERMISSIVE",
+      "policyname": "users manage own plans",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "coach_usage",
+      "permissive": "PERMISSIVE",
+      "policyname": "coach_usage_insert_own",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "coach_usage",
+      "permissive": "PERMISSIVE",
+      "policyname": "coach_usage_select_own",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((user_id = ( SELECT trainerhq_private.request_actor() AS request_actor)) OR ((approval_status = 'approved'::text) AND (EXISTS ( SELECT 1\n   FROM trainer_client_relationships r\n  WHERE ((r.trainer_id = trainer_profiles.user_id) AND (r.client_id = ( SELECT trainerhq_private.request_actor() AS request_actor)))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "trainer_profiles",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_profile_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((trainer_id = ( SELECT trainerhq_private.request_actor() AS request_actor)) OR (client_id = ( SELECT trainerhq_private.request_actor() AS request_actor)))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "trainer_client_relationships",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_relationship_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "trainerhq_private.relationship_party(( SELECT trainerhq_private.request_actor() AS request_actor), relationship_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "trainer_client_permissions",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_permissions_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((client_id = ( SELECT trainerhq_private.request_actor() AS request_actor)) OR trainerhq_private.request_allowed(relationship_id, 'workouts'::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "trainer_workout_assignments",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_assignment_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((client_id = ( SELECT trainerhq_private.request_actor() AS request_actor)) OR trainerhq_private.request_allowed(relationship_id, 'sessions'::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "trainer_appointments",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_appointment_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM trainer_appointments a\n  WHERE (a.id = trainer_appointment_changes.appointment_id)))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "trainer_appointment_changes",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_change_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(trainer_id = ( SELECT trainerhq_private.request_actor() AS request_actor))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "trainer_availability",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_availability_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "trainerhq_private.request_message_access(id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "trainer_conversations",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_conversation_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "trainerhq_private.request_message_access(conversation_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "trainer_conversation_members",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_member_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM trainer_messages m\n  WHERE (m.id = trainer_message_receipts.message_id)))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "trainer_message_receipts",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_receipt_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "trainerhq_private.request_attachment_access(object_path, false)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "trainer_message_attachments",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_attachment_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(trainer_id = ( SELECT trainerhq_private.request_actor() AS request_actor))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "trainer_reminders",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_reminder_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((bucket_id = 'trainerhq-message-attachments'::text) AND trainerhq_private.request_attachment_access(name, false))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_attachment_download",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_attachment_upload",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'trainerhq-message-attachments'::text) AND trainerhq_private.request_attachment_access(name, true))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(user_id = ( SELECT trainerhq_private.request_actor() AS request_actor))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "client_tracking_preferences",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_owner_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(user_id = ( SELECT trainerhq_private.request_actor() AS request_actor))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "client_nutrition_targets",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_owner_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(user_id = ( SELECT trainerhq_private.request_actor() AS request_actor))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "trainer_notification_preferences",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_owner_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((extension = 'broadcast'::text) AND trainerhq_private.request_topic_allowed(realtime.topic()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "messages",
+      "permissive": "PERMISSIVE",
+      "policyname": "trainerhq_private_broadcast_receive",
+      "schemaname": "realtime",
+      "with_check": null
+    }
+  ],
+  "triggers": [
+    {
+      "table": "trainer_client_relationships",
+      "schema": "public",
+      "definition": "CREATE CONSTRAINT TRIGGER trainerhq_relationship_conversation_consent AFTER UPDATE ON public.trainer_client_relationships DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trainerhq_private.consent_conversations_changed()"
+    },
+    {
+      "table": "trainer_client_permissions",
+      "schema": "public",
+      "definition": "CREATE CONSTRAINT TRIGGER trainerhq_scope_conversation_consent AFTER INSERT OR UPDATE ON public.trainer_client_permissions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trainerhq_private.consent_conversations_changed()"
+    },
+    {
+      "table": "food_log",
+      "schema": "public",
+      "definition": "CREATE TRIGGER trainerhq_log_invalidation AFTER INSERT OR DELETE OR UPDATE ON public.food_log FOR EACH ROW EXECUTE FUNCTION trainerhq_private.log_changed()"
+    },
+    {
+      "table": "workout_sessions",
+      "schema": "public",
+      "definition": "CREATE TRIGGER trainerhq_log_invalidation AFTER INSERT OR DELETE OR UPDATE ON public.workout_sessions FOR EACH ROW EXECUTE FUNCTION trainerhq_private.log_changed()"
+    },
+    {
+      "table": "supplement_log",
+      "schema": "public",
+      "definition": "CREATE TRIGGER trainerhq_log_invalidation AFTER INSERT OR DELETE OR UPDATE ON public.supplement_log FOR EACH ROW EXECUTE FUNCTION trainerhq_private.log_changed()"
+    },
+    {
+      "table": "supplement_stack",
+      "schema": "public",
+      "definition": "CREATE TRIGGER trainerhq_log_invalidation AFTER INSERT OR DELETE OR UPDATE ON public.supplement_stack FOR EACH ROW EXECUTE FUNCTION trainerhq_private.log_changed()"
+    },
+    {
+      "table": "body_weight_log",
+      "schema": "public",
+      "definition": "CREATE TRIGGER trainerhq_log_invalidation AFTER INSERT OR DELETE OR UPDATE ON public.body_weight_log FOR EACH ROW EXECUTE FUNCTION trainerhq_private.log_changed()"
+    },
+    {
+      "table": "trainer_messages",
+      "schema": "public",
+      "definition": "CREATE CONSTRAINT TRIGGER trainerhq_domain_invalidation AFTER INSERT OR UPDATE ON public.trainer_messages DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trainerhq_private.domain_changed()"
+    },
+    {
+      "table": "trainer_message_attachments",
+      "schema": "public",
+      "definition": "CREATE CONSTRAINT TRIGGER trainerhq_domain_invalidation AFTER INSERT OR UPDATE ON public.trainer_message_attachments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trainerhq_private.domain_changed()"
+    },
+    {
+      "table": "trainer_conversation_members",
+      "schema": "public",
+      "definition": "CREATE CONSTRAINT TRIGGER trainerhq_domain_invalidation AFTER INSERT OR UPDATE ON public.trainer_conversation_members DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trainerhq_private.domain_changed()"
+    },
+    {
+      "table": "trainer_client_relationships",
+      "schema": "public",
+      "definition": "CREATE CONSTRAINT TRIGGER trainerhq_domain_invalidation AFTER INSERT OR UPDATE ON public.trainer_client_relationships DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trainerhq_private.domain_changed()"
+    },
+    {
+      "table": "trainer_client_permissions",
+      "schema": "public",
+      "definition": "CREATE CONSTRAINT TRIGGER trainerhq_domain_invalidation AFTER INSERT OR UPDATE ON public.trainer_client_permissions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trainerhq_private.domain_changed()"
+    },
+    {
+      "table": "trainer_workout_assignments",
+      "schema": "public",
+      "definition": "CREATE CONSTRAINT TRIGGER trainerhq_domain_invalidation AFTER INSERT OR UPDATE ON public.trainer_workout_assignments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trainerhq_private.domain_changed()"
+    },
+    {
+      "table": "trainer_appointments",
+      "schema": "public",
+      "definition": "CREATE CONSTRAINT TRIGGER trainerhq_domain_invalidation AFTER INSERT OR UPDATE ON public.trainer_appointments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION trainerhq_private.domain_changed()"
+    }
+  ],
+  "functions": [
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "request_attachment_access",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.request_attachment_access(path text, writing boolean)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ select trainerhq_private.attachment_access(trainerhq_private.request_actor(),path,writing) $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "adherence_day",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.adherence_day(actor uuid, rid uuid, day_value date)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare rel public.trainer_client_relationships; prefs public.client_tracking_preferences; target public.client_nutrition_targets;\n rule trainerhq_private.adherence_rules; category text; scope text; state_value text; score_value numeric;\n expected numeric; completed numeric; food_rows int; kcal numeric; protein_g numeric; carbs_g numeric; fat_g numeric;\n result jsonb:='{}'; item jsonb; total numeric:=0; coverage int:=0; deadline timestamptz; has_config boolean; stamp text;\nbegin\n select * into rel from public.trainer_client_relationships where id=rid;\n if not found or rel.state<>'active' or not trainerhq_private.approved(rel.trainer_id) or actor not in(rel.client_id,rel.trainer_id)\n then raise insufficient_privilege;end if;\n select * into prefs from public.client_tracking_preferences where user_id=rel.client_id;\n select * into rule from trainerhq_private.adherence_rules where effective_from<=day_value order by effective_from desc limit 1;\n select * into target from public.client_nutrition_targets where user_id=rel.client_id and effective_from<=day_value order by effective_from desc limit 1;\n deadline:=(day_value::timestamp + make_interval(mins=>coalesce(prefs.cutoff_minute,1440))) at time zone coalesce(prefs.timezone,'UTC');\n foreach category in array array['workouts','diet','supplements','sessions'] loop\n  scope:=case when category='diet' then 'nutrition_adherence' else category end;\n  state_value:='available';score_value:=null;expected:=0;completed:=0;has_config:=false;\n  if actor=rel.trainer_id and not trainerhq_private.allowed(actor,rid,scope) then state_value:='not_shared';\n  elsif day_value>(now() at time zone coalesce(prefs.timezone,'UTC'))::date then state_value:='not_eligible';\n  elsif prefs.user_id is null then state_value:='not_configured';\n  else\n   case category\n   when 'diet' then\n    if target.id is null or not target.enabled then state_value:='not_configured';\n    elsif not (extract(dow from day_value)::int+1=any(target.weekdays)) then state_value:='not_eligible';\n    else\n     select count(*),coalesce(sum(round(coalesce(per100_cal,0)*coalesce(grams,0)/100)),0),\n      coalesce(sum(round(coalesce(per100_protein,0)*coalesce(grams,0)/100)),0),\n      coalesce(sum(round(coalesce(per100_carbs,0)*coalesce(grams,0)/100)),0),\n      coalesce(sum(round(coalesce(per100_fat,0)*coalesce(grams,0)/100)),0)\n      into food_rows,kcal,protein_g,carbs_g,fat_g from public.food_log where user_id=rel.client_id and logged_date=day_value;\n     expected:=1;completed:=case when food_rows>0 then 1 else 0 end;\n     if food_rows=0 and now()<deadline then state_value:='pending';\n     else\n      score_value:=rule.calorie_weight*trainerhq_private.range_score(kcal,target.calories,rule.calorie_tolerance)\n       +rule.protein_weight*trainerhq_private.range_score(protein_g,target.protein,0,true)\n       +rule.carb_weight*trainerhq_private.range_score(carbs_g,target.carbs,rule.macro_tolerance)\n       +rule.fat_weight*trainerhq_private.range_score(fat_g,target.fat,rule.macro_tolerance);\n      if food_rows=0 then state_value:='incomplete';end if;\n     end if;\n    end if;\n   when 'workouts' then\n    select exists(select 1 from public.trainer_workout_assignments a where a.relationship_id=rid and a.due_date<=day_value and a.status<>'cancelled') into has_config;\n    select count(*),count(*) filter(where exists(select 1 from public.workout_sessions ws\n      where ws.user_id=rel.client_id and ws.trainer_assignment_id=a.id and ws.completed_date=day_value))\n     into expected,completed from public.trainer_workout_assignments a where a.relationship_id=rid and a.due_date=day_value and a.status<>'cancelled';\n   when 'supplements' then\n    select count(*),count(*) filter(where exists(select 1 from public.supplement_log sl where sl.user_id=rel.client_id and sl.supplement_id=s.id and sl.log_date=day_value and sl.taken))\n     into expected,completed from public.supplement_stack s where s.user_id=rel.client_id\n      and least((s.created_at at time zone prefs.timezone)::date,\n       (select min(sl.log_date) from public.supplement_log sl where sl.supplement_id=s.id and sl.user_id=s.user_id))<=day_value;\n    has_config:=expected>0;\n   when 'sessions' then\n    select exists(select 1 from public.trainer_appointments a where a.relationship_id=rid and (a.start_at at time zone prefs.timezone)::date<=day_value and a.status<>'cancelled') into has_config;\n    select count(*),count(*) filter(where status='completed') into expected,completed from public.trainer_appointments\n      where relationship_id=rid and (start_at at time zone prefs.timezone)::date=day_value and status<>'cancelled';\n   end case;\n   if category<>'diet' then\n    if not has_config then state_value:='not_configured';\n    elsif expected=0 then state_value:='not_eligible';\n    elsif completed<expected and now()<deadline then state_value:='pending';\n    else score_value:=completed/expected;state_value:=case when completed=0 then 'incomplete' else 'available' end;end if;\n   end if;\n  end if;\n  item:=jsonb_build_object('state',state_value,'score',score_value,'calculation_version',rule.version);\n  -- Only aggregate adherence is exposed under aggregate-only consent, never macro values.\n  if state_value not in ('not_shared','not_configured') then item:=item||jsonb_build_object('completed',completed,'expected',expected);end if;\n  result:=result||jsonb_build_object(category,item);\n  if score_value is not null then total:=total+score_value;coverage:=coverage+1;end if;\n  if state_value not in ('not_shared','pending','not_configured','not_eligible') then\n   stamp:=trainerhq_private.hash((item||jsonb_build_object('target_id',case when category='diet' then target.id end))::text);\n   insert into trainerhq_private.adherence_summaries(relationship_id,day,category,calculation_version,source_hash,score,state)\n    values(rid,day_value,category,rule.version,stamp,score_value,state_value) on conflict do nothing;\n  end if;\n end loop;\n return jsonb_build_object('date',day_value,'categories',result,'coverage',coverage,'total_categories',4,\n  'overall_score',case when coverage>=2 then total/coverage end,\n  'overall_state',case when coverage>=2 then 'available' else 'insufficient_shared_data' end,\n  'calculation_version',rule.version);\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "range_score",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.range_score(actual numeric, target numeric, tolerance numeric, minimum_only boolean DEFAULT false)\n RETURNS numeric\n LANGUAGE sql\n IMMUTABLE\n SET search_path TO ''\nAS $function$\n select case when actual is null or target is null or target<=0 then null\n when minimum_only then least(1,greatest(0,actual/target))\n when actual between target*(1-tolerance) and target*(1+tolerance) then 1\n when actual<target*(1-tolerance) then greatest(0,actual/(target*(1-tolerance)))\n else greatest(0,1-(actual-target*(1+tolerance))/target) end\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "hash",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.hash(value text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE STRICT\n SET search_path TO ''\nAS $function$ select encode(sha256(convert_to(value,'UTF8')),'hex') $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "owner_review_trainer",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.owner_review_trainer(trainer uuid, decision text, reason text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if session_user not in ('postgres','supabase_admin') then raise insufficient_privilege; end if;\n  if decision not in ('approved','rejected','suspended') or length(trim(reason)) not between 1 and 2000\n  then raise invalid_parameter_value; end if;\n  update public.trainer_profiles set approval_status=decision,reviewed_at=now(),updated_at=now(),version=version+1\n    where user_id=trainer;\n  if not found then raise no_data_found; end if;\n  insert into trainerhq_private.trainer_reviews(trainer_id,operator_database_role,decision,reason)\n    values(trainer,session_user,decision,reason);\n  insert into trainerhq_private.audit_events(action,resource_id) values('trainer.'||decision,trainer);\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "domain_command",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.domain_command(actor uuid, action text, payload jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare result jsonb; rel public.trainer_client_relationships; item public.trainer_workout_assignments;\n appt public.trainer_appointments; change public.trainer_appointment_changes; cid uuid; rid uuid; id_value uuid;\n member uuid; seq bigint; starts timestamptz; ends timestamptz; from_day date; until_day date; vals jsonb; minute integer;\nbegin\n case action\n when 'assignments.list' then\n  rid:=(payload->>'relationship_id')::uuid;\n  if not trainerhq_private.allowed(actor,rid,'workouts') then raise insufficient_privilege;end if;\n  select coalesce(jsonb_agg(to_jsonb(q)),'[]') into result from (select a.* from public.trainer_workout_assignments a\n   where a.relationship_id=rid and (not payload ? 'after' or a.id>(payload->>'after')::uuid) order by a.id limit 100)q;\n when 'assignment.create' then\n  select * into rel from public.trainer_client_relationships where id=(payload->>'relationship_id')::uuid for update;\n  if not found or actor<>rel.trainer_id or not trainerhq_private.allowed(actor,rel.id,'workouts') then raise insufficient_privilege;end if;\n  -- Plan JSON must use WiFit's established name/sets shape; no trainer-written performance logs.\n  if jsonb_typeof(payload->'exercises')<>'array' or exists(select 1 from jsonb_array_elements(payload->'exercises') e\n   where length(trim(coalesce(e->>'name','')))=0 or coalesce(jsonb_typeof(e->'sets'),'')<>'array' or jsonb_array_length(e->'sets') not between 1 and 30)\n  then raise invalid_parameter_value;end if;\n  insert into public.trainer_workout_assignments(relationship_id,client_id,trainer_id,title,exercises,notes,due_date)\n  values(rel.id,rel.client_id,actor,payload->>'title',payload->'exercises',coalesce(payload->>'notes',''),(payload->>'due_date')::date)\n  returning to_jsonb(trainer_workout_assignments.*) into result;\n when 'assignment.accept' then\n  select * into item from public.trainer_workout_assignments where id=(payload->>'assignment_id')::uuid for update;\n  if not found or item.client_id<>actor or not trainerhq_private.allowed(actor,item.relationship_id,'workouts') then raise insufficient_privilege;end if;\n  if item.status='cancelled' then raise invalid_parameter_value;end if;\n  insert into public.workout_plans(user_id,name,tag,exercises,trainer_assignment_id,sort_order)\n   values(actor,item.title,'Trainer assignment',item.exercises,item.id,\n    coalesce((select max(sort_order)+1 from public.workout_plans where user_id=actor),0))\n   on conflict(trainer_assignment_id) where trainer_assignment_id is not null do nothing;\n  update public.trainer_workout_assignments set status='accepted',updated_at=now(),version=version+1 where id=item.id;\n  result:=jsonb_build_object('assignment_id',item.id,'accepted',true);\n when 'schedule.list' then\n  starts:=(payload->>'from')::timestamptz;ends:=(payload->>'until')::timestamptz;\n  if starts is null or ends is null or ends<=starts or ends-starts>interval '93 days' then raise invalid_parameter_value;end if;\n  select coalesce(jsonb_agg(to_jsonb(q)),'[]') into result from (select a.* from public.trainer_appointments a\n   where a.start_at<ends and a.end_at>starts and (a.client_id=actor or trainerhq_private.allowed(actor,a.relationship_id,'sessions'))\n   and (not payload ? 'after' or a.id>(payload->>'after')::uuid) order by a.id limit 200)q;\n when 'schedule.create','schedule.update' then\n  select * into rel from public.trainer_client_relationships where id=(payload->>'relationship_id')::uuid for update;\n  if not found or rel.trainer_id<>actor or not trainerhq_private.allowed(actor,rel.id,'sessions') then raise insufficient_privilege;end if;\n  if action='schedule.update' then\n   select * into appt from public.trainer_appointments where id=(payload->>'id')::uuid for update;\n   if not found or appt.trainer_id<>actor or not trainerhq_private.allowed(actor,appt.relationship_id,'sessions') then raise insufficient_privilege;end if;\n   if appt.version is distinct from (payload->>'version')::bigint or appt.status in ('completed','cancelled','missed')\n   then raise exception 'Appointment changed' using errcode='23505';end if;\n  end if;\n  starts:=(payload->>'start_at')::timestamptz;ends:=(payload->>'end_at')::timestamptz;\n  if starts is null or ends is null or ends-starts not between interval '15 minutes' and interval '180 minutes' then raise invalid_parameter_value;end if;\n  perform pg_advisory_xact_lock(hashtextextended(least(actor::text,rel.client_id::text),1));\n  perform pg_advisory_xact_lock(hashtextextended(greatest(actor::text,rel.client_id::text),1));\n  if exists(select 1 from public.trainer_appointments a where (a.trainer_id=actor or a.client_id=rel.client_id)\n    and a.status not in ('cancelled','missed') and a.start_at<ends and a.end_at>starts\n    and a.id is distinct from appt.id) then raise exception 'Time unavailable' using errcode='23505';end if;\n  if exists(select 1 from public.trainer_availability av where av.trainer_id=actor)\n    and not exists(select 1 from public.trainer_availability av where av.trainer_id=actor\n     and av.weekday=extract(dow from starts at time zone av.timezone)::int+1\n     and (starts at time zone av.timezone)::date=(ends at time zone av.timezone)::date\n     and extract(hour from starts at time zone av.timezone)*60+extract(minute from starts at time zone av.timezone)>=av.start_minute\n     and extract(hour from ends at time zone av.timezone)*60+extract(minute from ends at time zone av.timezone)<=av.end_minute)\n    then raise exception 'Outside trainer availability' using errcode='23505';end if;\n  id_value:=nullif(payload->>'assignment_id','')::uuid;\n  if id_value is not null and not exists(select 1 from public.trainer_workout_assignments a where a.id=id_value and a.relationship_id=rel.id and a.status<>'cancelled')\n  then raise insufficient_privilege;end if;\n  if action='schedule.create' then\n   insert into public.trainer_appointments(relationship_id,trainer_id,client_id,start_at,end_at,assignment_id,location,notes)\n    values(rel.id,actor,rel.client_id,starts,ends,id_value,coalesce(payload->>'location','Studio'),coalesce(payload->>'notes',''))\n    returning to_jsonb(trainer_appointments.*) into result;\n  else\n   update public.trainer_appointments set relationship_id=rel.id,client_id=rel.client_id,start_at=starts,end_at=ends,\n    assignment_id=id_value,location=coalesce(payload->>'location','Studio'),notes=coalesce(payload->>'notes',''),\n    status=case when starts<>appt.start_at then 'rescheduled' else status end,\n    rescheduled_from=case when starts<>appt.start_at then coalesce(rescheduled_from,appt.start_at) else rescheduled_from end,\n    updated_at=now(),version=version+1 where id=appt.id returning to_jsonb(trainer_appointments.*) into result;\n   update public.trainer_appointment_changes set resolution='rescheduled',resolved_at=now() where appointment_id=appt.id and resolution='pending';\n  end if;\n when 'schedule.status' then\n  select * into appt from public.trainer_appointments where id=(payload->>'id')::uuid for update;\n  if not found or appt.trainer_id<>actor or not trainerhq_private.allowed(actor,appt.relationship_id,'sessions') then raise insufficient_privilege;end if;\n  if appt.version is distinct from (payload->>'version')::bigint or appt.status in ('completed','cancelled','missed')\n   then raise exception 'Appointment changed' using errcode='23505';end if;\n  if payload->>'status' not in ('confirmed','in_progress','completed','cancelled','missed') then raise invalid_parameter_value;end if;\n  if payload->>'status' in ('in_progress','completed','missed') and appt.start_at>now() then raise invalid_parameter_value;end if;\n  update public.trainer_appointments set status=payload->>'status',updated_at=now(),version=version+1 where id=appt.id returning to_jsonb(trainer_appointments.*) into result;\n  if payload->>'status' in ('completed','cancelled','missed') then\n   update public.trainer_appointment_changes set resolution='closed',resolved_at=now() where appointment_id=appt.id and resolution='pending';end if;\n when 'schedule.request_change' then\n  select * into appt from public.trainer_appointments where id=(payload->>'id')::uuid for update;\n  if not found or appt.client_id<>actor or not trainerhq_private.allowed(actor,appt.relationship_id,'sessions') then raise insufficient_privilege;end if;\n  if appt.status in ('completed','cancelled','missed') then raise invalid_parameter_value;end if;\n  insert into public.trainer_appointment_changes(appointment_id,client_id,reason) values(appt.id,actor,payload->>'reason') returning to_jsonb(trainer_appointment_changes.*) into result;\n when 'schedule.changes' then\n  select coalesce(jsonb_agg(to_jsonb(q)),'[]') into result from (select c.* from public.trainer_appointment_changes c\n   join public.trainer_appointments a on a.id=c.appointment_id\n   where (a.client_id=actor or trainerhq_private.allowed(actor,a.relationship_id,'sessions'))\n   and c.resolution='pending' order by c.created_at limit 200)q;\n when 'schedule.decline_change' then\n  select * into change from public.trainer_appointment_changes where id=(payload->>'id')::uuid for update;\n  select * into appt from public.trainer_appointments where id=change.appointment_id;\n  if appt.trainer_id is distinct from actor or not trainerhq_private.allowed(actor,appt.relationship_id,'sessions') then raise insufficient_privilege;end if;\n  update public.trainer_appointment_changes set resolution='declined',resolved_at=now() where id=change.id and resolution='pending';\n  result:='{\"saved\":true}';\n when 'availability.list' then\n  rid:=(payload->>'relationship_id')::uuid;\n  if rid is not null then\n   select * into rel from public.trainer_client_relationships where id=rid;\n   if not trainerhq_private.allowed(actor,rid,'sessions') then raise insufficient_privilege;end if;\n  end if;\n  select coalesce(jsonb_agg(to_jsonb(a) order by a.weekday),'[]') into result from public.trainer_availability a where a.trainer_id=coalesce(rel.trainer_id,actor);\n when 'availability.set' then\n  if not trainerhq_private.approved(actor) then raise insufficient_privilege;end if;\n  if not exists(select 1 from pg_timezone_names where name=payload->>'timezone')\n   or jsonb_typeof(payload->'days')<>'array' or jsonb_array_length(payload->'days')>7 then raise invalid_parameter_value;end if;\n  delete from public.trainer_availability where trainer_id=actor;\n  insert into public.trainer_availability(trainer_id,weekday,start_minute,end_minute,timezone)\n   select actor,(d->>'weekday')::int,(d->>'start_minute')::int,(d->>'end_minute')::int,payload->>'timezone' from jsonb_array_elements(payload->'days') d;\n  result:='{\"saved\":true}';\n when 'messages.open' then\n  cid:=trainerhq_private.direct_conversation(actor,(payload->>'relationship_id')::uuid);result:=jsonb_build_object('conversation_id',cid);\n when 'messages.create_group' then\n  -- Initial groups are client-led with that client's independently consented trainers.\n  if jsonb_array_length(payload->'relationship_ids') not between 2 and 8 then raise invalid_parameter_value;end if;\n  insert into public.trainer_conversations(kind,creator_id,title) values('group',actor,payload->>'title') returning id into cid;\n  insert into public.trainer_conversation_members values(cid,actor,'client','active',0,0,null,null,false,now());\n  for vals in select * from jsonb_array_elements(payload->'relationship_ids') loop\n   rid:=(vals#>>'{}')::uuid;\n   select * into rel from public.trainer_client_relationships where id=rid;\n   if rel.client_id is distinct from actor or not trainerhq_private.allowed(actor,rid,'messaging') then raise insufficient_privilege;end if;\n   insert into trainerhq_private.conversation_relationships values(cid,rid);\n   insert into public.trainer_conversation_members(conversation_id,user_id,member_role,state) values(cid,rel.trainer_id,'trainer','invited');\n  end loop;result:=jsonb_build_object('conversation_id',cid);\n when 'messages.join' then\n  cid:=(payload->>'conversation_id')::uuid;\n  if not trainerhq_private.approved(actor) then raise insufficient_privilege;end if;\n  update public.trainer_conversation_members set state='active',joined_at=now() where conversation_id=cid and user_id=actor and state='invited';\n  if not found or not trainerhq_private.message_access(actor,cid) then raise insufficient_privilege;end if;\n  update public.trainer_conversations set channel_epoch=gen_random_uuid() where id=cid;\n  result:='{\"joined\":true}';\n when 'messages.threads' then\n  select coalesce(jsonb_agg(to_jsonb(q)),'[]') into result from (select c.*,\n   (select coalesce(jsonb_agg(jsonb_build_object('user_id',m.user_id,'member_role',m.member_role,'state',m.state,'read_at',m.read_at,'last_read_sequence',m.last_read_sequence)),'[]')\n    from public.trainer_conversation_members m where m.conversation_id=c.id and m.state='active') as members,\n   me.needs_follow_up,(select count(*) from public.trainer_messages m where m.conversation_id=c.id and m.sequence>me.last_read_sequence and m.sender_id<>actor) as unread_count,\n   (select to_jsonb(m) from public.trainer_messages m where m.conversation_id=c.id order by m.sequence desc limit 1) as last_message\n   from public.trainer_conversations c join public.trainer_conversation_members me on me.conversation_id=c.id and me.user_id=actor\n   where trainerhq_private.message_access(actor,c.id) and (not payload ? 'after' or c.id>(payload->>'after')::uuid) order by c.id limit 100)q;\n when 'messages.invitations' then\n  select coalesce(jsonb_agg(jsonb_build_object('conversation_id',c.id,'title',c.title,'creator_id',c.creator_id)),'[]') into result\n   from public.trainer_conversations c join public.trainer_conversation_members m on m.conversation_id=c.id\n   where m.user_id=actor and m.state='invited' and c.state='open'\n    and trainerhq_private.approved(actor)\n    and exists(select 1 from trainerhq_private.conversation_relationships cr\n      join public.trainer_client_relationships r on r.id=cr.relationship_id\n      where cr.conversation_id=c.id and r.trainer_id=actor and r.client_id=c.creator_id\n       and trainerhq_private.allowed(actor,r.id,'messaging'));\n when 'messages.list' then\n  cid:=(payload->>'conversation_id')::uuid;\n  if not trainerhq_private.message_access(actor,cid) then raise insufficient_privilege;end if;\n  select coalesce(jsonb_agg(to_jsonb(q)),'[]') into result from (select m.*,\n   coalesce((select jsonb_agg(jsonb_build_object('user_id',rc.recipient_id,'delivered_at',rc.delivered_at,'read_at',rc.read_at,\n    'delivered',rc.delivered_at is not null,'read',rc.read_at is not null))\n    from public.trainer_message_receipts rc where rc.message_id=m.id and rc.recipient_id<>m.sender_id),'[]') as receipts,\n   coalesce((select jsonb_agg(to_jsonb(a)) from public.trainer_message_attachments a where a.message_id=m.id and a.state='ready'),'[]') as attachments\n   from public.trainer_messages m where m.conversation_id=cid and m.sequence>coalesce((payload->>'after_sequence')::bigint,0) order by m.sequence limit 100)q;\n when 'messages.send' then\n  result:=trainerhq_private.send_message(actor,(payload->>'conversation_id')::uuid,payload->>'text');\n when 'messages.batch' then\n  if not trainerhq_private.approved(actor) or jsonb_array_length(payload->'relationship_ids') not between 1 and 100 then raise insufficient_privilege;end if;\n  result:='[]';\n  for vals in select distinct value from jsonb_array_elements(payload->'relationship_ids') order by value loop\n   rid:=(vals#>>'{}')::uuid;\n   if not exists(select 1 from public.trainer_client_relationships r where r.id=rid and r.trainer_id=actor) then raise insufficient_privilege;end if;\n   cid:=trainerhq_private.direct_conversation(actor,rid);\n   result:=result||jsonb_build_array(trainerhq_private.send_message(actor,cid,payload->>'text'));\n  end loop;\n when 'messages.read','messages.delivered','messages.follow_up' then\n  cid:=(payload->>'conversation_id')::uuid;\n  if not trainerhq_private.message_access(actor,cid) then raise insufficient_privilege;end if;\n  if action='messages.follow_up' then\n   update public.trainer_conversation_members set needs_follow_up=(payload->>'needed')::boolean where conversation_id=cid and user_id=actor;\n  else\n   select last_sequence into seq from public.trainer_conversations where id=cid;\n   seq:=least(seq,coalesce((payload->>'sequence')::bigint,seq));\n   if seq<0 then raise invalid_parameter_value;end if;\n   insert into public.trainer_message_receipts(message_id,recipient_id,delivered_at,read_at)\n    select m.id,actor,now(),case when action='messages.read' then now() end from public.trainer_messages m\n    where m.conversation_id=cid and m.sequence<=seq\n    on conflict(message_id,recipient_id) do update set delivered_at=coalesce(trainer_message_receipts.delivered_at,excluded.delivered_at),\n     read_at=coalesce(trainer_message_receipts.read_at,excluded.read_at);\n   update public.trainer_conversation_members set last_delivered_sequence=greatest(last_delivered_sequence,seq),delivered_at=now(),\n    last_read_sequence=case when action='messages.read' then greatest(last_read_sequence,seq) else last_read_sequence end,\n    read_at=case when action='messages.read' then now() else read_at end where conversation_id=cid and user_id=actor;\n  end if;result:='{\"saved\":true}';\n when 'media.reserve' then\n  id_value:=(payload->>'message_id')::uuid;\n  select conversation_id into cid from public.trainer_messages where id=id_value and sender_id=actor;\n  if cid is null or not trainerhq_private.message_access(actor,cid) then raise insufficient_privilege;end if;\n  if (select count(*) from public.trainer_message_attachments where message_id=id_value)>=5 then raise invalid_parameter_value;end if;\n  insert into public.trainer_message_attachments(message_id,owner_id,object_path,mime_type,byte_count)\n   values(id_value,actor,cid::text||'/'||gen_random_uuid()::text,payload->>'mime_type',(payload->>'byte_count')::bigint)\n   returning to_jsonb(trainer_message_attachments.*) into result;\n when 'media.complete' then\n  select m.conversation_id into cid from public.trainer_message_attachments a join public.trainer_messages m on m.id=a.message_id\n   where a.id=(payload->>'id')::uuid and a.owner_id=actor;\n  if cid is null or not trainerhq_private.message_access(actor,cid) then raise insufficient_privilege;end if;\n  if not exists(select 1 from storage.objects o join public.trainer_message_attachments a on a.object_path=o.name and a.bucket=o.bucket_id\n    where a.id=(payload->>'id')::uuid and (o.metadata->>'size')::bigint=a.byte_count and o.metadata->>'mimetype'=a.mime_type)\n   then raise exception 'Upload is incomplete' using errcode='22023';end if;\n  update public.trainer_message_attachments set state='ready' where id=(payload->>'id')::uuid;\n  result:='{\"saved\":true}';\n when 'reminders.list' then\n  select coalesce(jsonb_agg(to_jsonb(q)),'[]') into result from (select r.* from public.trainer_reminders r where r.trainer_id=actor order by r.updated_at desc limit 200)q;\n when 'reminders.save' then\n  if not trainerhq_private.approved(actor) then raise insufficient_privilege;end if;\n  insert into public.trainer_reminders(id,trainer_id,text,is_completed) values((payload->>'id')::uuid,actor,payload->>'text',coalesce((payload->>'is_completed')::boolean,false))\n   on conflict(id) do update set text=excluded.text,is_completed=excluded.is_completed,updated_at=now() where trainer_reminders.trainer_id=actor;\n  if not found then raise insufficient_privilege;end if;result:='{\"saved\":true}';\n when 'reminders.delete' then\n  delete from public.trainer_reminders where id=(payload->>'id')::uuid and trainer_id=actor;result:='{\"saved\":true}';\n else result:=trainerhq_private.later_command(actor,action,payload);\n end case;\n return coalesce(result,'{}');\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "valid_session",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.valid_session(actor uuid, session uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select actor is not null and session is not null\n    and exists(select 1 from trainerhq_private.integration_control where singleton and enabled)\n    and exists(select 1 from auth.users u join auth.sessions s on s.user_id=u.id\n      where u.id=actor and s.id=session and not coalesce(u.is_anonymous,false)\n      and (s.not_after is null or s.not_after>now()))\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "approved",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.approved(actor uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select exists(select 1 from public.trainer_profiles where user_id=actor and approval_status='approved')\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "trainerhq_api",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.trainerhq_api(actor_id uuid, session_id uuid, action text, payload jsonb DEFAULT '{}'::jsonb)\n RETURNS jsonb\n LANGUAGE sql\n SET search_path TO ''\nAS $function$\n select trainerhq_private.api(actor_id,session_id,action,payload)\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "message_access",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.message_access(actor uuid, conversation uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n select exists(select 1 from public.trainer_conversation_members me where me.conversation_id=conversation\n  and me.user_id=actor and me.state='active' and (me.member_role='client' or\n   (trainerhq_private.approved(actor)\n    and exists(select 1 from public.trainer_conversation_members cm where cm.conversation_id=conversation and cm.member_role='client' and cm.state='active')\n    and not exists(select 1 from public.trainer_conversation_members cm\n     where cm.conversation_id=conversation and cm.member_role='client' and cm.state='active'\n     and not exists(select 1 from trainerhq_private.conversation_relationships cr\n      join public.trainer_client_relationships r on r.id=cr.relationship_id\n      where cr.conversation_id=conversation and r.client_id=cm.user_id and r.trainer_id=actor\n       and trainerhq_private.allowed(actor,r.id,'messaging'))))))\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "attachment_access",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.attachment_access(actor uuid, path text, writing boolean DEFAULT false)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n select exists(select 1 from public.trainer_message_attachments a join public.trainer_messages m on m.id=a.message_id\n where a.object_path=path and trainerhq_private.message_access(actor,m.conversation_id)\n and (not writing or (a.owner_id=actor and a.state='uploading')))\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "topic_allowed",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.topic_allowed(actor uuid, topic_value text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n select actor is not null and (topic_value='thq:account:'||actor::text or\n exists(select 1 from public.trainer_client_relationships r where topic_value='thq:relationship:'||r.id::text||':'||r.channel_epoch::text\n  and r.state='active' and trainerhq_private.approved(r.trainer_id) and actor in(r.client_id,r.trainer_id)\n  and exists(select 1 from public.trainer_client_permissions p where p.relationship_id=r.id and p.granted)) or\n exists(select 1 from public.trainer_conversations c where topic_value='thq:conversation:'||c.id::text||':'||c.channel_epoch::text\n  and trainerhq_private.message_access(actor,c.id)))\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "invalidate",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.invalidate(topic_value text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$ begin\n if not exists(select 1 from trainerhq_private.integration_control where enabled) then return;end if;\n perform realtime.send('{\"refresh\":true}'::jsonb,'invalidate',topic_value,true);\n exception when others then\n -- A Realtime outage must never roll back a WiFit fitness log. Record only SQLSTATE.\n begin insert into trainerhq_private.integration_diagnostics(component,error_code) values('realtime',sqlstate);exception when others then null;end;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "domain_changed",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.domain_changed()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare cid uuid; rid uuid; participant uuid; rel public.trainer_client_relationships; conversation public.trainer_conversations;\nbegin\n if tg_table_name in ('trainer_messages','trainer_message_attachments','trainer_conversation_members') then\n  if tg_table_name='trainer_message_attachments' then select conversation_id into cid from public.trainer_messages where id=new.message_id;else cid:=new.conversation_id;end if;\n  select * into conversation from public.trainer_conversations where id=cid;\n  perform trainerhq_private.invalidate('thq:conversation:'||cid::text||':'||conversation.channel_epoch::text);\n  for participant in select user_id from public.trainer_conversation_members where conversation_id=cid and state='active' and trainerhq_private.message_access(user_id,cid) loop\n   perform trainerhq_private.invalidate('thq:account:'||participant::text);\n   if tg_table_name='trainer_messages' then\n    if participant<>new.sender_id then\n    insert into trainerhq_private.notification_jobs(recipient_id,kind,resource_id,conversation_id) values(participant,'message',new.id,cid) on conflict do nothing;\n    end if;\n   end if;\n  end loop;\n else\n  if tg_table_name='trainer_client_permissions' then rid:=new.relationship_id;\n  elsif tg_table_name='trainer_client_relationships' then rid:=new.id;\n  else rid:=new.relationship_id;end if;\n  select * into rel from public.trainer_client_relationships where id=rid;\n  perform trainerhq_private.invalidate('thq:account:'||rel.trainer_id::text);\n  if rel.client_id is not null then perform trainerhq_private.invalidate('thq:account:'||rel.client_id::text);end if;\n  if rel.state='active' then perform trainerhq_private.invalidate('thq:relationship:'||rid::text||':'||rel.channel_epoch::text);end if;\n  if tg_table_name in ('trainer_workout_assignments','trainer_appointments') then\n   insert into trainerhq_private.notification_jobs(recipient_id,kind,resource_id,relationship_id,resource_version)\n    values(rel.client_id,case when tg_table_name='trainer_appointments' then 'schedule' else 'assignment' end,new.id,rid,new.version) on conflict do nothing;\n  end if;\n end if;\n return null;\n exception when others then\n begin insert into trainerhq_private.integration_diagnostics(component,error_code) values('domain_invalidation',sqlstate);exception when others then null;end;\n return null;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "replay_allowed",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.replay_allowed(actor uuid, action text, payload jsonb)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n select case\n when action='trainer.apply' then true\n when action='trainer.review' then exists(select 1 from trainerhq_private.platform_administrators where user_id=actor)\n when action='invitation.create' then trainerhq_private.approved(actor)\n when action='invitation.respond' then exists(select 1 from trainerhq_private.invitations i join auth.users u\n  on trainerhq_private.hash(lower(trim(u.email)))=i.recipient_email_hash where u.id=actor and i.token_hash=trainerhq_private.hash(payload->>'token'))\n when action='relationship.update' then exists(select 1 from public.trainer_client_relationships r where r.id=(payload->>'relationship_id')::uuid and r.client_id=actor)\n when action in ('assignment.create') then trainerhq_private.allowed(actor,(payload->>'relationship_id')::uuid,'workouts')\n when action='assignment.accept' then exists(select 1 from public.trainer_workout_assignments a where a.id=(payload->>'assignment_id')::uuid and a.client_id=actor)\n when action in ('schedule.create','schedule.update') then trainerhq_private.allowed(actor,(payload->>'relationship_id')::uuid,'sessions')\n when action in ('schedule.status','schedule.request_change') then exists(select 1 from public.trainer_appointments a where a.id=(payload->>'id')::uuid and trainerhq_private.allowed(actor,a.relationship_id,'sessions'))\n when action='schedule.decline_change' then exists(select 1 from public.trainer_appointment_changes c join public.trainer_appointments a on a.id=c.appointment_id where c.id=(payload->>'id')::uuid and trainerhq_private.allowed(actor,a.relationship_id,'sessions'))\n when action='messages.open' then trainerhq_private.allowed(actor,(payload->>'relationship_id')::uuid,'messaging')\n when action in ('messages.send','messages.read','messages.delivered','messages.follow_up','messages.join') then trainerhq_private.message_access(actor,(payload->>'conversation_id')::uuid)\n when action in ('messages.batch','messages.create_group') then not exists(select 1 from jsonb_array_elements_text(payload->'relationship_ids') x where not trainerhq_private.allowed(actor,x::uuid,'messaging'))\n when action like 'reminders.%' or action='availability.set' then trainerhq_private.approved(actor)\n when action='media.reserve' then exists(select 1 from public.trainer_messages m where m.id=(payload->>'message_id')::uuid and trainerhq_private.message_access(actor,m.conversation_id))\n when action='media.complete' then exists(select 1 from public.trainer_message_attachments a join public.trainer_messages m on m.id=a.message_id where a.id=(payload->>'id')::uuid and trainerhq_private.message_access(actor,m.conversation_id))\n when action in ('tracking.configure','notifications.configure','device.register','device.unregister') then true\n else false end\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "allowed",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.allowed(actor uuid, relationship uuid, category text DEFAULT NULL::text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select exists(select 1 from public.trainer_client_relationships r\n    where r.id=relationship and r.state='active' and r.client_id is not null\n    and trainerhq_private.approved(r.trainer_id)\n    and (actor=r.trainer_id or actor=r.client_id)\n    and (category is null or exists(select 1 from public.trainer_client_permissions p\n      where p.relationship_id=r.id and p.scope=category and p.granted)))\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "consent_conversations_changed",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.consent_conversations_changed()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare rid uuid; rel public.trainer_client_relationships; member_state text;\nbegin\n if tg_table_name='trainer_client_relationships' then rid:=new.id; else rid:=new.relationship_id; end if;\n select * into rel from public.trainer_client_relationships where id=rid;\n member_state:=case when rel.state='paused' then 'paused' when rel.state='active'\n  and exists(select 1 from public.trainer_client_permissions p where p.relationship_id=rid and p.scope='messaging' and p.granted)\n  then 'active' else 'revoked' end;\n update public.trainer_conversation_members cm set state=member_state\n where cm.user_id=rel.trainer_id and cm.conversation_id in(select cr.conversation_id from trainerhq_private.conversation_relationships cr where cr.relationship_id=rid)\n and cm.state in ('active','paused') and cm.state<>member_state;\n update public.trainer_conversations c set channel_epoch=gen_random_uuid(),updated_at=now(),\n  state=case when c.kind='direct' and member_state='revoked' then 'archived' else c.state end\n where c.id in(select cr.conversation_id from trainerhq_private.conversation_relationships cr where cr.relationship_id=rid);\n return null;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "direct_conversation",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.direct_conversation(actor uuid, rid uuid)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare rel public.trainer_client_relationships; cid uuid;\nbegin\n if not trainerhq_private.allowed(actor,rid,'messaging') then raise insufficient_privilege; end if;\n select * into rel from public.trainer_client_relationships where id=rid for update;\n select id into cid from public.trainer_conversations where relationship_id=rid and kind='direct' and state='open';\n if cid is null then\n  insert into public.trainer_conversations(kind,relationship_id,creator_id) values('direct',rid,actor) returning id into cid;\n  insert into public.trainer_conversation_members(conversation_id,user_id,member_role,state)\n   values(cid,rel.trainer_id,'trainer','active'),(cid,rel.client_id,'client','active');\n  insert into trainerhq_private.conversation_relationships values(cid,rid);\n end if;\n return cid;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "send_message",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.send_message(actor uuid, cid uuid, text_body text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare seq bigint; result jsonb; role_name text; mid uuid;\nbegin\n if not trainerhq_private.message_access(actor,cid) then raise insufficient_privilege; end if;\n if length(trim(coalesce(text_body,''))) not between 1 and 2000 then raise invalid_parameter_value; end if;\n update public.trainer_conversations set last_sequence=last_sequence+1,updated_at=now()\n  where id=cid and state='open' returning last_sequence into seq;\n if seq is null then raise insufficient_privilege; end if;\n select member_role into role_name from public.trainer_conversation_members where conversation_id=cid and user_id=actor;\n insert into public.trainer_messages(conversation_id,sender_id,sender_role,sequence,body)\n values(cid,actor,role_name,seq,trim(text_body)) returning to_jsonb(trainer_messages.*) into result;\n mid:=(result->>'id')::uuid;\n insert into public.trainer_message_receipts(message_id,recipient_id,delivered_at,read_at)\n  select mid,cm.user_id,case when cm.user_id=actor then now() end,case when cm.user_id=actor then now() end\n  from public.trainer_conversation_members cm where cm.conversation_id=cid and cm.state='active'\n  and trainerhq_private.message_access(cm.user_id,cid);\n update public.trainer_conversation_members set last_read_sequence=seq,last_delivered_sequence=seq,read_at=now(),delivered_at=now()\n  where conversation_id=cid and user_id=actor;\n return result;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "later_command",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.later_command(actor uuid, action text, payload jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare result jsonb; rel public.trainer_client_relationships; target public.profiles; prefs public.client_tracking_preferences;\n starts date; ends date; d date; sid uuid;\nbegin\n case action\n when 'client.targets' then\n  select * into rel from public.trainer_client_relationships where id=(payload->>'relationship_id')::uuid;\n  if not trainerhq_private.allowed(actor,rel.id,'nutrition') then raise insufficient_privilege;end if;\n  result:=jsonb_build_object('wifit_targets',(select jsonb_build_object('calories',p.cal_goal,'protein',p.protein_goal,'carbs',p.carbs_goal,'fat',p.fat_goal) from public.profiles p where p.id=rel.client_id),\n   'nutrition_target',(select to_jsonb(t) from public.client_nutrition_targets t where user_id=rel.client_id and effective_from<=current_date order by effective_from desc limit 1));\n when 'tracking.get' then\n  result:=jsonb_build_object('preferences',(select to_jsonb(p) from public.client_tracking_preferences p where user_id=actor),\n   'nutrition_target',(select to_jsonb(t) from public.client_nutrition_targets t where user_id=actor and effective_from<=current_date order by effective_from desc limit 1),\n   'wifit_targets',(select jsonb_build_object('calories',p.cal_goal,'protein',p.protein_goal,'carbs',p.carbs_goal,'fat',p.fat_goal) from public.profiles p where p.id=actor));\n when 'tracking.configure' then\n  if not exists(select 1 from pg_timezone_names where name=payload->>'timezone') then raise invalid_parameter_value;end if;\n  insert into public.client_tracking_preferences(user_id,timezone,cutoff_minute) values(actor,payload->>'timezone',coalesce((payload->>'cutoff_minute')::int,1440))\n   on conflict(user_id) do update set timezone=excluded.timezone,cutoff_minute=excluded.cutoff_minute,updated_at=now(),version=client_tracking_preferences.version+1;\n  if payload ? 'nutrition_enabled' then\n   select * into target from public.profiles where id=actor;\n   if not found then raise invalid_parameter_value;end if;\n   d:=(now() at time zone (payload->>'timezone'))::date;\n   -- Same-day corrections are explicit; prior dates/targets are immutable.\n   insert into public.client_nutrition_targets(user_id,effective_from,enabled,calories,protein,carbs,fat,weekdays)\n    values(actor,d,(payload->>'nutrition_enabled')::boolean,target.cal_goal,target.protein_goal,target.carbs_goal,target.fat_goal,\n     case when payload ? 'weekdays' then array(select jsonb_array_elements_text(payload->'weekdays')::int) else array[1,2,3,4,5,6,7] end)\n    on conflict(user_id,effective_from) do update set enabled=excluded.enabled,calories=excluded.calories,protein=excluded.protein,carbs=excluded.carbs,fat=excluded.fat,weekdays=excluded.weekdays;\n  end if;\n  result:='{\"saved\":true}';\n when 'adherence.report' then\n  starts:=(payload->>'from')::date;ends:=(payload->>'until')::date;\n  if starts is null or ends is null or ends<=starts or ends-starts>93 then raise invalid_parameter_value;end if;\n  result:='[]';\n  for d in select generate_series(starts,ends-1,interval '1 day')::date loop\n   result:=result||jsonb_build_array(trainerhq_private.adherence_day(actor,(payload->>'relationship_id')::uuid,d));end loop;\n when 'realtime.topics' then\n  select coalesce(jsonb_agg(topic),'[]') into result from (\n   select 'thq:account:'||actor::text as topic\n   union all select 'thq:relationship:'||r.id::text||':'||r.channel_epoch::text from public.trainer_client_relationships r\n    where r.state='active' and actor in(r.client_id,r.trainer_id) and trainerhq_private.approved(r.trainer_id)\n     and exists(select 1 from public.trainer_client_permissions p where p.relationship_id=r.id and p.granted)\n   union all select 'thq:conversation:'||c.id::text||':'||c.channel_epoch::text from public.trainer_conversations c where trainerhq_private.message_access(actor,c.id))q;\n when 'notifications.preferences' then\n  select coalesce((select to_jsonb(p) from public.trainer_notification_preferences p where user_id=actor),'{\"messages\":true,\"schedule\":true,\"assignments\":true}') into result;\n when 'notifications.configure' then\n  insert into public.trainer_notification_preferences(user_id,messages,schedule,assignments)\n   values(actor,(payload->>'messages')::boolean,(payload->>'schedule')::boolean,(payload->>'assignments')::boolean)\n   on conflict(user_id) do update set messages=excluded.messages,schedule=excluded.schedule,assignments=excluded.assignments,updated_at=now();result:='{\"saved\":true}';\n when 'device.register' then\n  if not exists(select 1 from trainerhq_private.push_applications where app=payload->>'app' and bundle_id=payload->>'bundle_id') then\n   raise exception 'Push application is not configured' using errcode='22023';end if;\n  -- Session ID is supplied exclusively by the secured gateway, never from the app.\n  sid:=(payload->>'verified_session_id')::uuid;\n  if not trainerhq_private.valid_session(actor,sid) then raise insufficient_privilege;end if;\n  insert into trainerhq_private.device_installations(installation_id,app,user_id,session_id,environment,token)\n   values((payload->>'installation_id')::uuid,payload->>'app',actor,sid,payload->>'environment',lower(payload->>'token'))\n   on conflict(installation_id,app) do update set user_id=excluded.user_id,session_id=excluded.session_id,environment=excluded.environment,token=excluded.token,updated_at=now(),invalidated_at=null;\n  result:='{\"registered\":true,\"delivery_enabled\":false}';\n when 'device.unregister' then\n  update trainerhq_private.device_installations set invalidated_at=now() where installation_id=(payload->>'installation_id')::uuid and app=payload->>'app' and user_id=actor;\n  result:='{\"saved\":true}';\n else raise exception 'Unknown operation' using errcode='22023';\n end case;\n return result;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "request_actor",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.request_actor()\n RETURNS uuid\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare actor uuid; sid uuid;\nbegin\n  actor:=auth.uid(); sid:=nullif(auth.jwt()->>'session_id','')::uuid;\n  if trainerhq_private.valid_session(actor,sid) then return actor; end if;\n  return null;\nexception when invalid_text_representation then return null;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "relationship_party",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.relationship_party(actor uuid, relationship uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select actor=trainerhq_private.request_actor() and exists(select 1 from public.trainer_client_relationships r\n    where r.id=relationship and (actor=r.trainer_id or actor=r.client_id))\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "request_allowed",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.request_allowed(relationship uuid, category text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ select trainerhq_private.allowed(trainerhq_private.request_actor(),relationship,category) $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "request_message_access",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.request_message_access(conversation uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ select trainerhq_private.message_access(trainerhq_private.request_actor(),conversation) $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "request_topic_allowed",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.request_topic_allowed(topic_value text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ select trainerhq_private.topic_allowed(trainerhq_private.request_actor(),topic_value) $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "api",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.api(actor uuid, session uuid, action text, payload jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  result jsonb; op uuid; digest text; prior trainerhq_private.operations;\n  r public.trainer_client_relationships; inv trainerhq_private.invitations;\n  scopes text[]; token text; v_email text; rid uuid; target uuid; category text;\n  from_day date; until_day date; is_read boolean;\nbegin\n  if not trainerhq_private.valid_session(actor,session) then raise exception 'Session unavailable' using errcode='42501'; end if;\n  if jsonb_typeof(payload)<>'object' or octet_length(payload::text)>65536 then raise invalid_parameter_value; end if;\n  is_read:=action in ('account.get','relationships.list','invitation.review','clients.list','client.logs',\n    'assignments.list','schedule.list','schedule.changes','availability.list','messages.threads','messages.list',\n    'client.targets','tracking.get','notifications.preferences','messages.invitations','reminders.list','adherence.report','media.read','realtime.topics');\n  if not is_read then\n    op:=(payload->>'operation_id')::uuid;\n    if op is null then raise exception 'operation_id required' using errcode='22023'; end if;\n    digest:=trainerhq_private.hash(payload::text);\n    perform pg_advisory_xact_lock(hashtextextended(actor::text||op::text,0));\n    select * into prior from trainerhq_private.operations where actor_id=actor and operation_id=op;\n    if found then\n      if prior.action<>action or prior.request_hash<>digest then raise exception 'Operation ID reused' using errcode='23505'; end if;\n      -- Recheck access before returning previously saved sensitive responses.\n      if not trainerhq_private.replay_allowed(actor,action,payload)\n      then raise insufficient_privilege; end if;\n      return prior.response;\n    end if;\n  end if;\n\n  case action\n  when 'account.get' then\n    select jsonb_build_object('user_id',actor,'trainer',\n      (select to_jsonb(t) from public.trainer_profiles t where t.user_id=actor),\n      'is_platform_admin',exists(select 1 from trainerhq_private.platform_administrators where user_id=actor)) into result;\n  when 'trainer.apply' then\n    if length(trim(coalesce(payload->>'display_name',''))) not between 1 and 100\n      or length(coalesce(payload->>'credentials_summary',''))>2000 then raise invalid_parameter_value; end if;\n    insert into public.trainer_profiles(user_id,display_name,credentials_summary)\n      values(actor,trim(payload->>'display_name'),coalesce(payload->>'credentials_summary',''))\n      on conflict(user_id) do update set display_name=excluded.display_name,\n        credentials_summary=excluded.credentials_summary,\n        approval_status=case when trainer_profiles.display_name<>excluded.display_name or trainer_profiles.credentials_summary<>excluded.credentials_summary\n          then 'pending' else trainer_profiles.approval_status end,\n        reviewed_at=case when trainer_profiles.display_name<>excluded.display_name or trainer_profiles.credentials_summary<>excluded.credentials_summary\n          then null else trainer_profiles.reviewed_at end,updated_at=now(),version=trainer_profiles.version+1;\n    select to_jsonb(t) into result from public.trainer_profiles t where t.user_id=actor;\n  when 'trainer.review' then\n    target:=(payload->>'trainer_id')::uuid;\n    if target=actor or not exists(select 1 from trainerhq_private.platform_administrators where user_id=actor)\n    then raise insufficient_privilege; end if;\n    if payload->>'decision' not in ('approved','rejected','suspended') then raise invalid_parameter_value; end if;\n    insert into trainerhq_private.trainer_reviews(trainer_id,operator_user_id,decision,reason)\n      values(target,actor,payload->>'decision',payload->>'reason');\n    update public.trainer_profiles set approval_status=payload->>'decision',reviewed_at=now(),updated_at=now(),version=version+1 where user_id=target;\n    if not found then raise no_data_found; end if;\n    result:=jsonb_build_object('reviewed',true);\n  when 'invitation.create' then\n    if not trainerhq_private.approved(actor) then raise insufficient_privilege; end if;\n    v_email:=lower(trim(payload->>'email'));\n    if v_email is null or length(v_email)>254 or v_email !~ '^[^ @]+@[^ @]+\\.[^ @]+$'\n      or exists(select 1 from auth.users where id=actor and lower(auth.users.email)=v_email)\n    then raise invalid_parameter_value; end if;\n    if (select count(*) from public.trainer_client_relationships where trainer_id=actor and created_at>now()-interval '1 day')>=20\n    then raise exception 'Invitation limit reached' using errcode='P0001'; end if;\n    token:=gen_random_uuid()::text||gen_random_uuid()::text;\n    insert into public.trainer_client_relationships(trainer_id) values(actor) returning * into r;\n    insert into trainerhq_private.invitations(relationship_id,recipient_email_hash,token_hash)\n      values(r.id,trainerhq_private.hash(v_email),trainerhq_private.hash(token)) returning * into inv;\n    result:=jsonb_build_object('invitation_id',inv.id,'relationship_id',r.id,'token',token,'expires_at',inv.expires_at);\n  when 'invitation.review' then\n    select * into inv from trainerhq_private.invitations where token_hash=trainerhq_private.hash(payload->>'token');\n    if not found or inv.expires_at<=now() or inv.status<>'pending' then raise exception 'Invitation unavailable' using errcode='42501'; end if;\n    if not exists(select 1 from auth.users u where u.id=actor and u.email_confirmed_at is not null\n      and trainerhq_private.hash(lower(trim(u.email)))=inv.recipient_email_hash) then raise insufficient_privilege; end if;\n    select * into r from public.trainer_client_relationships where id=inv.relationship_id;\n    if not trainerhq_private.approved(r.trainer_id) then raise insufficient_privilege; end if;\n    select jsonb_build_object('invitation_id',inv.id,'relationship_id',r.id,'expires_at',inv.expires_at,\n      'trainer',jsonb_build_object('user_id',t.user_id,'display_name',t.display_name,'credentials_summary',t.credentials_summary))\n      into result from public.trainer_profiles t where t.user_id=r.trainer_id;\n  when 'invitation.respond' then\n    select * into inv from trainerhq_private.invitations where token_hash=trainerhq_private.hash(payload->>'token') for update;\n    if not found or inv.status<>'pending' or inv.expires_at<=now() then raise exception 'Invitation unavailable' using errcode='42501'; end if;\n    if not exists(select 1 from auth.users u where u.id=actor and u.email_confirmed_at is not null\n      and trainerhq_private.hash(lower(trim(u.email)))=inv.recipient_email_hash) then raise insufficient_privilege; end if;\n    select * into r from public.trainer_client_relationships where id=inv.relationship_id for update;\n    if not trainerhq_private.approved(r.trainer_id) or r.trainer_id=actor or r.state<>'invited' then raise insufficient_privilege; end if;\n    if payload->>'decision'='decline' then\n      update trainerhq_private.invitations set status='declined' where id=inv.id;\n      update public.trainer_client_relationships set state='ended',updated_at=now(),version=version+1 where id=r.id;\n    elsif payload->>'decision'='accept' then\n      select coalesce(array_agg(distinct value),'{}') into scopes from jsonb_array_elements_text(coalesce(payload->'scopes','[]'));\n      if cardinality(scopes)>9 then raise invalid_parameter_value; end if;\n      update trainerhq_private.invitations set status='accepted' where id=inv.id;\n      update public.trainer_client_relationships set client_id=actor,accepted_at=now(),\n        state=case when payload->'activate'='true'::jsonb then 'active' else 'accepted' end,\n        activated_at=case when payload->'activate'='true'::jsonb then now() end,\n        updated_at=now(),version=version+1 where id=r.id;\n      insert into public.trainer_client_permissions(relationship_id,scope) select r.id,unnest(scopes);\n    else raise invalid_parameter_value; end if;\n    result:=jsonb_build_object('relationship_id',r.id,'decision',payload->>'decision');\n  when 'relationships.list' then\n    select coalesce(jsonb_agg(to_jsonb(q)),'[]') into result from (\n      select roster.*,t.display_name as trainer_name,t.credentials_summary,\n        coalesce((select jsonb_agg(p.scope order by p.scope) from public.trainer_client_permissions p where p.relationship_id=roster.id and p.granted),'[]') as scopes\n      from public.trainer_client_relationships roster join public.trainer_profiles t on t.user_id=roster.trainer_id\n      where roster.trainer_id=actor or roster.client_id=actor order by roster.created_at desc limit 200\n    )q;\n  when 'relationship.update' then\n    select * into r from public.trainer_client_relationships where id=(payload->>'relationship_id')::uuid for update;\n    if not found or r.client_id<>actor then raise insufficient_privilege; end if;\n    if r.version<>(payload->>'version')::bigint or not payload ? 'version' then raise exception 'Relationship changed' using errcode='23505'; end if;\n    if r.state in ('revoked','ended') or payload->>'state' not in ('active','paused','revoked') then raise invalid_parameter_value; end if;\n    if payload->>'state'='active' and not trainerhq_private.approved(r.trainer_id) then raise insufficient_privilege; end if;\n    update public.trainer_client_relationships set state=payload->>'state',\n      revoked_at=case when payload->>'state'='revoked' then now() else revoked_at end,\n      activated_at=case when payload->>'state'='active' then coalesce(activated_at,now()) else activated_at end,\n      version=version+1,channel_epoch=gen_random_uuid(),updated_at=now() where id=r.id;\n    if payload ? 'scopes' then\n      select coalesce(array_agg(distinct value),'{}') into scopes from jsonb_array_elements_text(payload->'scopes');\n      update public.trainer_client_permissions set granted=false,updated_at=now() where relationship_id=r.id;\n      insert into public.trainer_client_permissions(relationship_id,scope,granted)\n        select r.id,unnest(scopes),true on conflict(relationship_id,scope) do update set granted=true,updated_at=now();\n    end if;\n    select to_jsonb(x) into result from public.trainer_client_relationships x where x.id=r.id;\n  when 'clients.list' then\n    if not trainerhq_private.approved(actor) then raise insufficient_privilege; end if;\n    select coalesce(jsonb_agg(to_jsonb(q)),'[]') into result from (\n      select roster.id as relationship_id,roster.client_id,roster.activated_at,roster.version,\n        coalesce(nullif(trim(p.name),''),'WiFit client') as display_name,\n        coalesce((select jsonb_agg(s.scope order by s.scope) from public.trainer_client_permissions s where s.relationship_id=roster.id and s.granted),'[]') as scopes\n      from public.trainer_client_relationships roster left join public.profiles p on p.id=roster.client_id\n      where roster.trainer_id=actor and roster.state='active' and roster.client_id is not null\n        and (not payload ? 'after' or roster.id>(payload->>'after')::uuid)\n      order by roster.id limit 100\n    )q;\n  when 'client.logs' then\n    rid:=(payload->>'relationship_id')::uuid; category:=payload->>'category';\n    if category not in ('workouts','nutrition','supplements','progress_measurements') then raise invalid_parameter_value; end if;\n    if not trainerhq_private.allowed(actor,rid,category) then raise insufficient_privilege; end if;\n    select * into r from public.trainer_client_relationships where id=rid;\n    from_day:=(payload->>'from')::date; until_day:=(payload->>'until')::date;\n    if from_day is null or until_day is null or until_day<=from_day or until_day-from_day>93 then raise invalid_parameter_value; end if;\n    if category='nutrition' then\n      select coalesce(jsonb_agg(to_jsonb(q)),'[]') into result from (select f.* from public.food_log f\n        where f.user_id=r.client_id and f.logged_date>=from_day and f.logged_date<until_day\n        and (not payload ? 'after' or f.id>(payload->>'after')::uuid) order by f.id limit 200)q;\n    elsif category='workouts' then\n      select coalesce(jsonb_agg(to_jsonb(q)),'[]') into result from (select w.* from public.workout_sessions w\n        where w.user_id=r.client_id and w.completed_date>=from_day and w.completed_date<until_day\n        and (not payload ? 'after' or w.id>(payload->>'after')::uuid) order by w.id limit 200)q;\n    elsif category='supplements' then\n      select coalesce(jsonb_agg(to_jsonb(q)),'[]') into result from (select l.*,s.name,s.sub from public.supplement_log l\n        join public.supplement_stack s on s.id=l.supplement_id and s.user_id=l.user_id\n        where l.user_id=r.client_id and l.log_date>=from_day and l.log_date<until_day\n        and (not payload ? 'after' or l.id>(payload->>'after')::uuid) order by l.id limit 200)q;\n    else\n      select coalesce(jsonb_agg(to_jsonb(q)),'[]') into result from (select id,user_id,weight_lbs,log_date,created_at\n        from public.body_weight_log w where w.user_id=r.client_id and w.log_date>=from_day and w.log_date<until_day\n        and (not payload ? 'after' or w.id>(payload->>'after')::uuid) order by w.id limit 200)q;\n    end if;\n  else result:=trainerhq_private.domain_command(actor,action,payload);\n  end case;\n  if result is null then result:='{}'; end if;\n  if not is_read then\n    insert into trainerhq_private.operations values(actor,op,action,digest,result,now());\n    insert into trainerhq_private.audit_events(actor_id,action,resource_id)\n      values(actor,action,coalesce(r.id,(payload->>'relationship_id')::uuid));\n  end if;\n  return result;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "log_changed",
+      "schema": "trainerhq_private",
+      "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.log_changed()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare owner_id uuid; category text; rel public.trainer_client_relationships;\nbegin\n if tg_op='DELETE' then owner_id:=old.user_id;else owner_id:=new.user_id;end if;\n category:=case tg_table_name when 'food_log' then 'nutrition' when 'workout_sessions' then 'workouts'\n when 'body_weight_log' then 'progress_measurements' else 'supplements' end;\n for rel in select r.* from public.trainer_client_relationships r where r.client_id=owner_id and r.state='active' and trainerhq_private.approved(r.trainer_id)\n  and exists(select 1 from public.trainer_client_permissions p where p.relationship_id=r.id and p.granted\n   and (p.scope=category or (category='nutrition' and p.scope='nutrition_adherence'))) loop\n  perform trainerhq_private.invalidate('thq:relationship:'||rel.id::text||':'||rel.channel_epoch::text);\n end loop;\n return null;\n exception when others then\n begin insert into trainerhq_private.integration_diagnostics(component,error_code) values('log_invalidation',sqlstate);exception when others then null;end;\n return null;\nend $function$\n"
+    }
+  ],
+  "storage_buckets": [
+    {
+      "id": "trainerhq-message-attachments",
+      "public": false,
+      "file_size_limit": 10485760,
+      "allowed_mime_types": [
+        "image/jpeg",
+        "image/png",
+        "application/pdf"
+      ]
+    }
+  ],
+  "integration_errors": 0
+}
