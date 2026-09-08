@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { searchStatus, USDA_ENABLED } from "../App.jsx";
+import { searchStatus, USDA_ENABLED } from "../lib/search.js";
 
 // A non-ok USDA/OFF response must never render as "no results". DEMO_KEY's
 // 429 did exactly that for months and looked like a plausible empty state.

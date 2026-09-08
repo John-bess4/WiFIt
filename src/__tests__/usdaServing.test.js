@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { usdaServingGrams } from "../App.jsx";
+import { usdaServingGrams } from "../lib/search.js";
 
 // USDA reports servingSize with a unit that is not always grams. The number used
 // to be taken regardless, which is how a 414 ml shake became 414 g and a 5000 IU

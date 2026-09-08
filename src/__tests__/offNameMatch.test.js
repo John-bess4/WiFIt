@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { nameMatchesQuery } from "../App.jsx";
+import { nameMatchesQuery } from "../lib/search.js";
 
 // OFF v2 returns unrelated products for a no-match query; the filter is what
 // makes the empty state reachable. Barcode lookup does not go through it.
