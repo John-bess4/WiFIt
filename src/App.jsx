@@ -4,6 +4,7 @@ import { THEME_META, THEME_ORDER, DEFAULT_THEME, KEYFRAMES } from "./themes.js";
 import { paletteToTheme, legacyExtended } from "./lib/paletteToTheme.js";
 import HomeTab from "./HomeTab.jsx";
 import TabBar from "./TabBar.jsx";
+import TabErrorBoundary from "./TabErrorBoundary.jsx";
 import { weekDays, reduceWeekRows, todayPlanFor } from "./lib/weekSummary.js";
 
 // ── THEME SYSTEM ──────────────────────────────────────────────
@@ -7063,15 +7064,15 @@ export default function App(){
       {personalizationPageOpen&&<PersonalizationPage onBack={()=>setPersonalizationPageOpen(false)} isDark={isDark} themeFam={themeFam} setThemeFam={setThemeFam}/>}
       {upgradePageOpen&&<UpgradePage onBack={()=>setUpgradePageOpen(false)}/>}
       {helpPageOpen&&<HelpPage onBack={()=>setHelpPageOpen(false)}/>}
-      {tab==="home"&&<HomeTab setTab={setTab} log={log} suppList={suppList} suppTaken={suppTaken} workoutHistory={history} isDark={isDark} toggleTheme={()=>setIsDark(d=>!d)} userName={userName} goals={goals} onProfileOpen={()=>setProfileMenuOpen(true)} waterOz={waterOz} setWaterOz={setWaterOz} weightLog={weightLog} logWeight={logWeight}
+      {tab==="home"&&<TabErrorBoundary T={T} name="Home"><HomeTab setTab={setTab} log={log} suppList={suppList} suppTaken={suppTaken} workoutHistory={history} isDark={isDark} toggleTheme={()=>setIsDark(d=>!d)} userName={userName} goals={goals} onProfileOpen={()=>setProfileMenuOpen(true)} waterOz={waterOz} setWaterOz={setWaterOz} weightLog={weightLog} logWeight={logWeight}
         onCoachOpen={()=>setAiOpen(true)} onCalendarOpen={()=>setTab("calendar")} onProgressOpen={()=>setTab("progress")} onAddOpen={onAddOpen}
         todayPlan={todayPlanFor(workouts)} todayPlanSeeded={workouts===INITIAL_WORKOUTS} onStartPlan={(id)=>{setPendingStartPlanId(id);setTab("workout");}}
-        toggleSuppTaken={toggleSuppTaken} weekHistory={weekHistory} onRetryWeek={()=>loadWeekHistory()} profileCreatedAt={profileCreatedAt}/>}
-      {tab==="food"&&<FoodTab log={log} setLog={setLog} uid={uid} onDeleteFailed={showError} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/>}
-      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} prEvents={prEvents} onSessionComplete={saveWorkoutSession} bests={bests} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress} historyStatus={sectionFailed("plans")?"failed":historyStatus} onRetryHistory={()=>{const u=sb.getUser()?.id;if(sectionFailed("plans")&&u)loadUserData(u);else retryHistory();}} pendingStartPlanId={pendingStartPlanId} onPendingConsumed={()=>setPendingStartPlanId(null)}/>}
-      {tab==="supps"&&<SuppsTab suppList={suppList} setSuppList={setSuppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} taken={taken} total={total} uid={uid} addSuppToList={addSuppToList} onWriteFailed={showError}/>}
-      {tab==="calendar"&&<CalendarTab uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz}/>}
-      {tab==="progress"&&<ProgressPage uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz} weightLog={weightLog} logWeight={logWeight} onProfileOpen={()=>setProfileMenuOpen(true)}/>}
+        toggleSuppTaken={toggleSuppTaken} weekHistory={weekHistory} onRetryWeek={()=>loadWeekHistory()} profileCreatedAt={profileCreatedAt}/></TabErrorBoundary>}
+      {tab==="food"&&<TabErrorBoundary T={T} name="Food"><FoodTab log={log} setLog={setLog} uid={uid} onDeleteFailed={showError} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/></TabErrorBoundary>}
+      {tab==="workout"&&<TabErrorBoundary T={T} name="Train"><WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} prEvents={prEvents} onSessionComplete={saveWorkoutSession} bests={bests} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress} historyStatus={sectionFailed("plans")?"failed":historyStatus} onRetryHistory={()=>{const u=sb.getUser()?.id;if(sectionFailed("plans")&&u)loadUserData(u);else retryHistory();}} pendingStartPlanId={pendingStartPlanId} onPendingConsumed={()=>setPendingStartPlanId(null)}/></TabErrorBoundary>}
+      {tab==="supps"&&<TabErrorBoundary T={T} name="Supps"><SuppsTab suppList={suppList} setSuppList={setSuppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} taken={taken} total={total} uid={uid} addSuppToList={addSuppToList} onWriteFailed={showError}/></TabErrorBoundary>}
+      {tab==="calendar"&&<TabErrorBoundary T={T} name="Calendar"><CalendarTab uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz}/></TabErrorBoundary>}
+      {tab==="progress"&&<TabErrorBoundary T={T} name="Progress"><ProgressPage uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz} weightLog={weightLog} logWeight={logWeight} onProfileOpen={()=>setProfileMenuOpen(true)}/></TabErrorBoundary>}
 
       <TabBar active={tab} setTab={setTab} onAdd={onAddOpen} workoutInProgress={workoutInProgress}/>
 
