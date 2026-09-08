@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { per100From } from "../App.jsx";
+import { per100From } from "../lib/nutrition.js";
 
 // food_log stores macros per 100g; the coach hands over absolute macros for a
 // specific gram weight. This scaling was written out by hand in five places

@@ -8,6 +8,7 @@ import { weekDays, reduceWeekRows, todayPlanFor } from "./lib/weekSummary.js";
 
 import { THEMES, LOCKED_FAMILIES, DEFAULT_THEME_KEY, resolveTheme, resolveDark, ThemeCtx, useTheme } from "./lib/theme.js";
 import { localDate } from "./lib/dates.js";
+import { calc, totals, per100From, customFoodFromRow, CF_UNIT_G, CF_AUTO_UNITS, cfGramsFor } from "./lib/nutrition.js";
 import { COLORS, SEED, LOCAL_FOOD_DB, SUPP_DB, SUPP_CATEGORY_DOTS, isSuppCategory, toSuppCategory, GOAL_OZ, CF_MAX_SERVING_G, MAX_FOOD_GRAMS, EXERCISE_LIBRARY, INITIAL_WORKOUTS, GOAL_RATES, calcCalFromRate, ACTIVITY, ACTIVITY_MULTS_BY_ID } from "./lib/constants.js";
 
 const GOALS={cal:2200,protein:140,carbs:180,fat:78,fiber:25,sodium:2300};
@@ -41,25 +42,6 @@ const dayData={
 };
 
 
-export function calc(item){
-  const g=item.grams/100,m=item.per100;
-  return{
-    cal:Math.round(m.cal*g),
-    protein:Math.round(m.protein*g*10)/10,
-    carbs:Math.round(m.carbs*g*10)/10,
-    fat:Math.round(m.fat*g*10)/10,
-    fiber:Math.round(m.fiber*g*10)/10,
-    sugar:Math.round((m.sugar||0)*g*10)/10, // null = unknown; counts as 0 in a total, but is stored as null
-    sodium:Math.round(m.sodium*g),
-  };
-}
-
-export function totals(log){
-  return Object.values(log).flat().reduce((a,item)=>{
-    const m=calc(item);
-    return{cal:a.cal+m.cal,protein:Math.round((a.protein+m.protein)*10)/10,carbs:Math.round((a.carbs+m.carbs)*10)/10,fat:Math.round((a.fat+m.fat)*10)/10,fiber:Math.round((a.fiber+m.fiber)*10)/10,sugar:Math.round((a.sugar+m.sugar)*10)/10,sodium:a.sodium+m.sodium};
-  },{cal:0,protein:0,carbs:0,fat:0,fiber:0,sugar:0,sodium:0});
-}
 
 // ── LONG-PRESS HOOK ───────────────────────────────────────────────
 function useLongPress(onLongPress, ms=500){
@@ -438,27 +420,6 @@ export const parseActions=(reply)=>{
 export const LEGACY_PREFIXES=["MULTI_FOOD:","MEAL_SUGGESTION:","RECIPE:","WATER_LOG:","ADD_SUPP:","WORKOUT_PLAN:"];
 export const legacyFormatOf=(reply)=>LEGACY_PREFIXES.find(p=>reply.startsWith(p))||null;
 
-// food_log stores macros per 100g; the coach and the recipe card both hand over
-// absolute macros for a specific gram weight. This scaling was written out by
-// hand in five places, which is exactly how a rounding or field-name slip ships
-// unnoticed. Callers must guarantee grams>0 (ACTION_VALID.food does).
-// Coach items arrive as totals for `grams`; convert to per-100 g. fiber,
-// sodium and sugar used to be hardcoded 0 here, so every coach-logged food
-// under-reported the Fiber tile and the sodium bar. The prompt now asks for
-// them; absent values still fall back to 0 rather than NaN.
-const per100Of=(v,g)=>Math.round(((Number(v)||0)/g)*100);
-export const per100From=(item)=>{
-  const g=Number(item.grams)||100;
-  return {
-    cal:per100Of(item.cal,g),
-    protein:per100Of(item.protein,g),
-    carbs:per100Of(item.carbs,g),
-    fat:per100Of(item.fat,g),
-    fiber:per100Of(item.fiber,g),
-    sugar:per100Of(item.sugar,g),
-    sodium:per100Of(item.sodium,g),
-  };
-};
 
 // A component, not a branch of renderMsg, because it owns collapsible state.
 // renderMsg runs inside a .map, so a useState there made the panel's hook count
@@ -1759,20 +1720,9 @@ function BarcodeScanner({onResult,onClose}){
 
 
 
-// Serving units we can turn into grams ourselves. g and oz are exact; ml is a
-// disclosed water-density default the user can overwrite. cup/tbsp/piece are
-// food-dependent — there is no honest constant, so the user supplies the grams.
-const CF_UNIT_G={g:1,oz:28.3495,ml:1};
-const CF_AUTO_UNITS=["g","oz"];
 // Numeric fields here are pre-filled, so typing without selecting first appends
 // to the default — "100" + "100" = 100100. Select the value on focus instead.
 const selectOnFocus=e=>e.target.select();
-const cfGramsFor=(qty,unit)=>{
-  const f=CF_UNIT_G[unit];
-  const n=parseFloat(qty);
-  if(!f||!Number.isFinite(n)||n<=0)return"";
-  return String(Math.round(n*f*10)/10);
-};
 
 function QuickAddPanel({open,onClose,onAddItem,suppList,suppTaken,setSuppTaken,addSuppToList,customFoods,addCustomFood,waterOz=0,setWaterOz,initialMode="food",initialAction=null}){
   const T=useTheme();
@@ -4326,9 +4276,6 @@ const UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const hasDbId=(item)=>typeof item?.id==="string"&&UUID_RE.test(item.id);
 // Replace the local item with one carrying the database id, by reference.
 export const withDbId=(items,item,row)=>items.map(i=>i===item?{...i,id:row.id}:i);
-// custom_foods row → in-memory food. Keeps the uuid; the loader used to drop
-// it, so every custom food loaded from the database was un-deletable in place.
-export const customFoodFromRow=(f)=>({id:f.id,name:f.name,brand:f.brand||null,servingG:f.serving_g,servingQty:f.serving_qty,servingUnit:f.serving_unit||"g",isCustom:true,per100:{cal:f.per100_cal,protein:f.per100_protein,carbs:f.per100_carbs,fat:f.per100_fat,fiber:f.per100_fiber||0,sugar:f.per100_sugar||0,sodium:f.per100_sodium||0}});
 // Personal records. Both readers of a stored set string ("8×27.5lbs") and the
 // live comparison go through these, so 2.5 lb increments survive (parseInt
 // truncated 27.5 to 27 everywhere) and there is ONE definition of "a PR".

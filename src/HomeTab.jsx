@@ -12,7 +12,7 @@ import { KEYFRAMES } from "./themes.js";
 import { useTheme } from "./lib/theme.js";
 import { GOAL_OZ, SEED } from "./lib/constants.js";
 import { localDate } from "./lib/dates.js";
-import { calc, totals } from "./App.jsx";
+import { calc, totals } from "./lib/nutrition.js";
 import { weekDays, summarizeWeek, streakFrom } from "./lib/weekSummary.js";
 
 function useHomeKeyframes() {

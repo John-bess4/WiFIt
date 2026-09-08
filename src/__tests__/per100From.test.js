@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { per100From } from "../App.jsx";
+import { per100From } from "../lib/nutrition.js";
 
 // Coach-logged foods used to get fiber:0, sodium:0 and no sugar at all —
 // confirmed in production: coach-logged chicken had sodium 0 while the same
