@@ -236,4 +236,8 @@ Managed backups, a separate development/production environment strategy, tested 
 
 Existing migrations/inventory were preserved in commit cc8bb95. A private JSON export of the current public tables and Storage metadata was saved outside Git in the TrainerHQ workspace; it excludes Auth credentials and is not a complete recovery backup.
 
-Migration 1 is prepared and locally tested: protected trainer approval, invitations, independent relationships/scopes, RLS and scoped read-only projections of existing WiFit logs. See supabase/tests/trainerhq_identity.sql and supabase/rollbacks/trainerhq_disable.sql. No original WiFit policy is replaced.
+Migration 1 was applied successfully on 2026-09-08: protected trainer approval, invitations, independent relationships/scopes, RLS and scoped read-only projections of existing WiFit logs. See supabase/tests/trainerhq_identity.sql and supabase/rollbacks/trainerhq_disable.sql. No original WiFit policy is replaced.
+
+After migration 1: 25 authorization assertions, 22 original logging assertions and 163 WiFit tests passed. Lint has zero errors and 22 existing warnings; the production build passes with its existing bundle-size warning.
+
+Migration 2 is prepared and isolated-PostgreSQL tested. It adds client-accepted assignments linked into existing workout_plans, optional origin IDs on workout plans/sessions, conflict-checked scheduling, client-led multi-trainer groups, durable messages/receipts, and a private attachment bucket. Deferred consent checks remove only the affected trainer, preserving group history for remaining members. Tests cover authorization, idempotency, conflicts, read receipts and immediate read denial after revocation. The non-destructive integration-disable rollback also applies to this migration.
