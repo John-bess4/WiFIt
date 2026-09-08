@@ -7,6 +7,7 @@ import TabErrorBoundary from "./TabErrorBoundary.jsx";
 import { weekDays, reduceWeekRows, todayPlanFor } from "./lib/weekSummary.js";
 
 import { THEMES, LOCKED_FAMILIES, DEFAULT_THEME_KEY, resolveTheme, resolveDark, ThemeCtx, useTheme } from "./lib/theme.js";
+import { localDate } from "./lib/dates.js";
 import { COLORS, SEED, LOCAL_FOOD_DB, SUPP_DB, SUPP_CATEGORY_DOTS, isSuppCategory, toSuppCategory, GOAL_OZ, CF_MAX_SERVING_G, MAX_FOOD_GRAMS, EXERCISE_LIBRARY, INITIAL_WORKOUTS, GOAL_RATES, calcCalFromRate, ACTIVITY, ACTIVITY_MULTS_BY_ID } from "./lib/constants.js";
 
 const GOALS={cal:2200,protein:140,carbs:180,fat:78,fiber:25,sodium:2300};
@@ -4314,11 +4315,6 @@ function CalendarTab({uid,goals,suppList,userName,log,suppTaken,workoutHistory,w
 const SUPABASE_URL="https://vghqqksbjpgdzmvfmnru.supabase.co";
 const SUPABASE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnaHFxa3NianBnZHptdmZtbnJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NjAwNzgsImV4cCI6MjA5MzMzNjA3OH0.1JXmsIs9Jk87wd9uTIpNp93gnoqNMtOR78XiDQHUasg";
 
-// Every date column in this app stores the user's LOCAL day. toISOString()
-// returns the UTC day, which is already tomorrow for anyone west of UTC logging
-// in the evening. "en-CA" formats local time as YYYY-MM-DD. Writes, read
-// filters and comparisons all go through this so they cannot drift apart.
-export const localDate=(d=new Date())=>d.toLocaleDateString("en-CA");
 
 // Food-log identity. Every entry path gives a new item a local id (Date.now()
 // or Date.now()+Math.random()); the database gives it a uuid on insert. Until

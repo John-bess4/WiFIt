@@ -11,7 +11,7 @@ import React, { useEffect, useId, useMemo, useState } from "react";
 import { KEYFRAMES } from "./themes.js";
 import { useTheme } from "./lib/theme.js";
 import { GOAL_OZ, SEED } from "./lib/constants.js";
-import { localDate } from "./App.jsx";
+import { localDate } from "./lib/dates.js";
 import { calc, totals } from "./App.jsx";
 import { weekDays, summarizeWeek, streakFrom } from "./lib/weekSummary.js";
 

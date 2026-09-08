@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { localDate } from "../App.jsx";
+import { localDate } from "../lib/dates.js";
 
 // Runs under TZ=America/Los_Angeles (see the test script).
 //
