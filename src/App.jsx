@@ -3679,11 +3679,9 @@ function WorkoutTab({workouts,setWorkouts,history=[],prEvents={},onSessionComple
       // logic left on the client is ActiveWorkout's live banner — computePRs
       // against the baseline loaded at session start — because the session
       // isn't saved yet and the view can't see it.
-      exercises:sets.map(ex=>({
-        name:ex.name,
-        sets:ex.sets.filter(s=>s.done).map(s=>s.actualReps+"×"+s.actualWeight+"lbs"),
-        setsData:setsDataOf(ex),
-      }))
+      // Labels are derived from setsData, not typed alongside it: one source,
+      // and normalizeExercises pins the shape the reader expects.
+      exercises:normalizeExercises(sets.map(ex=>{const setsData=setsDataOf(ex);return{name:ex.name,sets:setsData.map(setLabel),setsData};}))
     };
     clearWorkoutSnapshot(snapKey);
     onSessionComplete&&onSessionComplete(entry);
@@ -4666,6 +4664,31 @@ export const computePRs=(sets,bests={})=>(sets||[]).filter(ex=>{const w=bestDone
 // Structured per-set data stored ALONGSIDE the display strings, so the PR
 // baseline (the exercise_bests view) never depends on render format.
 export const setsDataOf=(ex)=>(ex.sets||[]).filter(s=>s.done).map(s=>({reps:parseFloat(s.actualReps)||0,weight:parseFloat(s.actualWeight)||0}));
+// ── Session rows: normalised at the read boundary ──────────────────────
+// One malformed row must not take a tab down (TabErrorBoundary is the last
+// line, this is the guard) and the two set representations must never
+// disagree: setsData is what the views read, sets is what History shows.
+// setsData is authoritative — when the labels are missing or their count
+// differs, they are rebuilt from the numbers. Every path that puts a session
+// into state (mount, Retry, finish) and the editor before it writes go
+// through here, so the reader can only ever see this shape:
+//   {name, sets:["8×135lbs",…], setsData:[{reps,weight},…]}  (same length)
+const numOr0=(x)=>{const n=parseFloat(x);return Number.isFinite(n)?n:0;};
+export const setLabel=(d)=>numOr0(d?.reps)+"×"+numOr0(d?.weight)+"lbs";
+export const parseSetLabel=(str)=>{const m=/^(\d+(?:\.\d+)?)×(\d+(?:\.\d+)?)lbs$/.exec(String(str||"").trim());return m?{reps:parseFloat(m[1]),weight:parseFloat(m[2])}:null;};
+export const normalizeExercises=(arr)=>{
+  if(!Array.isArray(arr))return[];
+  return arr.filter(e=>e&&typeof e==="object"&&!Array.isArray(e)).map(e=>{
+    const name=typeof e.name==="string"&&e.name.trim()?e.name:"Exercise";
+    const labels=Array.isArray(e.sets)?e.sets.map(x=>String(x)):null;
+    let data=Array.isArray(e.setsData)?e.setsData.map(d=>({reps:numOr0(d?.reps),weight:numOr0(d?.weight)})):null;
+    if(!data)data=(labels||[]).map(l=>parseSetLabel(l)||{reps:0,weight:0});
+    const sets=labels&&labels.length===data.length?labels:data.map(setLabel);
+    return{name,sets,setsData:data};
+  });
+};
+export const sessionFromRow=(s)=>({id:s?.id,workoutName:typeof s?.workout_name==="string"&&s.workout_name?s.workout_name:"Workout",date:s?.completed_date||"",duration:numOr0(s?.duration_secs),setsCompleted:numOr0(s?.sets_completed),totalSets:numOr0(s?.total_sets),exercises:normalizeExercises(s?.exercises)});
+
 export const bestsFromView=(rows)=>Object.fromEntries((rows||[]).map(r=>[r.name,Number(r.best_lbs)||0]));
 export const prEventsBySession=(rows)=>(rows||[]).reduce((m,r)=>{(m[r.session_id]||(m[r.session_id]=[])).push(r.name);return m;},{});
 
@@ -6691,7 +6714,7 @@ export default function App(){
         const bestsOk=histOk&&await loadBests(uid);
         setHistoryStatus(!histOk||!bestsOk?"failed":"ready");
         if(sessions?.length>0){
-          setHistory(sessions.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[]})));
+          setHistory(sessions.map(sessionFromRow));
         }
         // Water intake today
         const waterRows=await read("water","water_log","user_id=eq."+uid+"&log_date=eq."+today);
@@ -6922,7 +6945,7 @@ export default function App(){
     setHistoryStatus("loading");
     const {ok,rows}=await sb.selectAuth("workout_sessions","user_id=eq."+u,{order:"created_at.desc",limit:20});
     if(!ok){setHistoryStatus("failed");return;}
-    setHistory(rows.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[]})));
+    setHistory(rows.map(sessionFromRow));
     if(await loadBests(u))setHistoryStatus("ready");
   };
   // Drives the dot on the Train nav item. WorkoutTab keeps this in sync while
