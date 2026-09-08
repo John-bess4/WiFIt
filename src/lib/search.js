@@ -170,9 +170,10 @@ export function nameMatchesQuery(name,query){
 }
 async function searchOFF(query){
   let anyOk=false;
-  // Try two OFF endpoints — v2 search is more reliable for CORS
+  // v2 only. The legacy cgi/search.pl endpoint was tried first for months and
+  // failed CORS on every query — a doomed request and a console error before
+  // each real search, which would mask a genuine failure. Dropped 2026-09-08.
   const urls=[
-    "https://world.openfoodfacts.org/cgi/search.pl?search_terms="+encodeURIComponent(query)+"&search_simple=1&action=process&json=1&page_size=10&fields=product_name,nutriments,brands,serving_quantity",
     "https://world.openfoodfacts.net/api/v2/search?q="+encodeURIComponent(query)+"&page_size=8&fields=product_name,nutriments,brands,serving_quantity",
   ];
   for(const url of urls){
