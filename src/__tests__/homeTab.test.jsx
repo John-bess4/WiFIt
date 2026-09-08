@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import HomeTab from "../HomeTab.jsx";
 import { ThemeCtx, THEMES } from "../lib/theme.js";
-import { GOAL_OZ } from "../App.jsx";
+import { GOAL_OZ } from "../lib/constants.js";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 

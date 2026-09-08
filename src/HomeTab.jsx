@@ -10,7 +10,9 @@
 import React, { useEffect, useId, useMemo, useState } from "react";
 import { KEYFRAMES } from "./themes.js";
 import { useTheme } from "./lib/theme.js";
-import { calc, totals, localDate, GOAL_OZ, SEED } from "./App.jsx";
+import { GOAL_OZ, SEED } from "./lib/constants.js";
+import { localDate } from "./App.jsx";
+import { calc, totals } from "./App.jsx";
 import { weekDays, summarizeWeek, streakFrom } from "./lib/weekSummary.js";
 
 function useHomeKeyframes() {

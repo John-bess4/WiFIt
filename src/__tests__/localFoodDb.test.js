@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { LOCAL_FOOD_DB, calc } from "../App.jsx";
+import { LOCAL_FOOD_DB } from "../lib/constants.js";
+import { calc } from "../App.jsx";
 
 // The seed catalogue had no sugar field, so every seed food wrote
 // per100_sugar = 0 — the entry path the owner hits most. Every entry must now

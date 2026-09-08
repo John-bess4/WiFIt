@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { parseActions, legacyFormatOf, MAX_ACTIONS, SUPP_CATEGORY_DOTS, isSuppCategory, toSuppCategory } from "../App.jsx";
+import { parseActions, legacyFormatOf, MAX_ACTIONS } from "../App.jsx";
+import { SUPP_CATEGORY_DOTS, isSuppCategory, toSuppCategory } from "../lib/constants.js";
 
 const water = (oz = 8) => ({ type: "water", oz });
 const supp = () => ({ type: "supplement", items: [{ name: "Creatine", category: "performance" }] });
