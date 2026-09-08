@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildContextMessages, buildRequestMessages, summarizeActionCard } from "../App.jsx";
+import { buildContextMessages, buildRequestMessages, summarizeActionCard } from "../lib/coach.js";
 
 // Known issue #17: applied-action cards were dropped from the model's context,
 // so it re-emitted the previous turn's water action with the next request.

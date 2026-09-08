@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseActions, legacyFormatOf, MAX_ACTIONS } from "../App.jsx";
+import { parseActions, legacyFormatOf, MAX_ACTIONS } from "../lib/coach.js";
 import { SUPP_CATEGORY_DOTS, isSuppCategory, toSuppCategory } from "../lib/constants.js";
 
 const water = (oz = 8) => ({ type: "water", oz });
