@@ -3597,7 +3597,7 @@ function ExercisePreviewList({exercises}){
 }
 
 // ── WORKOUT TAB ──────────────────────────────────────────────────
-function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,bests,onSavePlan,onDeletePlan,uid,onActiveChange,historyStatus="ready",onRetryHistory,pendingStartPlanId=null,onPendingConsumed}){
+function WorkoutTab({workouts,setWorkouts,history=[],prEvents={},onSessionComplete,bests,onSavePlan,onDeletePlan,uid,onActiveChange,historyStatus="ready",onRetryHistory,pendingStartPlanId=null,onPendingConsumed}){
   const T=useTheme();
   const [createOpen,setCreateOpen]=useState(false);
   const [editWorkout,setEditWorkout]=useState(null);
@@ -3659,9 +3659,6 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,bests,onS
   const finishWorkout=(sets,elapsed,startedAt=Date.now())=>{
     const allSets=sets.flatMap(e=>e.sets);
     const doneSets=allSets.filter(s=>s.done).length;
-    // The persisted value is decided HERE, from the final sets, against the
-    // history as loaded. Whatever the live banner showed is not consulted.
-    const newPRs=computePRs(sets,bests);
     const entry={
       id:"h"+Date.now(),
       workoutName:activeWorkout.name,
@@ -3676,10 +3673,13 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,bests,onS
       duration:elapsed,
       setsCompleted:doneSets,
       totalSets:allSets.length,
-      prs:newPRs,
+      // prs / isPR are no longer stored (#28): the history cards read the
+      // exercise_pr_events view, which recomputes from setsData. The only PR
+      // logic left on the client is ActiveWorkout's live banner — computePRs
+      // against the baseline loaded at session start — because the session
+      // isn't saved yet and the view can't see it.
       exercises:sets.map(ex=>({
         name:ex.name,
-        isPR:newPRs.includes(ex.name),
         sets:ex.sets.filter(s=>s.done).map(s=>s.actualReps+"×"+s.actualWeight+"lbs"),
         setsData:setsDataOf(ex),
       }))
@@ -3804,15 +3804,15 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,bests,onS
               <div style={{fontSize:16,fontWeight:600,color:T.text,marginBottom:6}}>No workout history yet</div>
               <div style={{fontSize:13,color:T.muted}}>Complete a workout to see your history here</div>
             </div>
-          ):history.map(h=>(
-            <div key={h.id} style={{background:T.card,border:"1px solid "+(h.prs?.length>0?"rgba(245,158,11,0.4)":T.border),boxShadow:h.prs?.length>0?"0 0 16px rgba(245,158,11,0.12)":T.glowShadow,borderRadius:14,padding:16,marginBottom:12}}>
+          ):history.map(h=>{const prs=prEvents[h.id]||[];return(
+            <div key={h.id} style={{background:T.card,border:"1px solid "+(prs.length>0?"rgba(245,158,11,0.4)":T.border),boxShadow:prs.length>0?"0 0 16px rgba(245,158,11,0.12)":T.glowShadow,borderRadius:14,padding:16,marginBottom:12}}>
               {/* PR banner */}
-              {h.prs?.length>0&&(
+              {prs.length>0&&(
                 <div style={{background:"linear-gradient(135deg,rgba(245,158,11,0.15),rgba(239,68,68,0.1))",border:"1px solid rgba(245,158,11,0.3)",borderRadius:10,padding:"8px 12px",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
                   <span style={{fontSize:16}}>🏆</span>
                   <div>
-                    <div style={{fontSize:12,fontWeight:700,color:"#F59E0B"}}>New PR{h.prs.length>1?"s":""} this session!</div>
-                    <div style={{fontSize:11,color:T.muted,marginTop:1}}>{h.prs.join(" · ")}</div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#F59E0B"}}>New PR{prs.length>1?"s":""} this session!</div>
+                    <div style={{fontSize:11,color:T.muted,marginTop:1}}>{prs.join(" · ")}</div>
                   </div>
                 </div>
               )}
@@ -3827,10 +3827,10 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,bests,onS
                 </div>
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:5}}>
-                {h.exercises.filter(e=>e.sets.length>0).map((ex,i)=>(
-                  <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:ex.isPR?"rgba(245,158,11,0.08)":T.surface,borderRadius:8,border:ex.isPR?"1px solid rgba(245,158,11,0.2)":"1px solid transparent"}}>
+                {(h.exercises||[]).filter(e=>(e.sets||[]).length>0).map((ex,i)=>(
+                  <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:prs.includes(ex.name)?"rgba(245,158,11,0.08)":T.surface,borderRadius:8,border:ex.isPR?"1px solid rgba(245,158,11,0.2)":"1px solid transparent"}}>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      {ex.isPR&&<span style={{fontSize:11}}>🏆</span>}
+                      {prs.includes(ex.name)&&<span style={{fontSize:11}}>🏆</span>}
                       <div style={{fontSize:12,fontWeight:500,color:T.text}}>{ex.name}</div>
                     </div>
                     <div style={{fontSize:11,color:T.muted}}>{ex.sets.join(" · ")}</div>
@@ -3838,7 +3838,7 @@ function WorkoutTab({workouts,setWorkouts,history=[],onSessionComplete,bests,onS
                 ))}
               </div>
             </div>
-          ))}
+          );})}
         </div>
       )}
     </div>
@@ -4666,6 +4666,7 @@ export const computePRs=(sets,bests={})=>(sets||[]).filter(ex=>{const w=bestDone
 // baseline (the exercise_bests view) never depends on render format.
 export const setsDataOf=(ex)=>(ex.sets||[]).filter(s=>s.done).map(s=>({reps:parseFloat(s.actualReps)||0,weight:parseFloat(s.actualWeight)||0}));
 export const bestsFromView=(rows)=>Object.fromEntries((rows||[]).map(r=>[r.name,Number(r.best_lbs)||0]));
+export const prEventsBySession=(rows)=>(rows||[]).reduce((m,r)=>{(m[r.session_id]||(m[r.session_id]=[])).push(r.name);return m;},{});
 
 export const foodDeleteFilter=(item,uid)=>hasDbId(item)&&uid?"id=eq."+item.id+"&user_id=eq."+uid:null;
 
@@ -6226,15 +6227,14 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
         // supps taken/due, weight) is computed in Postgres — the client only
         // keeps the date spine and joins by day. supplement_due_from gives the
         // denominator for days the view has no row for. weight_monthly is all
-        // time and bounded by months, never by a row ceiling. The narrow
-        // workout_sessions read is only for the stored prs array, until the
-        // exercise_pr_events view replaces it (after #25 — see PROJECT_CONTEXT).
+        // time and bounded by months, never by a row ceiling. exercise_pr_events
+        // is which lifts beat every earlier session (#28).
         const thisMonthStart=localDate().slice(0,7)+"-01";
         const [dr,fr,mr,pr]=await Promise.all([
           uid?sb.selectAuth("daily_summary","user_id=eq."+uid+"&day=gte."+startStr+"&day=lte."+endStr,{order:"day.asc"}):okEmpty,
           uid?sb.selectAuth("supplement_due_from","user_id=eq."+uid):okEmpty,
           uid?sb.selectAuth("weight_monthly","user_id=eq."+uid,{order:"month.asc"}):okEmpty,
-          uid?sb.selectAuth("workout_sessions","user_id=eq."+uid+"&completed_date=gte."+thisMonthStart+"&completed_date=lte."+endStr+"&select=completed_date,prs",{limit:200}):okEmpty,
+          uid?sb.selectAuth("exercise_pr_events","user_id=eq."+uid+"&completed_date=gte."+thisMonthStart+"&completed_date=lte."+endStr+"&select=completed_date,name",{limit:500}):okEmpty,
         ]);
         if(cancel)return;
         // Failed reads must not render as "0 avg calories, 0% adherence".
@@ -6259,7 +6259,7 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
         }
         pr.rows.forEach(r=>{
           const day=days.find(d=>d.date===r.completed_date);
-          if(day&&Array.isArray(r.prs))day.prs=day.prs.concat(r.prs);
+          if(day)day.prs.push(r.name);
         });
         setMonthly(mr.rows.map(m=>({month:m.month,first:Number(m.first_lbs),last:Number(m.last_lbs),entries:m.entries})));
         setDailyData(days);
@@ -6690,7 +6690,7 @@ export default function App(){
         const bestsOk=histOk&&await loadBests(uid);
         setHistoryStatus(!histOk||!bestsOk?"failed":"ready");
         if(sessions?.length>0){
-          setHistory(sessions.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[],prs:s.prs||[]})));
+          setHistory(sessions.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[]})));
         }
         // Water intake today
         const waterRows=await read("water","water_log","user_id=eq."+uid+"&log_date=eq."+today);
@@ -6881,7 +6881,7 @@ export default function App(){
       // `today` — which is computed once per App mount and would stamp a resumed
       // or past-midnight session with whatever day the app last mounted on.
       const completedDate=session.startedAt?localDate(new Date(session.startedAt)):today;
-      const row=await sb.insert("workout_sessions",{user_id:uid,workout_name:wname,completed_date:completedDate,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises||[],prs:session.prs||[]});
+      const row=await sb.insert("workout_sessions",{user_id:uid,workout_name:wname,completed_date:completedDate,duration_secs:session.duration,sets_completed:session.setsCompleted,total_sets:session.totalSets,exercises:session.exercises||[]});
       if(!row)throw new Error("insert returned no row");
       // Carry the row's uuid into state (the food-delete lesson): a session
       // edit/delete (#25) needs it, and a local "h<ts>" id would 400 at a uuid.
@@ -6903,10 +6903,17 @@ export default function App(){
   // genuine PR as false, permanently.
   const [bests,setBests]=useState({});
   const [historyStatus,setHistoryStatus]=useState("loading"); // loading | ready | failed
+  // PR events (which session/exercise beat every earlier session) come from
+  // the exercise_pr_events view, keyed by session id for the history cards.
+  const [prEvents,setPrEvents]=useState({});
   const loadBests=async(u)=>{
-    const {ok,rows}=await sb.selectAuth("exercise_bests","user_id=eq."+u+"&select=name,best_lbs",{limit:1000});
-    if(!ok){setHistoryStatus("failed");return false;} // any failure, not just 401 — an empty read must mean "no history", never "unknown"
-    setBests(bestsFromView(rows));
+    const [b,e]=await Promise.all([
+      sb.selectAuth("exercise_bests","user_id=eq."+u+"&select=name,best_lbs",{limit:1000}),
+      sb.selectAuth("exercise_pr_events","user_id=eq."+u+"&select=session_id,name",{limit:1000}),
+    ]);
+    if(!b.ok||!e.ok){setHistoryStatus("failed");return false;} // any failure, not just 401 — an empty read must mean "no history", never "unknown"
+    setBests(bestsFromView(b.rows));
+    setPrEvents(prEventsBySession(e.rows));
     return true;
   };
   const retryHistory=async()=>{
@@ -6914,7 +6921,7 @@ export default function App(){
     setHistoryStatus("loading");
     const {ok,rows}=await sb.selectAuth("workout_sessions","user_id=eq."+u,{order:"created_at.desc",limit:20});
     if(!ok){setHistoryStatus("failed");return;}
-    setHistory(rows.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[],prs:s.prs||[]})));
+    setHistory(rows.map(s=>({id:s.id,workoutName:s.workout_name,date:s.completed_date,duration:s.duration_secs,setsCompleted:s.sets_completed,totalSets:s.total_sets,exercises:s.exercises||[]})));
     if(await loadBests(u))setHistoryStatus("ready");
   };
   // Drives the dot on the Train nav item. WorkoutTab keeps this in sync while
@@ -7061,7 +7068,7 @@ export default function App(){
         todayPlan={todayPlanFor(workouts)} todayPlanSeeded={workouts===INITIAL_WORKOUTS} onStartPlan={(id)=>{setPendingStartPlanId(id);setTab("workout");}}
         toggleSuppTaken={toggleSuppTaken} weekHistory={weekHistory} onRetryWeek={()=>loadWeekHistory()} profileCreatedAt={profileCreatedAt}/>}
       {tab==="food"&&<FoodTab log={log} setLog={setLog} uid={uid} onDeleteFailed={showError} customFoods={customFoods} addCustomFood={addCustomFoodDB} onAddItem={addFoodItem} goals={goals} waterOz={waterOz} setWaterOz={setWaterOz}/>}
-      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} onSessionComplete={saveWorkoutSession} bests={bests} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress} historyStatus={sectionFailed("plans")?"failed":historyStatus} onRetryHistory={()=>{const u=sb.getUser()?.id;if(sectionFailed("plans")&&u)loadUserData(u);else retryHistory();}} pendingStartPlanId={pendingStartPlanId} onPendingConsumed={()=>setPendingStartPlanId(null)}/>}
+      {tab==="workout"&&<WorkoutTab workouts={workouts} setWorkouts={setWorkouts} history={history} prEvents={prEvents} onSessionComplete={saveWorkoutSession} bests={bests} onSavePlan={saveWorkoutPlanDB} onDeletePlan={deleteWorkoutPlanDB} uid={uid} onActiveChange={setWorkoutInProgress} historyStatus={sectionFailed("plans")?"failed":historyStatus} onRetryHistory={()=>{const u=sb.getUser()?.id;if(sectionFailed("plans")&&u)loadUserData(u);else retryHistory();}} pendingStartPlanId={pendingStartPlanId} onPendingConsumed={()=>setPendingStartPlanId(null)}/>}
       {tab==="supps"&&<SuppsTab suppList={suppList} setSuppList={setSuppList} suppTaken={suppTaken} setSuppTaken={toggleSuppTaken} taken={taken} total={total} uid={uid} addSuppToList={addSuppToList} onWriteFailed={showError}/>}
       {tab==="calendar"&&<CalendarTab uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz}/>}
       {tab==="progress"&&<ProgressPage uid={uid} goals={goals} suppList={suppList} userName={userName} log={log} suppTaken={suppTaken} workoutHistory={history} waterOz={waterOz} weightLog={weightLog} logWeight={logWeight} onProfileOpen={()=>setProfileMenuOpen(true)}/>}

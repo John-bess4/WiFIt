@@ -610,6 +610,28 @@ for a supplement logged on the local day it was created.
 session edit/delete — so two structural changes to session data do not land in
 the same week without a correction UI.
 
+## 2026-09-07 — PR events are a read; the live banner is the only client PR logic
+
+**Decision.** `exercise_pr_events` derives "this session set a PR for this
+exercise" from `setsData` with a window over all earlier sessions. The client
+stopped writing `workout_sessions.prs` and `exercises[].isPR`; the column stays
+until a later migration drops it. The one PR computation left on the client is
+ActiveWorkout's live banner — `computePRs` against `exercise_bests` loaded at
+session start — because the session is not saved yet and no view can see it.
+
+**Why #28 before #25.** An edit/delete UI built while `prs` was stored would
+have had to maintain a derived column on every edit: recompute it (the work the
+view deletes) or leave it stale (an edit feature that corrupts a column). With
+nothing derived stored, edit/delete has nothing to maintain and the view
+recomputes by itself.
+
+**Why stop writing now and drop later.** A column drop is not reversible and
+nothing is waiting on it. Stop the write, prove nothing reads it, drop at leisure.
+
+**Verification shape.** Seeded history with three intended PRs and five decoys
+(lower lift, tie, first-ever lift, same-day tie, bodyweight set); the view
+returned exactly the three. Zero sessions → zero rows. Seeds deleted.
+
 ## Standing conventions
 
 These are not dated decisions so much as long-standing ones. `AGENTS.md` is the

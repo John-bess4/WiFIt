@@ -171,14 +171,15 @@ future edit screen can redisplay "4 oz" instead of "113.4 g". Nothing reads them
 | total_sets | integer | YES | 0 |
 | exercises | jsonb | YES | `'[]'` |
 | created_at | timestamptz | YES | now() |
-| **prs** | **jsonb** | **NO** | `'[]'` |
+| **prs** | **jsonb** | **NO** | `'[]'` — **no longer written or read (2026-09-07, #28)**; inserts rely on the default. Drop in a later migration. |
 
 `prs` was missing for months while the client sent it on every insert — PostgREST
 returned 400 `PGRST204`, `sb.insert` swallowed it, and the table stayed empty while
-the UI showed saved workouts. It is a **native jsonb array**: read `r.prs` directly,
-never `JSON.parse(r.prs)`.
+the UI showed saved workouts. Since #28 PR events come from the `exercise_pr_events`
+view and the column is dead.
 
-`exercises` shape: `[{name, isPR, sets:["8×135lbs", ...]}]`.
+`exercises` shape: `[{name, sets:["8×135lbs", ...], setsData:[{reps, weight}]}]`.
+Older rows also carry `isPR` — dead, ignored.
 
 ### workout_plans
 `id`, `user_id`, `name` (NOT NULL), `tag`, `level`, `est_min` integer,
@@ -306,6 +307,21 @@ or `calc()`/`totals()`; read the view. `supps_due` counts a supplement only from
 supplement added on day 29 no longer scores 29 misses); the client uses
 `supplement_due_from` for the same rule on days the view has no row for.
 Migration: `20260907_daily_summary_views.sql`. See `DECISIONS.md` §"daily_summary".
+
+### exercise_pr_events — VIEW (2026-09-07)
+
+```
+exercise_pr_events   user_id, session_id, completed_date, name, lbs, prev_best
+                     = sessions whose top setsData weight for an exercise beats
+                       max over ALL earlier sessions (completed_date, created_at, id)
+                     strict; first-ever lift and ties are not PRs; weight 0 ignored
+                     security_invoker = true; GRANT select TO authenticated only (verified)
+```
+
+Read with `loadBests` (mount, Retry, after a session insert) keyed by session id for
+the Train history cards, and by Progress for "PRs this month". Replaces the stored
+`workout_sessions.prs` / `exercises[].isPR` (#28). Migration
+`20260907_exercise_pr_events_view.sql`.
 
 ### workouts — LEGACY, DO NOT USE
 `id, user_id, name, tag, level, est_min, exercises, created_at, updated_at`. Zero rows.
@@ -847,9 +863,11 @@ Anthropic response formats are unchanged and out of scope for security work:
     as the food delete — and the session's uuid must be written back into state
     (the local-id note in #24), or the delete will have the food bug on day one.
     See `DECISIONS.md` §"Derived values…", second corollary.
-    **Sequence (Gate 2 decision, 2026-09-07):** `daily_summary` first (done), #25
-    next, then #28 — two structural changes to session data must not land in
-    the same week without the correction UI existing.
+    **Sequence (revised 2026-09-07):** `daily_summary` (done) → #28 (done) → #25.
+    #28 went first because an edit UI built before `prs` was gone would have had
+    to maintain a stored derived value on every edit — recompute it (work #28
+    deletes) or leave it stale (an edit feature that corrupts a column). With
+    `prs` unwritten, edit/delete has nothing derived to maintain.
 
 26. **REQUIRED PRE-LAUNCH (iOS) — real reminders via `UNUserNotificationCenter`.**
     The web app's "reminders" are a `setTimeout` in the open tab. As of
@@ -876,14 +894,21 @@ Anthropic response formats are unchanged and out of scope for security work:
     (local key at a uuid column) is refused with "still saving" instead of a
     swallowed 400; `supplement_stack.sub` stores null for blank.
 
-28. **PLANNED — `exercise_pr_events` view replaces `workout_sessions.prs`.** The
-    stored `prs` array is the last computed-and-stored value (#23): it froze
-    whatever `bests` said at finish time. A view over `setsData` with a window
-    over earlier sessions (`weight > max(previous)`) makes PR *events* a read,
-    like `exercise_bests` made the *baseline* a read, and `computePRs` stops
-    persisting. Approved in principle; **after #25** (see its sequence note).
-    Until then Progress reads `prs` through a narrow
-    `select=completed_date,prs` on this month's sessions only.
+28. ~~**PLANNED — `exercise_pr_events` view replaces `workout_sessions.prs`.**~~
+    **DONE 2026-09-07** (sequenced BEFORE #25 after all: an edit UI built while
+    `prs` is stored would have to maintain a derived column on every edit). The
+    view (`20260907_exercise_pr_events_view.sql`) derives PR events from
+    `setsData` — a session's top weight beats the max over all earlier
+    sessions, strictly; first-ever lifts and ties are not PRs; weight 0 never
+    counts. The client **stopped writing** `prs` and `exercises[].isPR`; the
+    history cards and Progress' PR card read the view. **`prs` column and
+    existing `isPR` keys are still in the schema/data** — drop them in a later
+    migration once nothing reads them (a column drop is not reversible; nothing
+    reads them now, so it is safe whenever). The only PR logic left on the
+    client is ActiveWorkout's live banner (`computePRs` against `exercise_bests`
+    loaded at session start) — the session isn't saved yet, so no view can
+    answer it. Verified against a seeded 5-session history (3 expected events,
+    5 decoys, exactly 3 rows) and zero sessions → zero rows.
 
 29. **`body_weight_log` read was the OLDEST 30 rows** (`order=log_date.asc&limit=30`)
     — fixed 2026-09-07: newest 30, reversed. From weigh-in #31 every weight
