@@ -156,6 +156,44 @@ test (`bodyMetrics.test.js`) against the pre-extraction inline results.
 Swift: `Decimal` isn't required here (these are display integers via `round`),
 but the coefficients and the rounding must match to the unit. Port the test too.
 
+## 10. Proposed SPM structure (react to this — not a final decision)
+
+A **proposal** for how the two apps share this layer; push back on names/shape.
+
+**One local Swift package, `FitDataKit`** (name TBD), a single library product,
+living in the monorepo at `Packages/FitDataKit`. Both `WiFit-iOS` and
+`TrainerHQ-iOS` app targets depend on it via a local path dependency (no
+versioning overhead while both move together; promote to a tagged private git
+package later if they diverge).
+
+**In the package (the contracts in this doc, §1–§9):**
+- `SupabaseREST` — the `sb`-equivalent client: `select`/`selectAuth`/insert/
+  upsert/update/delete with the exact failure contract (§1), the `[sb.*]` log line.
+- `ReadResult` + the treatment-ladder types (§2), `OnConflict` targets (§3).
+- `Nutrition` — `Decimal` macro math (§4) + `rounding-fixture` conformance test.
+- `BodyMetrics` — BMR/TDEE/goals (§9) + its value-for-value test.
+- `Views` — read models for `exercise_bests`, `exercise_pr_events`,
+  `daily_summary`, `weight_monthly` (§5); `SessionRow`/`normalizeExercises` (§6).
+- `LocalDate` (§8); `Auth` — session model, single-flight refresh, `resolveSession`
+  (§7).
+
+**App-side, NOT in the package:** all UI/theme/navigation/screens; the coach chat
+UI and its request assembly (COACH.md — coach is app-level, though the `ACTIONS`
+parser/types could be a second tiny module `CoachKit` if both apps offer coach);
+anything TrainerHQ-specific. The `trainerhq-api` client (TRAINERHQ_CONTRACT.md) is
+**its own** concern — either a separate `TrainerHQKit` package or app-side in
+TrainerHQ-iOS; it does not belong in the shared data layer.
+
+**Session/token storage: Keychain.** Access + refresh tokens in the Keychain
+(`kSecClassGenericPassword`, `kSecAttrAccessibleAfterFirstUnlock`), owned by the
+package's `Auth`, with an in-memory cache for the hot path — never `UserDefaults`
+(tokens are credentials). The package reads the token at call time (§7). Each app
+uses its own Keychain access group unless a deliberate SSO story says otherwise.
+
+**Tests travel with the package:** the value-for-value BodyMetrics test, the
+rounding fixture, and an RLS smoke (sign in, prove own-only access) are part of
+`FitDataKitTests`, run in both apps' CI.
+
 ## What the shared package explicitly does NOT contain
 
 UI, theme, the coach request/replay (that is app-level, see COACH.md), and

@@ -16,4 +16,8 @@ this Supabase project. Evidence-backed, not summaries: schema from
 Read alongside, not duplicated here: `../PROJECT_CONTEXT.md` (live reference +
 numbered known issues), `../DECISIONS.md` (why the code is the way it is),
 `../HANDOFF.md` (the rewrite brief), `../TRAINERHQ_CONTRACT.md` (the trainerhq-api
-contract). The JS to translate is `src/lib/` + `HomeTab.jsx` + `src/lib/ui.jsx`.
+contract). > `docs/PORT_READINESS_GATES.md` was referenced in earlier sessions but never
+> actually landed in the repo. Do not look for it — **this `docs/port/` package
+> supersedes it.**
+
+The JS to translate is `src/lib/` + `HomeTab.jsx` + `src/lib/ui.jsx`.

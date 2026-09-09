@@ -104,6 +104,22 @@ grey dot.
 - If the user already has a supplement in their stack, say so after the `|`
   rather than re-adding it.
 
+## Test-build coach limit (decided 2026-09-09)
+
+**Decision: dedicated test accounts, not a raised limit and not a separate
+project.** The limit is keyed to `user_id`, so each sign-in gets its own
+60/hr — QA on `wifit-qa+web@`, `+ios@`, `+trainer@` accounts sidesteps the
+shared budget with zero code and zero infra.
+
+Tradeoff vs the two named options, in two lines:
+- **Raise the limit**: one env change, but real users then share the higher
+  ceiling and the Anthropic bill rises for everyone — a production knob loosened
+  for a test problem.
+- **Separate Supabase project for test builds**: clean isolation, but duplicates
+  the schema, RLS, migrations, and the coach/OFF edge env — a second project to
+  keep in lockstep for the life of QA. Only worth it if QA also needs to trash
+  data freely; dedicated accounts on the real project are cheaper until then.
+
 ## Port notes
 - `callCoach(userMsg, history, {liveContext, userName})` and `applyActions(parsed,
   {onAddWater, onAddFood, onAddSupp}) → {messages, hasSupp}` are already
