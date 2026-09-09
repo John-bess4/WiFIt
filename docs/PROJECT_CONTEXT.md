@@ -117,6 +117,44 @@ throughout. This is intentional legacy, not a defect. Do not "fix" it.
 
 ---
 
+## TrainerHQ shares this Supabase project — out of scope for WiFit
+
+This Supabase project (`vghqqksbjpgdzmvfmnru`) backs **two** apps. WiFit is one.
+**TrainerHQ** — a separate trainer-facing client-management product Johnny also
+builds — is the other. It reads WiFit data with user consent and owns its own
+tables in the same database. A WiFit session **must not touch TrainerHQ's
+objects**: no reads, no writes, no migrations, no schema edits, and they are not
+WiFit's to audit. This section exists so that an audit which runs "list every
+table" does not treat TrainerHQ's ~29 tables as WiFit's problem.
+
+**TrainerHQ owns (out of scope):**
+- `public` schema: the 16 `trainer_*` and `client_*` tables — `trainer_profiles`,
+  `trainer_client_relationships`, `trainer_client_permissions`,
+  `trainer_workout_assignments`, `trainer_appointments`,
+  `trainer_appointment_changes`, `trainer_availability`, `trainer_reminders`,
+  `trainer_conversations`, `trainer_conversation_members`, `trainer_messages`,
+  `trainer_message_attachments`, `trainer_message_receipts`,
+  `trainer_notification_preferences`, `client_nutrition_targets`,
+  `client_tracking_preferences`.
+- the entire **`trainerhq_private`** schema (13 tables: `adherence_rules`,
+  `adherence_summaries`, `audit_events`, `invitations`, `notification_jobs`,
+  `push_applications`, `platform_administrators`, `device_installations`,
+  `integration_control`, `integration_diagnostics`, `operations`,
+  `conversation_relationships`, `trainer_reviews`).
+- the **`trainerhq-api`** edge function.
+
+**Not TrainerHQ's, despite the name grouping:** `coach_usage`. It was listed
+with the TrainerHQ set, but it is `{id, user_id, created_at}` and WiFit's own
+`api/coach.js` reads it (the 60/hour + 400/day gate) and inserts a row on every
+coach request. It is documented below as a WiFit table and stays WiFit's. If
+TrainerHQ also writes it, it is *shared*, not TrainerHQ-owned — flag it and this
+note gets corrected; until then WiFit treats it as its own.
+
+**WiFit owns:** the 11 base tables and 5 views documented below, and nothing
+else. If a table is not in the schema section that follows, it is not WiFit's.
+
+---
+
 ## Database schema (live, verified)
 
 All 11 tables have **RLS enabled**. Every `user_id` is a FK to `auth.users(id)` with
@@ -998,9 +1036,9 @@ explicit approval is given. TrainerHQ remains a separate iOS project, UI,
 identifier, architecture and release lifecycle; only backend contracts are
 shared. See `TRAINERHQ_INTEGRATION.md`.
 
-Prepared `trainerhq_client_timezone_targets` changes two date comparisons in the
+Applied `trainerhq_client_timezone_targets` (live version `20260909062025`) changes two date comparisons in the
 new private TrainerHQ command function. `tracking.get` and `client.targets` select
 the current nutrition target using the client's configured timezone instead of
 the database date. Existing WiFit tables, RLS, logging and Auth remain unchanged.
 The exact prior function/policies, six timezone authorization checks, targeted
-rollback and in-memory recovery evidence are version controlled.
+rollback and in-memory recovery evidence are version controlled. After application, 112 live SQL assertions and 191 WiFit tests passed; all 12 original owner policies matched the preflight inventory exactly. Production remains on explicit owner hold.

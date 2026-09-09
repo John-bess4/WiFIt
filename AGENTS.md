@@ -78,6 +78,15 @@ signal lives in the console and the network tab, so:
 3. For a write path, confirm the row actually landed — re-read it, or check the
    table — rather than trusting the optimistic UI update.
 
+## Before every push
+
+Run `git log --oneline origin/main..HEAD` and report every commit you did not
+author this session. Not a security check — a review-scope one: a push makes
+you the person who put those commits on a public remote, whatever their origin.
+This repo shares a working tree with TrainerHQ (see PROJECT_CONTEXT), so
+concurrent commits from that work land here routinely; naming them before the
+push is how "I pushed 11 commits I'd never read" does not happen twice.
+
 **If the AI coach breaks, check the pinned `MODEL` constant in `api/coach.js`
 first** — then `coach_usage`: localhost proxies `/api` to production and shares
 the user's 60/hour limit with every other client on that account. Model IDs retire; the proxy passes `upstream.status` through verbatim, so
