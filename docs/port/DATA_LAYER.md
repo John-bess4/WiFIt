@@ -126,6 +126,29 @@ never use UTC ISO components. The bug this prevents: an evening signup compared
 `created_at` (UTC) to the local day and marked the user's own first day
 pre-creation.
 
+## 9. Body metrics — BMR / TDEE / goals  (`src/lib/bodyMetrics.js`)
+
+The one place a formula produces a number the user lives by for months, so a
+divergence here is the worst kind. Extracted 2026-09-09 with a value-for-value
+test (`bodyMetrics.test.js`) against the pre-extraction inline results.
+
+- **BMR — Revised Harris-Benedict (Roza & Shizgal, 1984)**, metric:
+  - male:   `13.397·kg + 4.799·cm − 5.677·age + 88.362`
+  - female: `9.247·kg + 3.098·cm − 4.330·age + 447.593`
+  - `kg = lb × 0.453592`, `cm = in × 2.54`. Inputs are resolved numbers; the
+    empty-field defaults (170 lb, 5'9", 25) are UI, kept at the call sites.
+- **TDEE** = `round(BMR × activityMult)`; the seven multipliers are
+  `ACTIVITY_MULTS_BY_ID` (constants), unknown → 1.55.
+- **Calorie target** = `calcCalFromRate(tdee, rate)` = `max(tdee + rateDelta,
+  1200)`; deltas are `GOAL_RATES` (−1000…+1000 by weekly rate).
+- **Macros** = `macrosForCal(cal, weightLbs)`: protein `round(lb·0.82)`, fat
+  `round(cal·0.25/9)`, carbs `max(round((cal − 4·protein − 9·fat)/4), 50)`.
+- **`computeGoals({gender,weightLbs,heightIn,age,activityId,rateId})`** → the full
+  onboarding set `{bmr,tdee,cal,protein,carbs,fat}`.
+
+Swift: `Decimal` isn't required here (these are display integers via `round`),
+but the coefficients and the rounding must match to the unit. Port the test too.
+
 ## What the shared package explicitly does NOT contain
 
 UI, theme, the coach request/replay (that is app-level, see COACH.md), and

@@ -259,10 +259,8 @@ export const GOAL_RATES=[
   {id:"gain_2",   label:"Gain 2 lbs/week",   delta:1000,  dir:"gain",  color:"#A855F7", icon:"🚀"},
 ];
 
-export function calcCalFromRate(tdee,rateId){
-  const rate=GOAL_RATES.find(r=>r.id===rateId)||GOAL_RATES[3];
-  return Math.max(tdee+rate.delta,1200);
-}
+// calcCalFromRate moved to lib/bodyMetrics.js (2026-09-09) — it belongs with
+// the BMR/TDEE math it feeds. GOAL_RATES (its data) stays here.
 
 // Used by the onboarding picker (label/sub/mult) and, via ACTIVITY_MULTS_BY_ID,
 // by ProfilePage. Was defined inside OnboardingWizard; ProfilePage carried its

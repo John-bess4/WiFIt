@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { ACTIVITY, ACTIVITY_MULTS_BY_ID, GOAL_RATES, calcCalFromRate, MEAL_SLOTS, SEED } from "../lib/constants.js";
+import { ACTIVITY, ACTIVITY_MULTS_BY_ID, GOAL_RATES, MEAL_SLOTS, SEED } from "../lib/constants.js";
+import { calcCalFromRate } from "../lib/bodyMetrics.js";
 
 // ProfilePage used to carry its own literal copy of the seven multipliers.
 // This is that literal, kept as the expected value: if the shared table ever

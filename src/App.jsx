@@ -8,12 +8,13 @@ import { weekDays, reduceWeekRows, todayPlanFor } from "./lib/weekSummary.js";
 
 import { THEMES, LOCKED_FAMILIES, DEFAULT_THEME_KEY, resolveTheme, resolveDark, ThemeCtx, useTheme } from "./lib/theme.js";
 import { localDate } from "./lib/dates.js";
-import { assignmentOrigin, computePRs, setsDataOf, setLabel, normalizeExercises, editSet, sessionFromRow, bestsFromView, prEventsBySession } from "./lib/workouts.js";
+import { withPlanExerciseIDs, assignmentOrigin, computePRs, setsDataOf, setLabel, normalizeExercises, editSet, sessionFromRow, bestsFromView, prEventsBySession } from "./lib/workouts.js";
 import { sb, setAuthLostHandler, resolveSession, hasDbId, withDbId, foodDeleteFilter } from "./lib/supabase.js";
 import { parseActions, LEGACY_PREFIXES, callCoach, applyActions as applyCoachActions, coachHeaders, coachErrorText } from "./lib/coach.js";
 import { searchFood, searchLocalFood, searchSupp, searchLocalSupp, searchStatus } from "./lib/search.js";
+import { bmr, tdee, calcCalFromRate, macrosForCal, computeGoals } from "./lib/bodyMetrics.js";
 import { calc, totals, per100From, customFoodFromRow, CF_UNIT_G, CF_AUTO_UNITS, cfGramsFor } from "./lib/nutrition.js";
-import { COLORS, SEED, SUPP_DB, SUPP_CATEGORY_DOTS, toSuppCategory, GOAL_OZ, CF_MAX_SERVING_G, MAX_FOOD_GRAMS, EXERCISE_LIBRARY, INITIAL_WORKOUTS, GOAL_RATES, calcCalFromRate, ACTIVITY, ACTIVITY_MULTS_BY_ID } from "./lib/constants.js";
+import { COLORS, SEED, SUPP_DB, SUPP_CATEGORY_DOTS, toSuppCategory, GOAL_OZ, CF_MAX_SERVING_G, MAX_FOOD_GRAMS, EXERCISE_LIBRARY, INITIAL_WORKOUTS, GOAL_RATES, ACTIVITY } from "./lib/constants.js";
 
 const GOALS={cal:2200,protein:140,carbs:180,fat:78,fiber:25,sodium:2300};
 
@@ -2242,7 +2243,7 @@ function ActiveWorkout({workout,onFinish,onClose,bests={},restore=null,snapKey=n
   // switch, a reload, or the app being evicted. Seeding from it is what makes
   // those recoverable instead of silent data loss.
   const [sets,setSets]=useState(()=>
-    restore?.sets||workout.exercises.map(ex=>({
+    restore?.sets?withPlanExerciseIDs(restore.sets):withPlanExerciseIDs(workout.exercises).map(ex=>({
       ...ex,
       sets:ex.sets.map(s=>({...s,done:false,actualReps:s.reps,actualWeight:s.weight}))
     }))
@@ -3891,22 +3892,14 @@ function OnboardingWizard({userId,onComplete}){
   const [saving,setSaving]=useState(false);
 
 
-  const calcGoals=()=>{
-    const w=parseFloat(weightLbs)||170;
-    const h=(parseInt(heightFt)||5)*12+(parseInt(heightIn)||9);
-    const a=parseInt(age)||25;
-    const wKg=w*0.453592;const hCm=h*2.54;
-    const bmr=gender==="male"
-      ?(13.397*wKg)+(4.799*hCm)-(5.677*a)+88.362
-      :(9.247*wKg)+(3.098*hCm)-(4.330*a)+447.593;
-    const mult=ACTIVITY.find(x=>x.id===activity)?.mult||1.55;
-    const tdee=Math.round(bmr*mult);
-    const cal=calcCalFromRate(tdee,goalRate);
-    const protein=Math.round(w*0.82);
-    const fat=Math.round(cal*0.25/9);
-    const carbs=Math.max(Math.round((cal-protein*4-fat*9)/4),50);
-    return{cal,protein,carbs,fat,tdee,bmr:Math.round(bmr)};
-  };
+  const calcGoals=()=>computeGoals({
+    gender,
+    weightLbs:parseFloat(weightLbs)||170,
+    heightIn:(parseInt(heightFt)||5)*12+(parseInt(heightIn)||9),
+    age:parseInt(age)||25,
+    activityId:activity,
+    rateId:goalRate,
+  });
 
   const g=calcGoals();
 
@@ -4496,7 +4489,6 @@ function ProfilePage({goals,setGoals,userName,setUserName,isDark,setIsDark,theme
     bmr:"BMR only",sedentary:"Little/no exercise",light:"1–3×/week",
     moderate:"3–5×/week",active:"Daily intense",very_active:"6–7×/week",extremely:"Physical job daily",
   };
-  const ACTIVITY_MULTS=ACTIVITY_MULTS_BY_ID; // one table for onboarding and profile — activityMults.test pins the seven values
 
   useEffect(()=>{
     const load=async()=>{
@@ -4523,15 +4515,11 @@ function ProfilePage({goals,setGoals,userName,setUserName,isDark,setIsDark,theme
 
   // Live TDEE calc
   const calcTDEE=()=>{
-    const w=parseFloat(weightLbs)||0;const h=(parseInt(heightFt)||5)*12+(parseInt(heightIn)||9);const a=parseInt(age)||25;
+    const w=parseFloat(weightLbs)||0;
     if(!w)return null;
-    const wKg=w*0.453592;const hCm=h*2.54;
-    const bmrVal=gender==="male"
-      ?(13.397*wKg)+(4.799*hCm)-(5.677*a)+88.362
-      :(9.247*wKg)+(3.098*hCm)-(4.330*a)+447.593;
-    const tdee=Math.round(bmrVal*(ACTIVITY_MULTS[activity]||1.55));
-    const cal=calcCalFromRate(tdee,goalRate);
-    return{bmr:Math.round(bmrVal),tdee,cal};
+    const stats={gender,weightLbs:w,heightIn:(parseInt(heightFt)||5)*12+(parseInt(heightIn)||9),age:parseInt(age)||25};
+    const t=tdee(stats,activity);
+    return{bmr:Math.round(bmr(stats)),tdee:t,cal:calcCalFromRate(t,goalRate)};
   };
   const tdeeData=calcTDEE();
 
@@ -4541,12 +4529,8 @@ function ProfilePage({goals,setGoals,userName,setUserName,isDark,setIsDark,theme
     setCalGoal(String(tdeeData.cal));
     const w=parseFloat(weightLbs)||0;
     if(w>0){
-      const protein=Math.round(w*0.82);
-      const fat=Math.round(tdeeData.cal*0.25/9);
-      const carbs=Math.max(Math.round((tdeeData.cal-protein*4-fat*9)/4),50);
-      setProtGoal(String(protein));
-      setCarbGoal(String(carbs));
-      setFatGoal(String(fat));
+      const {protein,carbs,fat}=macrosForCal(tdeeData.cal,w);
+      setProtGoal(String(protein));setCarbGoal(String(carbs));setFatGoal(String(fat));
     }
   },[weightLbs,heightFt,heightIn,age,gender,activity,goalRate]);
 
@@ -5530,7 +5514,7 @@ export default function App(){
             level:p.level||"Intermediate",
             estMin:p.est_min||45,
             scheduledDay:p.scheduled_day||null,
-            exercises:p.exercises||[],
+            exercises:withPlanExerciseIDs(p.exercises),
           })));
         }
         setLoadFailures(failed);
