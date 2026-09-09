@@ -20,7 +20,7 @@
               "type": "table",
               "schema": "trainerhq_private"
             },
-            "observed_at": "2026-09-08T22:30:46.235Z"
+            "observed_at": "2026-09-08T22:53:01.466Z"
           },
           {
             "detail": "Table \\`trainerhq_private.adherence_summaries\\` has RLS enabled, but no policies exist",
@@ -29,7 +29,7 @@
               "type": "table",
               "schema": "trainerhq_private"
             },
-            "observed_at": "2026-09-08T22:30:46.235Z"
+            "observed_at": "2026-09-08T22:53:01.466Z"
           },
           {
             "detail": "Table \\`trainerhq_private.audit_events\\` has RLS enabled, but no policies exist",
@@ -38,7 +38,7 @@
               "type": "table",
               "schema": "trainerhq_private"
             },
-            "observed_at": "2026-09-08T22:30:46.235Z"
+            "observed_at": "2026-09-08T22:53:01.466Z"
           },
           {
             "detail": "Table \\`trainerhq_private.conversation_relationships\\` has RLS enabled, but no policies exist",
@@ -47,7 +47,7 @@
               "type": "table",
               "schema": "trainerhq_private"
             },
-            "observed_at": "2026-09-08T22:30:46.235Z"
+            "observed_at": "2026-09-08T22:53:01.466Z"
           },
           {
             "detail": "Table \\`trainerhq_private.device_installations\\` has RLS enabled, but no policies exist",
@@ -56,7 +56,7 @@
               "type": "table",
               "schema": "trainerhq_private"
             },
-            "observed_at": "2026-09-08T22:30:46.235Z"
+            "observed_at": "2026-09-08T22:53:01.466Z"
           },
           {
             "detail": "Table \\`trainerhq_private.integration_control\\` has RLS enabled, but no policies exist",
@@ -65,7 +65,7 @@
               "type": "table",
               "schema": "trainerhq_private"
             },
-            "observed_at": "2026-09-08T22:30:46.235Z"
+            "observed_at": "2026-09-08T22:53:01.466Z"
           },
           {
             "detail": "Table \\`trainerhq_private.integration_diagnostics\\` has RLS enabled, but no policies exist",
@@ -74,7 +74,7 @@
               "type": "table",
               "schema": "trainerhq_private"
             },
-            "observed_at": "2026-09-08T22:30:46.235Z"
+            "observed_at": "2026-09-08T22:53:01.466Z"
           },
           {
             "detail": "Table \\`trainerhq_private.invitations\\` has RLS enabled, but no policies exist",
@@ -83,7 +83,7 @@
               "type": "table",
               "schema": "trainerhq_private"
             },
-            "observed_at": "2026-09-08T22:30:46.235Z"
+            "observed_at": "2026-09-08T22:53:01.466Z"
           },
           {
             "detail": "Table \\`trainerhq_private.notification_jobs\\` has RLS enabled, but no policies exist",
@@ -92,7 +92,7 @@
               "type": "table",
               "schema": "trainerhq_private"
             },
-            "observed_at": "2026-09-08T22:30:46.235Z"
+            "observed_at": "2026-09-08T22:53:01.466Z"
           },
           {
             "detail": "Table \\`trainerhq_private.operations\\` has RLS enabled, but no policies exist",
@@ -101,7 +101,7 @@
               "type": "table",
               "schema": "trainerhq_private"
             },
-            "observed_at": "2026-09-08T22:30:46.235Z"
+            "observed_at": "2026-09-08T22:53:01.466Z"
           },
           {
             "detail": "Table \\`trainerhq_private.platform_administrators\\` has RLS enabled, but no policies exist",
@@ -110,7 +110,7 @@
               "type": "table",
               "schema": "trainerhq_private"
             },
-            "observed_at": "2026-09-08T22:30:46.235Z"
+            "observed_at": "2026-09-08T22:53:01.466Z"
           },
           {
             "detail": "Table \\`trainerhq_private.push_applications\\` has RLS enabled, but no policies exist",
@@ -119,7 +119,7 @@
               "type": "table",
               "schema": "trainerhq_private"
             },
-            "observed_at": "2026-09-08T22:30:46.235Z"
+            "observed_at": "2026-09-08T22:53:01.466Z"
           },
           {
             "detail": "Table \\`trainerhq_private.trainer_reviews\\` has RLS enabled, but no policies exist",
@@ -128,7 +128,7 @@
               "type": "table",
               "schema": "trainerhq_private"
             },
-            "observed_at": "2026-09-08T22:30:46.235Z"
+            "observed_at": "2026-09-08T22:53:01.466Z"
           }
         ]
       },

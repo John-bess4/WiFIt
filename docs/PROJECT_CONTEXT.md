@@ -987,4 +987,4 @@ Applied trainerhq_pending_group_consent filters unaccepted group invitations thr
 
 The authenticated `/trainer-consent` React route uses the existing sb session and secured trainerhq-api Edge Function. Routes are lazy loaded; the main WiFit mount/Auth and food/supplement logging are preserved. Accepted assignment origins pass through workout plan loading and session writes via assignmentOrigin, which validates UUIDs. See TRAINERHQ_INTEGRATION.md and supabase/testing for current verification/provenance.
 
-Prepared trainerhq_conversation_display_names adds only display names to the current-member-authorized messages.threads projection. Other profile attributes remain private; native group UI does not show internal account IDs.
+Applied trainerhq_conversation_display_names adds only display names to the current-member-authorized messages.threads projection. Other profile attributes remain private; native group UI does not show internal account IDs.

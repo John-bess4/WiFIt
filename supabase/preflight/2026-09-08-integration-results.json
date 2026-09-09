@@ -13,7 +13,7 @@
     },
     "trainerhq_domain": {
       "result": "passed",
-      "assertions": 35
+      "assertions": 37
     },
     "trainerhq_insights": {
       "result": "passed",
@@ -77,7 +77,29 @@
       {
         "version": "20260908221003",
         "name": "trainerhq_pending_group_consent"
+      },
+      {
+        "version": "20260908224545",
+        "name": "trainerhq_conversation_display_names"
       }
     ]
+  },
+  "application_verification": {
+    "wifit_tests": 191,
+    "wifit_lint_errors": 0,
+    "wifit_existing_lint_warnings": 22,
+    "wifit_build": "passed",
+    "trainerhq_standard_unit_tests": 75,
+    "trainerhq_opt_in_test_skipped_by_default": true,
+    "trainerhq_ui_regression_cases_passed": 11,
+    "trainerhq_live_scheduling_and_messaging_ui_tests": "passed",
+    "trainerhq_native_assignment_to_wifit_plan_and_linked_completion": "verified",
+    "private_broadcast_and_storage_live_service_test": "passed",
+    "authorized_client_private_png_preview": "verified",
+    "public_key_only_private_object_http_status": 400,
+    "client_appointment_change_http_and_database_readback": "verified",
+    "original_food_supplement_workout_browser_writes_and_database_readback": "verified",
+    "production_portal_deployment": "pending explicit approval",
+    "apns_delivery": "preparation only; Apple configuration and protected sender pending"
   }
 }

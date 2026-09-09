@@ -41,3 +41,59 @@ it('keeps independent trainer scopes and clears protected state and drafts on au
   await act(async () => fake.handler());
   expect(container.textContent).not.toContain('First trainer'); expect(container.textContent).toContain('Sign in to WiFit'); expect(sessionStorage.length).toBe(0);
 });
+
+it('loads an invitation opened into an already signed-in portal tab', async () => {
+  await render();
+  await act(async () => { window.history.replaceState(null, '', '/trainer-consent#invite=new-token'); window.dispatchEvent(new HashChangeEvent('hashchange')); });
+  expect(container.textContent).toContain('Reviewed Trainer');
+  expect(fake.read).toHaveBeenCalledWith('invitation.review', { token: 'new-token' });
+});
+
+it('keeps active relationships visible when reopening a used invitation', async () => {
+  window.history.replaceState(null, '', '/trainer-consent#invite=used-token');
+  fake.read.mockImplementation(async action => {
+    if (action === 'invitation.review') throw new Error('Your session or permission is no longer available.');
+    if (action === 'relationships.list') return [{ id:'one',client_id:'client-one',trainer_name:'Authorized trainer',state:'active',scopes:['messaging'],version:2 }];
+    return action === 'tracking.get' ? {} : [];
+  });
+  await render();
+  expect(container.textContent).toContain('Authorized trainer');
+  expect(container.textContent).toContain('Relationship: active');
+  expect(container.textContent).toContain('already used');
+  expect(container.textContent).not.toContain('No accepted trainer relationships.');
+  expect(container.querySelectorAll('fieldset input:checked')).toHaveLength(1);
+});
+
+it('clears protected drafts after detecting reduced sharing permissions', async () => {
+  let scopes = ['messaging'];
+  fake.read.mockImplementation(async action => action === 'tracking.get' ? {} : action === 'relationships.list' ? [{ id:'one',client_id:'client-one',trainer_name:'Trainer',state:'active',scopes,version:1 }] : []);
+  await render();
+  sessionStorage.setItem('wifit-coach-draft:client-one:thread', 'unsent private draft');
+  scopes = [];
+  await click('Refresh');
+  expect(sessionStorage.getItem('wifit-coach-draft:client-one:thread')).toBeNull();
+  expect(container.querySelectorAll('fieldset input:checked')).toHaveLength(0);
+});
+
+it('collects appointment requests inline and retains the reason after a failed submission', async () => {
+  fake.read.mockImplementation(async action => action === 'tracking.get' ? {} : action === 'schedule.list' ? [{id:'appointment-one',start_at:'2026-09-09T12:00:00Z',location:'Studio',status:'scheduled'}] : []);
+  await render(); await click('Request a change');
+  expect(container.querySelector('form[aria-label="Appointment change request"]')).toBeTruthy();
+  const submit = [...container.querySelectorAll('button')].find(b => b.textContent === 'Send change request');
+  expect(submit.disabled).toBe(true);
+  await click('Cancel request'); expect(fake.api).not.toHaveBeenCalled();
+  await click('Request a change');
+  const field = container.querySelector('form[aria-label="Appointment change request"] textarea');
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(field, 'Please move the development test appointment.');
+    field.dispatchEvent(new Event('input', {bubbles:true}));
+  });
+  fake.api.mockRejectedValueOnce(new Error('Offline'));
+  await click('Send change request');
+  expect(container.textContent).toContain('Offline');
+  expect(field.value).toBe('Please move the development test appointment.');
+  await click('Retry submission');
+  expect(fake.api.mock.calls[1][0]).toEqual(fake.api.mock.calls[0][0]);
+  expect(fake.api.mock.calls[1][0]).toMatchObject({action:'schedule.request_change',payload:{id:'appointment-one',reason:'Please move the development test appointment.'}});
+  expect(container.querySelector('form[aria-label="Appointment change request"]')).toBeNull();
+});

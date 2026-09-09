@@ -48,6 +48,7 @@ function CoachingPanel({ relationships, busy, run, refreshID }) {
   const [threads, setThreads] = useState([]); const [threadID, setThreadID] = useState('');
   const [messages, setMessages] = useState([]); const [draft, setDraft] = useState(''); const [error, setError] = useState('');
   const [groupTitle, setGroupTitle] = useState(''); const [groupMembers, setGroupMembers] = useState([]);
+  const [changeAppointment, setChangeAppointment] = useState(''); const [changeReason, setChangeReason] = useState('');
   const currentUser = sb.getUser()?.id;
   const live = useRef(true);
   useEffect(() => { live.current = true; return () => { live.current = false; }; }, []);
@@ -101,7 +102,11 @@ function CoachingPanel({ relationships, busy, run, refreshID }) {
     {!appointments.length && <p>No upcoming appointments.</p>}
     {appointments.sort((a,b) => a.start_at.localeCompare(b.start_at)).map(a => <div className="consent-row" key={a.id}>
       <strong>{new Date(a.start_at).toLocaleString()}</strong><span>{a.location} · {a.status}</span>
-      {['scheduled','confirmed','rescheduled'].includes(a.status) && <button className="secondary" disabled={busy} onClick={() => { const reason = window.prompt('What needs to change about this appointment?'); if (reason?.trim()) run('schedule.request_change', { id: a.id, reason: reason.trim() }); }}>Request a change</button>}
+      {['scheduled','confirmed','rescheduled'].includes(a.status) && <button className="secondary" disabled={busy} onClick={() => { setChangeAppointment(a.id); setChangeReason(''); }}>Request a change</button>}
+      {changeAppointment === a.id && <form aria-label="Appointment change request" onSubmit={e => { e.preventDefault(); if (!changeReason.trim()) return; run('schedule.request_change', { id: a.id, reason: changeReason.trim() }, () => { setChangeAppointment(''); setChangeReason(''); }); }}>
+        <label>What needs to change?<textarea autoFocus value={changeReason} maxLength={2000} onChange={e => setChangeReason(e.target.value)} /></label>
+        <div className="consent-actions"><button disabled={busy || !changeReason.trim()}>Send change request</button><button type="button" className="secondary" disabled={busy} onClick={() => { setChangeAppointment(''); setChangeReason(''); }}>Cancel request</button></div>
+      </form>}
     </div>)}
     <h3>Messages</h3><div className="consent-actions">
       {relationships.filter(r => r.state === 'active' && r.scopes.includes('messaging')).map(r => <button className="secondary" key={r.id} disabled={busy} onClick={() => openConversation(r.id)}>Message {r.trainer_name}</button>)}
@@ -128,24 +133,49 @@ export default function TrainerConsent() {
   const [relationships, setRelationships] = useState([]); const [invitation, setInvitation] = useState(null); const [scopes, setScopes] = useState([]);
   const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [notice, setNotice] = useState(''); const [refreshID, setRefreshID] = useState(0);
   const [tracking, setTracking] = useState(null); const [nutritionEnabled, setNutritionEnabled] = useState(false);
-  const pending = useRef(null); const mounted = useRef(true);
+  const pending = useRef(null); const mounted = useRef(true); const loadGeneration = useRef(0);
+  const [invitationError, setInvitationError] = useState('');
+  const previousAccess = useRef([]);
+  const accessKey = relationships.map(r => [r.id, r.state, ...r.scopes.slice().sort()].join(':')).sort().join('|');
   const [token, setToken] = useState(() => new URLSearchParams(window.location.hash.slice(1)).get('invite') || '');
-  const clearProtected = useCallback(() => { setRelationships([]); setInvitation(null); setTracking(null); setUser(null); pending.current = null; for (const key of Object.keys(sessionStorage)) if (key.startsWith('wifit-coach-draft:')) sessionStorage.removeItem(key); }, []);
+  useEffect(() => {
+    const changed = () => { setToken(new URLSearchParams(window.location.hash.slice(1)).get('invite') || ''); setInvitation(null); setScopes([]); setInvitationError(''); loadGeneration.current++; };
+    changed(); window.addEventListener('hashchange', changed);
+    return () => window.removeEventListener('hashchange', changed);
+  }, []);
+  const clearProtected = useCallback(() => { loadGeneration.current++; previousAccess.current = []; setInvitationError(''); setRelationships([]); setInvitation(null); setTracking(null); setUser(null); pending.current = null; for (const key of Object.keys(sessionStorage)) if (key.startsWith('wifit-coach-draft:')) sessionStorage.removeItem(key); }, []);
   useEffect(() => {
     mounted.current = true;
     setAuthLostHandler(() => { clearProtected(); setError('Your session expired. Sign in again.'); });
     resolveSession().then(result => { if (mounted.current) { setUser(result.status === 'logged-out' ? null : sb.getUser()); setReady(true); } }).catch(() => { if (mounted.current) { setReady(true); setError('Your session could not be restored. Sign in again.'); } });
-    return () => { mounted.current = false; setAuthLostHandler(null); };
+    return () => { mounted.current = false; loadGeneration.current++; setAuthLostHandler(null); };
   }, [clearProtected]);
   const load = useCallback(async () => {
     if (!user) return;
+    const generation = ++loadGeneration.current;
+    const current = () => mounted.current && generation === loadGeneration.current && sb.getUser()?.id === user.id;
     try {
       const rows = await trainerRead('relationships.list');
       const prefs = await trainerRead('tracking.get');
-      if (!mounted.current || sb.getUser()?.id !== user.id) return;
-      setRelationships(rows.filter(r => r.client_id === user.id)); setTracking(prefs); setNutritionEnabled(prefs.nutrition_target?.enabled || false);
-      if (token) { const invite = await trainerRead('invitation.review', { token }); if (mounted.current && sb.getUser()?.id === user.id) setInvitation(invite); }
-    } catch (e) { if (mounted.current && sb.getUser()?.id === user.id) { setRelationships([]); setInvitation(null); setTracking(null); setError(e.message); } }
+      if (!current()) return;
+      const clientRows = rows.filter(r => r.client_id === user.id);
+      const reduced = previousAccess.current.some(old => old.state === 'active' && (() => {
+        const next = clientRows.find(r => r.id === old.id);
+        return !next || next.state !== 'active' || old.scopes.some(scope => !next.scopes.includes(scope));
+      })());
+      if (reduced) for (const key of Object.keys(sessionStorage)) if (key.startsWith('wifit-coach-draft:' + user.id + ':')) sessionStorage.removeItem(key);
+      previousAccess.current = clientRows;
+      setRelationships(clientRows); setTracking(prefs); setNutritionEnabled(prefs.nutrition_target?.enabled || false);
+    } catch (e) { if (current()) { setRelationships([]); setInvitation(null); setTracking(null); setError(e.message); } return; }
+    if (token) {
+      try {
+        const invite = await trainerRead('invitation.review', { token });
+        if (current()) { setInvitation(invite); setInvitationError(''); }
+      } catch {
+        // An expired or already-used link must not hide independently authorized relationships.
+        if (current()) { setInvitation(null); setInvitationError('This invitation is unavailable, expired or already used. Your existing trainer relationships are shown below.'); }
+      }
+    }
   }, [user, token]);
   useEffect(() => { load(); }, [load, refreshID]);
   useEffect(() => {
@@ -173,6 +203,7 @@ export default function TrainerConsent() {
       <label>Password<input type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required /></label><button disabled={busy}>Sign in</button><p>New to WiFit? <a href="/">Create your account in WiFit</a>, then return to this invitation.</p>
     </form> : <>
       <div className="consent-actions"><span>{user.email}</span><button className="secondary" disabled={busy} onClick={() => { setError(''); setRefreshID(n => n + 1); }}>Refresh</button><button className="secondary" disabled={busy} onClick={async () => { setBusy(true); clearProtected(); try { await sb.signOut(); } catch { sb._session = null; localStorage.removeItem('sb_session'); setNotice('Signed out locally. Remote sign-out could not be confirmed.'); } finally { setBusy(false); } }}>Sign out</button></div>
+      {invitationError && <p role="status">{invitationError}</p>}
       {invitation && <section className="consent-card"><h2>Trainer invitation</h2><h3>{invitation.trainer.display_name}</h3><p>{invitation.trainer.credentials_summary || 'No credentials summary supplied.'}</p><p>Owner-approved trainer. Confirm this is the person you intend to work with.</p>
         <ScopePicker value={scopes} onChange={setScopes} disabled={busy} /><div className="consent-actions"><button disabled={busy} onClick={() => respond('accept')}>Accept and activate selected access</button><button className="secondary" disabled={busy} onClick={() => respond('decline')}>Decline invitation</button></div>
       </section>}
@@ -183,7 +214,7 @@ export default function TrainerConsent() {
         <label className="consent-check"><input type="checkbox" checked={nutritionEnabled} onChange={e => setNutritionEnabled(e.target.checked)} disabled={busy || !tracking.wifit_targets} />Use these WiFit nutrition targets for daily adherence tracking</label>
         <button disabled={busy || !tracking.wifit_targets} onClick={() => run('tracking.configure', { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, cutoff_minute: 1440, nutrition_enabled: nutritionEnabled, weekdays: [1,2,3,4,5,6,7] })}>Confirm tracking settings</button>
       </section>}
-      <CoachingPanel relationships={relationships} busy={busy} run={run} refreshID={refreshID} />
+      <CoachingPanel key={accessKey} relationships={relationships} busy={busy} run={run} refreshID={refreshID} />
     </>}
     <div className="consent-feedback" aria-live="polite">{notice && <p role="status">{notice}</p>}{error && <p role="alert">{error}</p>}{error && pending.current && <button disabled={busy} onClick={() => runCommand(pending.current.command, pending.current.success)}>Retry submission</button>}</div>
     <footer><a href="/">Return to WiFit</a><p>Fitness records stay in WiFit. Revoking a trainer stops their future access without deleting your records or your other trainer relationships.</p></footer>
