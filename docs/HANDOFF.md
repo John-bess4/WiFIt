@@ -227,6 +227,14 @@ watch scale), screen layouts, navigation decided deliberately for iOS rather
 than inherited from the web tab bar, and the states that actually happen:
 empty, loading, error, mid-workout.
 
+DESIGN-NATIVELY BUCKET (with Settings and Profile — NOT redesigned in React
+first): the client-facing **trainer screens** — assignments, messages,
+appointments. They render only when a trainer agreement exists, so the DEFAULT
+state for most users is empty, and empty must read as "no trainer connected
+yet", never as broken or loading-forever. The consent flow itself is web today
+(`/trainer-consent`); the in-app screens are new native surfaces. Contract to
+build against: `docs/TRAINERHQ_CONTRACT.md`.
+
 THE THING I CARE MOST ABOUT: every feature that works today must have a named
 home in the new design BEFORE any SwiftUI is written. If something has no home,
 I want that surfaced as a decision, not discovered as a gap after the rewrite.

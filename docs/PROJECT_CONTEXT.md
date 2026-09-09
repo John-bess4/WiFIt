@@ -85,6 +85,16 @@ splitting them would be wasted work (`DECISIONS.md` §"Extract the port layer").
 | `lib/theme.js` | not for the port — the theme registry and context; here because it was the cycle edge | — |
 | `lib/weekSummary.js` | `reduceWeekRows` (provisional — read `daily_summary`), `summarizeWeek`, `streakFrom` | — |
 
+**Two iOS apps, ONE data layer (Gate 5).** WiFit-iOS and TrainerHQ-iOS both read
+this Supabase project, so the data layer must be a **shared Swift package**, not
+reimplemented per app. It carries: the `sb`-equivalent REST client, the
+`selectAuth` `ok`/`authError` contract and the per-read treatment ladder, the
+per-table `on_conflict` targets, `Decimal` macro arithmetic, and the view reads
+(`exercise_bests`, `exercise_pr_events`, `daily_summary`, `weight_monthly`). Two
+implementations of these WILL diverge — the same argument that moved derived
+values into Postgres. The `src/lib/` port layer is the JS source of truth to
+translate once, into that package.
+
 **Next extraction candidate — BMR/TDEE (highest value remaining).** The
 Mifflin/Harris-Benedict math still lives inside `OnboardingWizard.calcGoals`
 and `ProfilePage.calcTDEE` (plus `calcCalFromRate`, already in constants).
@@ -998,6 +1008,27 @@ Anthropic response formats are unchanged and out of scope for security work:
     range history comes from `daily_summary` and all-time from `weight_monthly`,
     neither bounded by a row count. The class: a `limit` is a correctness
     ceiling on a delay — the same shape as the 20-session `prHistory` window.
+
+30. **Temporary `coach_usage` compatibility view (2026-09-09).** The rate-limit
+    table was renamed `coach_usage` → `ai_coach_usage`; a security_invoker view
+    `coach_usage` still points at it so the currently-deployed `api/coach.js`
+    keeps rate-limiting until it redeploys with the new name. **Drop the view
+    once that deploy lands:** `drop view public.coach_usage;`. Until then two
+    names resolve to one table.
+
+31. **REQUIRED PRE-LAUNCH (iOS) — App Store privacy label must disclose the
+    trainer data-sharing.** WiFit shares health/fitness data with a third party
+    (a trainer, via TrainerHQ) **on the user's consent**. Apple's privacy
+    "nutrition label" and the privacy manifest must declare that sharing and its
+    categories (the nine consent scopes — see `TRAINERHQ_CONTRACT.md`). Shipping
+    without it is an App Review rejection and a compliance problem.
+
+32. **REQUIRED PRE-LAUNCH — account deletion must handle an active trainer
+    relationship.** Deleting a WiFit account while a trainer agreement exists
+    must do something defined — revoke the grant and notify the trainer, or
+    block deletion until the relationship ends — not orphan the trainer's access
+    or silently drop it. Account deletion is itself an App Review requirement, so
+    "undefined behaviour with a trainer attached" blocks launch.
 
 ---
 
