@@ -169,44 +169,40 @@ export function nameMatchesQuery(name,query){
   return tokens.some(t=>n.includes(t));
 }
 async function searchOFF(query){
-  let anyOk=false;
-  // v2 only. The legacy cgi/search.pl endpoint was tried first for months and
-  // failed CORS on every query — a doomed request and a console error before
-  // each real search, which would mask a genuine failure. Dropped 2026-09-08.
-  const urls=[
-    "https://world.openfoodfacts.net/api/v2/search?q="+encodeURIComponent(query)+"&page_size=8&fields=product_name,nutriments,brands,serving_quantity",
-  ];
-  for(const url of urls){
-    try{
-      const res=await fetch(url,{mode:"cors",headers:{Accept:"application/json"}});
-      if(!res.ok)continue;
-      const data=await res.json();
-      const products=data.products||data.foods||[];
-      const results=products
-        .filter(p=>p.product_name&&p.nutriments&&(p.nutriments["energy-kcal_100g"]>0||p.nutriments["energy_100g"]>0))
-        .filter(p=>nameMatchesQuery(p.product_name,query))
-        .slice(0,6)
-        .map(p=>({
-          name:p.product_name.trim(),
-          brand:(p.brands||"").split(",")[0].trim(),
-          servingG:parseFloat(p.serving_quantity)||null,
-          per100:{
-            cal:Math.round(p.nutriments["energy-kcal_100g"]||p.nutriments["energy_100g"]/4.184||0),
-            protein:Math.round((p.nutriments["proteins_100g"]||0)*10)/10,
-            carbs:Math.round((p.nutriments["carbohydrates_100g"]||0)*10)/10,
-            fat:Math.round((p.nutriments["fat_100g"]||0)*10)/10,
-            fiber:Math.round((p.nutriments["fiber_100g"]||0)*10)/10,
-            sugar:Math.round((p.nutriments["sugars_100g"]||0)*10)/10,
-            sodium:Math.round((p.nutriments["sodium_100g"]||0)*1000),
-          }
-        }));
-      if(results.length>0)return {ok:true,results};
-      anyOk=true; // answered, just no matches
-    }catch(e){
-      console.warn("OFF search failed:",e.message);
-    }
+  // Free-text OFF search is CORS-blocked in the browser, so this goes through
+  // api/off.js — our JWT-gated edge proxy over search-a-licious — which
+  // normalises to the products[] shape mapped below. A non-2xx or a network
+  // failure is a FAILED search (ok:false), NEVER laundered into "no results":
+  // searchStatus's failed-vs-none distinction depends on it. Barcode lookup is
+  // a separate path (api/v0/product, direct) and is unchanged.
+  try{
+    const res=await fetch("/api/off?q="+encodeURIComponent(query),{headers:coachHeaders(),cache:"no-store"});
+    if(!res.ok)return {ok:false,results:[]};
+    const data=await res.json();
+    const products=data.products||[];
+    const results=products
+      .filter(p=>p.product_name&&p.nutriments&&(p.nutriments["energy-kcal_100g"]>0||p.nutriments["energy_100g"]>0))
+      .filter(p=>nameMatchesQuery(p.product_name,query))
+      .slice(0,6)
+      .map(p=>({
+        name:p.product_name.trim(),
+        brand:(p.brands||"").split(",")[0].trim(),
+        servingG:parseFloat(p.serving_quantity)||null,
+        per100:{
+          cal:Math.round(p.nutriments["energy-kcal_100g"]||p.nutriments["energy_100g"]/4.184||0),
+          protein:Math.round((p.nutriments["proteins_100g"]||0)*10)/10,
+          carbs:Math.round((p.nutriments["carbohydrates_100g"]||0)*10)/10,
+          fat:Math.round((p.nutriments["fat_100g"]||0)*10)/10,
+          fiber:Math.round((p.nutriments["fiber_100g"]||0)*10)/10,
+          sugar:Math.round((p.nutriments["sugars_100g"]||0)*10)/10,
+          sodium:Math.round((p.nutriments["sodium_100g"]||0)*1000),
+        }
+      }));
+    return {ok:true,results};
+  }catch(e){
+    console.warn("OFF search failed:",e.message);
+    return {ok:false,results:[]};
   }
-  return {ok:anyOk,results:[]};
 }
 
 // Deduplicate by normalised name prefix
