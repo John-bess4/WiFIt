@@ -71,6 +71,13 @@ Postgres `round()` = round-half-up) for `calc`, `totals`, `per100From`, and
 anything summing macros. `sugar` null = unknown: counts as 0 in a total, stored
 and displayed as null/"—", never 0.
 
+**Test it day one, don't trust the prose:** `docs/port/rounding-fixture.json` is
+~30 `(per100, grams) → expected` cases with `expected` computed in Postgres
+`numeric` (not JS), including the exact-.5 divergences (a `Double` gets 10 of 29
+wrong). The Swift macro function must reproduce every `expected` exactly, using
+`Decimal` with **round-half-away-from-zero** (Postgres `round()`, not banker's).
+`roundingFixture.test.js` keeps the fixture discriminating.
+
 ## 5. The four view reads and what each replaces  (defs in SCHEMA.md)
 
 Never recompute these on the client; read the view (RLS-scoped, security_invoker):

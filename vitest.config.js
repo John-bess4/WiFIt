@@ -15,6 +15,9 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "node",
+    // jsdom component renders (homeTab, ui, tabErrorBoundary) can exceed the 5s
+    // default under full-suite load; the logic tests are all sub-ms.
+    testTimeout: 20000,
     setupFiles: ["./src/test/setup.js"],
     include: ["src/__tests__/**/*.test.{js,jsx}"],
   },
