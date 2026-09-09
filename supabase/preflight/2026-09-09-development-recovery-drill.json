@@ -1,0 +1,63 @@
+{
+  "scope": "Original WiFit public development records only",
+  "source_sha256": "14b0ddd4d9254b312343819e3573e98bef4a86df91617966984ce0a485be6dc1",
+  "source_exported_at": "2026-09-08T16:56:18.152Z",
+  "checked_at": "2026-09-09T06:17:05.935Z",
+  "database": "PGlite 0.5.8, PostgreSQL 18.3, in memory",
+  "restored_rows": {
+    "profiles": 3,
+    "custom_foods": 1,
+    "food_log": 3,
+    "workout_plans": 3,
+    "workouts": 0,
+    "supplement_stack": 3,
+    "supplement_log": 3,
+    "body_weight_log": 2,
+    "water_log": 4,
+    "coach_usage": 29,
+    "workout_sessions": 0
+  },
+  "suites": {
+    "wifit_logging_baseline": {
+      "result": "passed",
+      "assertions": 22
+    },
+    "trainerhq_identity": {
+      "result": "passed",
+      "assertions": 25
+    },
+    "trainerhq_domain": {
+      "result": "passed",
+      "assertions": 37
+    },
+    "trainerhq_insights": {
+      "result": "passed",
+      "assertions": 22
+    },
+    "trainerhq_timezone_targets": {
+      "result": "passed",
+      "assertions": 6
+    }
+  },
+  "limitations": [
+    "Auth users are FK-only local stubs; real Auth/session recovery is NOT verified.",
+    "Storage object bytes and post-export TrainerHQ records are NOT present in this export.",
+    "This drill does NOT satisfy the complete backup/recovery release gate."
+  ],
+  "migrations": [
+    "20260908165845_trainerhq_identity_and_consent.sql",
+    "20260908170956_trainerhq_assignments_scheduling_messaging.sql",
+    "20260908185559_trainerhq_adherence_realtime_push.sql",
+    "20260908200706_trainerhq_roster_projection_contract.sql",
+    "20260908220640_trainerhq_pending_group_consent.sql",
+    "20260908224233_trainerhq_conversation_display_names.sql",
+    "20260909061603_trainerhq_client_timezone_targets.sql"
+  ],
+  "targeted_timezone_rollback_and_reapplication": "passed",
+  "compatibility_rollback": {
+    "result": "passed",
+    "logging_assertions": 22,
+    "original_records_and_policies": "unchanged"
+  },
+  "result": "passed"
+}

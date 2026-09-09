@@ -1,6 +1,6 @@
 # TrainerHQ / WiFit shared Supabase integration
 
-Updated 2026-09-08. **Six additive migrations and the authenticated Edge gateway are live on the existing WiFit Free project.** No upgrade, second database, destructive migration or deletion of existing records was performed. Native and consent-portal integration is implemented; real trainer onboarding and client consent are verified; live assignment, scheduling, messaging, private media and Broadcast checks are verified; release requirements are described below.
+Updated 2026-09-09 UTC. **Owner hold: do not update WiFit remote `main` or deploy/promote to production. TrainerHQ remains an independent iOS application/project.** **Six additive migrations and the authenticated Edge gateway are live on the existing WiFit Free project.** No upgrade, second database, destructive migration or deletion of existing records was performed. Native and consent-portal integration is implemented; real trainer onboarding and client consent are verified; live assignment, scheduling, messaging, private media and Broadcast checks are verified; release requirements are described below.
 
 ## Ownership and compatibility
 
@@ -96,3 +96,37 @@ The consent portal and WiFit assignment-origin support are committed locally but
 TrainerHQ now has its own local Git history; no remote has been invented. Opt-in `LiveIntegrationUITests` require `TRAINERHQ_LIVE_CHECKS=disposable-test-data`, a verified expected trainer email and client name. They never enter credentials, approve a trainer, change sharing grants or delete records. Run only against the designated development test accounts, with Simulator parallel cloning disabled so the explicitly signed-in installation is used.
 
 `LiveSupabaseIntegrationTests` additionally requires `TRAINERHQ_TEST_CLIENT_ID`. Its private media/Broadcast check restores the normal app Keychain session and refuses unexpected accounts before writing; it never prints or exports credentials. Both live suites are disabled by default. Ordinary unit tests do not create remote records.
+
+## Owner release gates (2026-09-09 UTC)
+
+Before any WiFit production deployment, complete the full native UI suite,
+physical-device testing, full backup/recovery verification, hosted consent
+preview verification and final WiFit Auth/logging/workout/nutrition/Storage/RLS
+regression checks. Another explicit owner approval is required even after all
+checks pass. No main push, merge, production alias change or production deployment
+is authorized. TrainerHQ retains its own Git repository, SwiftUI UI, app
+architecture, `com.trainerhq.trainerhq` local identifier and separate release cycle.
+
+The current production deployment is `dpl_7c8kcAZY3bvaVtUtjvusp2hKa3wm` at remote
+main `f2849f0a09f03acc9b2050285c1bea3a35d911eb`; no production update occurred.
+The local base also includes pre-existing unpublished WiFit commits `5cd8353`
+and `3415ab1`, preserved from before the TrainerHQ work. Review them separately
+when choosing a future release candidate.
+
+The attempted separate `codex/trainerhq-consent-preview` push was rejected by
+automatic approval review because this GitHub repository is public and publishing
+the new integration code needs explicit approval. No branch was pushed; no
+alternate publication was attempted. Hosted preview remains unverified.
+
+An in-memory recovery drill restored 51 original public development records,
+replayed the seven candidate migrations, preserved original owner policies and
+passed 112 SQL assertions plus the 22-check logging suite after the compatibility
+rollback. The target-date rollback/reapplication also passed. This **does not**
+verify real Auth, Storage files or a full current-project restore. See
+`supabase/preflight/2026-09-09-development-recovery-drill.json` and
+`supabase/testing/README.md`. The device Release target compiles, but no physical
+iPhone is connected and no Apple Developer Team is configured.
+
+The seventh migration is prepared and isolated-tested: it corrects only two
+TrainerHQ nutrition-target date lookups to use the client's configured timezone.
+Original WiFit tables, policies, auth and logging functions are unchanged.

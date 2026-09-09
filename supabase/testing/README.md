@@ -31,3 +31,24 @@ If application fails, stop and report the exact SQL failure. Run the documented
 non-destructive `../rollbacks/trainerhq_disable.sql` if a compatibility shutdown
 is needed. It blocks TrainerHQ authorization while retaining WiFit logging and
 all data. Never compensate by dropping existing objects or deleting user data.
+
+## Private development-export recovery drill
+
+Run `node recovery-drill.mjs /absolute/path/to/private-development-export.json`
+from this directory. Keep the export outside Git. The script reconstructs the
+original WiFit schema in memory, restores original public records, compares
+PostgreSQL-typed values, replays the canonical additive migrations, verifies
+original policies, runs all authorization suites, and tests targeted and general
+compatibility rollbacks. It rejects unmapped export columns and logs only counts,
+checksums, fixed test labels and statuses. Both harnesses explicitly use UTC,
+matching Supabase rather than PGlite's host-derived timezone.
+
+The checked development export restored 51 records across 11 original tables.
+Original records and owner policies survived both migration replay and rollback.
+The report contains no record values. This is **not complete database recovery**:
+Auth users are local FK stubs, Storage files and later TrainerHQ data are absent,
+and managed Auth/Realtime/Storage services are not restored by PGlite. Before
+production, perform a full protected database/Auth export plus independent
+Storage-byte backup and a restore drill in an isolated Supabase-compatible
+runtime. Do not restore over the shared WiFit project. The current development
+waiver remains in effect; no plan upgrade is required for this local drill.

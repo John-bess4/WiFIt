@@ -988,3 +988,19 @@ Applied trainerhq_pending_group_consent filters unaccepted group invitations thr
 The authenticated `/trainer-consent` React route uses the existing sb session and secured trainerhq-api Edge Function. Routes are lazy loaded; the main WiFit mount/Auth and food/supplement logging are preserved. Accepted assignment origins pass through workout plan loading and session writes via assignmentOrigin, which validates UUIDs. See TRAINERHQ_INTEGRATION.md and supabase/testing for current verification/provenance.
 
 Applied trainerhq_conversation_display_names adds only display names to the current-member-authorized messages.threads projection. Other profile attributes remain private; native group UI does not show internal account IDs.
+
+
+### Release hold and target-date correction (2026-09-09 UTC)
+
+The owner explicitly prohibits updating remote `main` or deploying WiFit
+production until full UI/device/recovery/preview/regression gates pass and a new
+explicit approval is given. TrainerHQ remains a separate iOS project, UI,
+identifier, architecture and release lifecycle; only backend contracts are
+shared. See `TRAINERHQ_INTEGRATION.md`.
+
+Prepared `trainerhq_client_timezone_targets` changes two date comparisons in the
+new private TrainerHQ command function. `tracking.get` and `client.targets` select
+the current nutrition target using the client's configured timezone instead of
+the database date. Existing WiFit tables, RLS, logging and Auth remain unchanged.
+The exact prior function/policies, six timezone authorization checks, targeted
+rollback and in-memory recovery evidence are version controlled.

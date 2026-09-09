@@ -1,0 +1,152 @@
+{
+  "captured_at": "2026-09-09 06:18:22.02567+00",
+  "timezone": "UTC",
+  "definition": "CREATE OR REPLACE FUNCTION trainerhq_private.later_command(actor uuid, action text, payload jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare result jsonb; rel public.trainer_client_relationships; target public.profiles; prefs public.client_tracking_preferences;\n starts date; ends date; d date; sid uuid;\nbegin\n case action\n when 'client.targets' then\n  select * into rel from public.trainer_client_relationships where id=(payload->>'relationship_id')::uuid;\n  if not trainerhq_private.allowed(actor,rel.id,'nutrition') then raise insufficient_privilege;end if;\n  result:=jsonb_build_object('wifit_targets',(select jsonb_build_object('calories',p.cal_goal,'protein',p.protein_goal,'carbs',p.carbs_goal,'fat',p.fat_goal) from public.profiles p where p.id=rel.client_id),\n   'nutrition_target',(select to_jsonb(t) from public.client_nutrition_targets t where user_id=rel.client_id and effective_from<=current_date order by effective_from desc limit 1));\n when 'tracking.get' then\n  result:=jsonb_build_object('preferences',(select to_jsonb(p) from public.client_tracking_preferences p where user_id=actor),\n   'nutrition_target',(select to_jsonb(t) from public.client_nutrition_targets t where user_id=actor and effective_from<=current_date order by effective_from desc limit 1),\n   'wifit_targets',(select jsonb_build_object('calories',p.cal_goal,'protein',p.protein_goal,'carbs',p.carbs_goal,'fat',p.fat_goal) from public.profiles p where p.id=actor));\n when 'tracking.configure' then\n  if not exists(select 1 from pg_timezone_names where name=payload->>'timezone') then raise invalid_parameter_value;end if;\n  insert into public.client_tracking_preferences(user_id,timezone,cutoff_minute) values(actor,payload->>'timezone',coalesce((payload->>'cutoff_minute')::int,1440))\n   on conflict(user_id) do update set timezone=excluded.timezone,cutoff_minute=excluded.cutoff_minute,updated_at=now(),version=client_tracking_preferences.version+1;\n  if payload ? 'nutrition_enabled' then\n   select * into target from public.profiles where id=actor;\n   if not found then raise invalid_parameter_value;end if;\n   d:=(now() at time zone (payload->>'timezone'))::date;\n   -- Same-day corrections are explicit; prior dates/targets are immutable.\n   insert into public.client_nutrition_targets(user_id,effective_from,enabled,calories,protein,carbs,fat,weekdays)\n    values(actor,d,(payload->>'nutrition_enabled')::boolean,target.cal_goal,target.protein_goal,target.carbs_goal,target.fat_goal,\n     case when payload ? 'weekdays' then array(select jsonb_array_elements_text(payload->'weekdays')::int) else array[1,2,3,4,5,6,7] end)\n    on conflict(user_id,effective_from) do update set enabled=excluded.enabled,calories=excluded.calories,protein=excluded.protein,carbs=excluded.carbs,fat=excluded.fat,weekdays=excluded.weekdays;\n  end if;\n  result:='{\"saved\":true}';\n when 'adherence.report' then\n  starts:=(payload->>'from')::date;ends:=(payload->>'until')::date;\n  if starts is null or ends is null or ends<=starts or ends-starts>93 then raise invalid_parameter_value;end if;\n  result:='[]';\n  for d in select generate_series(starts,ends-1,interval '1 day')::date loop\n   result:=result||jsonb_build_array(trainerhq_private.adherence_day(actor,(payload->>'relationship_id')::uuid,d));end loop;\n when 'realtime.topics' then\n  select coalesce(jsonb_agg(topic),'[]') into result from (\n   select 'thq:account:'||actor::text as topic\n   union all select 'thq:relationship:'||r.id::text||':'||r.channel_epoch::text from public.trainer_client_relationships r\n    where r.state='active' and actor in(r.client_id,r.trainer_id) and trainerhq_private.approved(r.trainer_id)\n     and exists(select 1 from public.trainer_client_permissions p where p.relationship_id=r.id and p.granted)\n   union all select 'thq:conversation:'||c.id::text||':'||c.channel_epoch::text from public.trainer_conversations c where trainerhq_private.message_access(actor,c.id))q;\n when 'notifications.preferences' then\n  select coalesce((select to_jsonb(p) from public.trainer_notification_preferences p where user_id=actor),'{\"messages\":true,\"schedule\":true,\"assignments\":true}') into result;\n when 'notifications.configure' then\n  insert into public.trainer_notification_preferences(user_id,messages,schedule,assignments)\n   values(actor,(payload->>'messages')::boolean,(payload->>'schedule')::boolean,(payload->>'assignments')::boolean)\n   on conflict(user_id) do update set messages=excluded.messages,schedule=excluded.schedule,assignments=excluded.assignments,updated_at=now();result:='{\"saved\":true}';\n when 'device.register' then\n  if not exists(select 1 from trainerhq_private.push_applications where app=payload->>'app' and bundle_id=payload->>'bundle_id') then\n   raise exception 'Push application is not configured' using errcode='22023';end if;\n  -- Session ID is supplied exclusively by the secured gateway, never from the app.\n  sid:=(payload->>'verified_session_id')::uuid;\n  if not trainerhq_private.valid_session(actor,sid) then raise insufficient_privilege;end if;\n  insert into trainerhq_private.device_installations(installation_id,app,user_id,session_id,environment,token)\n   values((payload->>'installation_id')::uuid,payload->>'app',actor,sid,payload->>'environment',lower(payload->>'token'))\n   on conflict(installation_id,app) do update set user_id=excluded.user_id,session_id=excluded.session_id,environment=excluded.environment,token=excluded.token,updated_at=now(),invalidated_at=null;\n  result:='{\"registered\":true,\"delivery_enabled\":false}';\n when 'device.unregister' then\n  update trainerhq_private.device_installations set invalidated_at=now() where installation_id=(payload->>'installation_id')::uuid and app=payload->>'app' and user_id=actor;\n  result:='{\"saved\":true}';\n else raise exception 'Unknown operation' using errcode='22023';\n end case;\n return result;\nend $function$\n",
+  "definition_md5": "921f66f8216f743fd2bddf8c1844558b",
+  "original_policies": [
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "body_weight_log",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own weight log",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "coach_usage",
+      "permissive": "PERMISSIVE",
+      "policyname": "coach_usage_insert_own",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "coach_usage",
+      "permissive": "PERMISSIVE",
+      "policyname": "coach_usage_select_own",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "custom_foods",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own custom foods",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "food_log",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own food log",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "profiles",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own profile",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "supplement_log",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own supplement log",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "supplement_stack",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own supplement stack",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "water_log",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own water log",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "workout_plans",
+      "permissive": "PERMISSIVE",
+      "policyname": "users manage own plans",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "workout_sessions",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own workout sessions",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "workouts",
+      "permissive": "PERMISSIVE",
+      "policyname": "Users can manage their own workouts",
+      "schemaname": "public",
+      "with_check": "(auth.uid() = user_id)"
+    }
+  ]
+}
