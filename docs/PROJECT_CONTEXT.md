@@ -143,12 +143,12 @@ table" does not treat TrainerHQ's ~29 tables as WiFit's problem.
   `conversation_relationships`, `trainer_reviews`).
 - the **`trainerhq-api`** edge function.
 
-**Not TrainerHQ's, despite the name grouping:** `coach_usage`. It was listed
-with the TrainerHQ set, but it is `{id, user_id, created_at}` and WiFit's own
-`api/coach.js` reads it (the 60/hour + 400/day gate) and inserts a row on every
-coach request. It is documented below as a WiFit table and stays WiFit's. If
-TrainerHQ also writes it, it is *shared*, not TrainerHQ-owned — flag it and this
-note gets corrected; until then WiFit treats it as its own.
+**Not TrainerHQ's, despite the name grouping:** the table listed as `coach_usage`
+is WiFit's — `{id, user_id, created_at}`, read and written by WiFit's own
+`api/coach.js` (the 60/hour + 400/day gate) on every coach request. To remove
+the ambiguity it was **renamed `ai_coach_usage`** (2026-09-09); see its schema
+entry below. A short-lived `coach_usage` view remains only until the deployed
+`api/coach.js` redeploys with the new name.
 
 **WiFit owns:** the 11 base tables and 5 views documented below, and nothing
 else. If a table is not in the schema section that follows, it is not WiFit's.
@@ -320,11 +320,17 @@ the coach's weight context were silently empty forever.
 
 **`note` is dead.** Nothing reads or writes it.
 
-### coach_usage
+### ai_coach_usage  (renamed from `coach_usage` 2026-09-09)
 `id`, `user_id` (FK → `auth.users`, cascade), `created_at` timestamptz NOT NULL
-default now(). One row per accepted `/api/coach` request.
+default now(). One row per accepted `/api/coach` request. **WiFit's** AI-coach
+rate limiter — renamed because "coach" is ambiguous now that TrainerHQ shares
+this project (its human trainers vs WiFit's AI coach).
 
-Index: `coach_usage_user_created_idx (user_id, created_at DESC)` — matches the query's
+A **temporary** `coach_usage` view (security_invoker) still points here so the
+previously-deployed `api/coach.js` keeps rate-limiting until it redeploys with
+the new name. **Drop the view once that deploy lands** (known issue below).
+
+Index: `ai_coach_usage_user_created_idx (user_id, created_at DESC)` — matches the query's
 sort order; the windowed count runs on every request.
 
 **RLS: INSERT and SELECT of own rows only. There is deliberately NO UPDATE and NO
@@ -589,10 +595,10 @@ a signed-in account; demo mode is not enough.**
 
 **Local dev burns the real rate limit (2026-09-07).** `vite.config.js` proxies
 `/api` to the deployment, so every coach call from `localhost:5173` counts
-against `coach_usage` for the signed-in user — the same **60/hour + 400/day**
+against `ai_coach_usage` for the signed-in user — the same **60/hour + 400/day**
 the production app uses. When iOS testing starts on the same account, that
 budget is shared three ways (web prod, localhost, the Swift client) and a 429
-will look like a client bug. Check `coach_usage` for the user before debugging
+will look like a client bug. Check `ai_coach_usage` for the user before debugging
 a coach that "stopped working".
 
 Vercel Edge runtime. Not streaming — `await upstream.json()` buffers the whole response.
@@ -627,7 +633,7 @@ field would be attacker-controlled and would enforce nothing.
 
 **Rate limit: 60/hour + 400/day per authenticated user**, counted **on entry** —
 recorded before the Anthropic call, so nobody can burn quota and retry for free. Keyed
-to user id, not IP (mobile NAT sharing, IP rotation). State lives in `coach_usage`
+to user id, not IP (mobile NAT sharing, IP rotation). State lives in `ai_coach_usage`
 because Edge isolates are ephemeral, concurrent and per-region — an in-memory counter
 would enforce nothing. Over the limit returns **429** with `Retry-After` and a message
 naming the real wait. Any Supabase failure during the check **fails closed** (503).
@@ -707,10 +713,10 @@ Anthropic response formats are unchanged and out of scope for security work:
    and never used the result, so it accounted for **two** of the `no-unused-vars`
    warnings, not one.
 
-7. **`coach_usage` retention.** One row per request, ~110 bytes with the index. At 100
+7. **`ai_coach_usage` retention.** One row per request, ~110 bytes with the index. At 100
    active users it approaches the 500 MB free tier within a year. Only the last 24h is
    ever read. When the table nears ~1M rows, add a nightly `pg_cron`:
-   `delete from coach_usage where created_at < now() - interval '2 days';` — it runs as
+   `delete from ai_coach_usage where created_at < now() - interval '2 days';` — it runs as
    `postgres`, so the absent DELETE policy does not block it.
 
 8. **`today` is computed once per mount** (see Dates above).
@@ -755,7 +761,7 @@ Anthropic response formats are unchanged and out of scope for security work:
     Two diagnostics that tell a retired model apart from a broken deployment:
     the Vercel runtime log shows the request reaching the function
     (`source=edge-function`) and returning 404 rather than the route 404ing; and
-    `coach_usage` gains a row per attempt, because usage is recorded on entry,
+    `ai_coach_usage` gains a row per attempt, because usage is recorded on entry,
     just before the Anthropic call.
 
 11. **`react-hooks/exhaustive-deps` is deliberately OFF.** `rules-of-hooks` is on
@@ -999,7 +1005,7 @@ Anthropic response formats are unchanged and out of scope for security work:
 
 `profiles` 3 · `workout_plans` 2 · `supplement_stack` 2 · `supplement_log` 1 ·
 `custom_foods` 1 · **`food_log` 0 · `workout_sessions` 0 · `water_log` 0 ·
-`body_weight_log` 0 · `coach_usage` 0** · `workouts` 0 (legacy).
+`body_weight_log` 0 · `ai_coach_usage` 0** · `workouts` 0 (legacy).
 
 The zeroes are a deliberate clean slate. Five `workout_sessions` rows were deleted as
 click-through artifacts (3–13 second durations; one recorded 12 sets in 13 seconds and

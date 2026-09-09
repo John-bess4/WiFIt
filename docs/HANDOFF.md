@@ -53,7 +53,7 @@ Operate as a **senior technical lead**: direct, willing to push back, sequence w
 ```
 body_weight_log   id, user_id, weight_lbs NOT NULL, log_date NOT NULL, note, created_at
                   UNIQUE(user_id, log_date)
-coach_usage       id, user_id, created_at NOT NULL
+ai_coach_usage    id, user_id, created_at NOT NULL  (was coach_usage, renamed 2026-09-09)
                   RLS: INSERT+SELECT own only, NO UPDATE, NO DELETE
                   INDEX (user_id, created_at DESC)
 custom_foods      id, user_id, name NOT NULL, brand, serving_g, per100_cal/protein/
@@ -84,7 +84,7 @@ Every table has RLS with `auth.uid() = user_id`.
 
 **All server-side work is language-agnostic:**
 - The entire schema, all RLS policies, all migrations
-- `/api/coach` Edge Function: JWT verified via `/auth/v1/user` **rejecting on `!r.ok`** (a bad token returns **403**, not 401 — a 401-only check passes every garbage token), model pinned server-side, `max_tokens` clamped (1200/600/120), `thinking:{type:"disabled"}`, rate limit **60/hour + 400/day** counted on entry in `coach_usage`
+- `/api/coach` Edge Function: JWT verified via `/auth/v1/user` **rejecting on `!r.ok`** (a bad token returns **403**, not 401 — a 401-only check passes every garbage token), model pinned server-side, `max_tokens` clamped (1200/600/120), `thinking:{type:"disabled"}`, rate limit **60/hour + 400/day** counted on entry in `ai_coach_usage`
 - The `ACTIONS:` contract and system prompt
 - **Calibration: exactly 2 coach calls per user turn** (`callClaude` + `generateSuggestions`)
 
@@ -164,7 +164,7 @@ Negative cases are what actually prove things:
 
 ## KNOWN ISSUES — deliberately not fixed (they disappear in the rewrite)
 
-OFF search CORS-blocked (USDA works) · **10 unchecked `sb.*` return values** — documented as a requirement spec for Swift, every one is a place the new client must not ignore a result · AI parser invents cup→240g while the custom-food form refuses to guess · USDA `servingSizeUnit` decided: grams pass, oz converts at 28.3495, ml/IU return null (needs a density) · no edit/delete UI for custom foods · `coach_usage` retention (pg_cron prune at ~1M rows) · dead columns `water_log.cups`, `body_weight_log.note`, `profiles.goal` · deferred CHECK constraint on `supplement_stack.category` (legacy ADD_SUPP path doesn't validate until C2) · `exhaustive-deps` off (7 advisory warnings) · C2 (retire six legacy parsers) gated on the legacy-format `console.warn` going quiet
+OFF search CORS-blocked (USDA works) · **10 unchecked `sb.*` return values** — documented as a requirement spec for Swift, every one is a place the new client must not ignore a result · AI parser invents cup→240g while the custom-food form refuses to guess · USDA `servingSizeUnit` decided: grams pass, oz converts at 28.3495, ml/IU return null (needs a density) · no edit/delete UI for custom foods · `ai_coach_usage` retention (pg_cron prune at ~1M rows) · dead columns `water_log.cups`, `body_weight_log.note`, `profiles.goal` · deferred CHECK constraint on `supplement_stack.category` (legacy ADD_SUPP path doesn't validate until C2) · `exhaustive-deps` off (7 advisory warnings) · C2 (retire six legacy parsers) gated on the legacy-format `console.warn` going quiet
 
 ---
 

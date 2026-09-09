@@ -91,10 +91,10 @@ function retryPhrase(sec) {
 //
 // Edge isolates are ephemeral, concurrent and per-region, so an in-memory
 // counter would reset constantly and enforce nothing. State lives in
-// coach_usage instead, which is co-located with the function (Supabase
+// ai_coach_usage instead, which is co-located with the function (Supabase
 // us-east-1 / Vercel iad1).
 //
-// Uses the caller's own JWT, not a service-role key: coach_usage grants
+// Uses the caller's own JWT, not a service-role key: ai_coach_usage grants
 // INSERT and SELECT of your own rows and has no UPDATE or DELETE policy, so a
 // user cannot clear or backdate their history to reset the limit.
 //
@@ -106,7 +106,7 @@ async function checkRate(userId, token) {
   const h = { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + token };
   const url =
     SUPABASE_URL +
-    '/rest/v1/coach_usage?user_id=eq.' + encodeURIComponent(userId) +
+    '/rest/v1/ai_coach_usage?user_id=eq.' + encodeURIComponent(userId) +
     '&created_at=gte.' + encodeURIComponent(new Date(now - 86400000).toISOString()) +
     '&select=created_at&order=created_at.desc&limit=' + (RATE_PER_DAY + 1);
 
@@ -137,7 +137,7 @@ async function checkRate(userId, token) {
   // burn quota and retry for free. A failed write fails closed for the same
   // reason: unrecorded usage is unenforceable usage.
   try {
-    const w = await fetch(SUPABASE_URL + '/rest/v1/coach_usage', {
+    const w = await fetch(SUPABASE_URL + '/rest/v1/ai_coach_usage', {
       method: 'POST',
       headers: { ...h, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify({ user_id: userId }),

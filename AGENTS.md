@@ -88,7 +88,7 @@ concurrent commits from that work land here routinely; naming them before the
 push is how "I pushed 11 commits I'd never read" does not happen twice.
 
 **If the AI coach breaks, check the pinned `MODEL` constant in `api/coach.js`
-first** — then `coach_usage`: localhost proxies `/api` to production and shares
+first** — then `ai_coach_usage`: localhost proxies `/api` to production and shares
 the user's 60/hour limit with every other client on that account. Model IDs retire; the proxy passes `upstream.status` through verbatim, so
 a retired model surfaces as a 404 that looks exactly like a missing deployment.
 
