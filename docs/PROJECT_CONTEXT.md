@@ -1075,3 +1075,14 @@ the current nutrition target using the client's configured timezone instead of
 the database date. Existing WiFit tables, RLS, logging and Auth remain unchanged.
 The exact prior function/policies, six timezone authorization checks, targeted
 rollback and in-memory recovery evidence are version controlled. After application, 112 live SQL assertions and 191 WiFit tests passed; all 12 original owner policies matched the preflight inventory exactly. Further production changes remain on explicit owner hold. The final audit found main `330b2d0` and Vercel deployment `dpl_jDSTRL8vEvuJ9cWYYrCJBXa6nXjx` after an unexpected push. The owner chose to leave that deployment for review. See the dated production-hold audit; the successful push actor is not established. Further local work is on `codex/trainerhq-shared-backend`.
+
+### Imported workout exercise identity (2026-09-09 local verification fix)
+
+Trainer assignments can contain plan exercises without a client-side `id`.
+`withPlanExerciseIDs` in `src/lib/workouts.js` preserves existing unique IDs and
+adds stable, distinct fallback IDs at plan loading and active-workout restore.
+This prevents duplicate React keys and ambiguous expand/edit/remove actions.
+Exercise names and set values are preserved; no database rewrite or migration
+is involved. The three regression cases are in `planExerciseIdentity.test.js`.
+This fix remains local on `codex/trainerhq-shared-backend`; production deployment
+and pushing `main` still require separate owner approval.

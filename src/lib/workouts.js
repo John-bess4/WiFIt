@@ -75,3 +75,20 @@ export const prEventsBySession=(rows)=>(rows||[]).reduce((m,r)=>{(m[r.session_id
 
 // Optional trainer origin: keep normal WiFit logs unchanged and reject local template IDs.
 export const assignmentOrigin=(session)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(session?.trainerAssignmentID||"")?{trainer_assignment_id:session.trainerAssignmentID}:{};
+
+// Imported trainer plans may omit client-side exercise IDs. Give each row a
+// stable, distinct UI identity without changing its sets or rewriting the database.
+export const withPlanExerciseIDs=(exercises)=>{
+  if(!Array.isArray(exercises))return[];
+  const reserved=new Set(exercises.map(e=>e.id).filter(id=>id!==undefined&&id!==null&&id!==""));
+  const seen=new Set();
+  return exercises.map((exercise,index)=>{
+    let id=exercise.id;
+    if(id===undefined||id===null||id===""||seen.has(id)){
+      id="plan-exercise-"+index;
+      while(reserved.has(id)||seen.has(id))id+="-local";
+    }
+    seen.add(id);
+    return{...exercise,id};
+  });
+};
