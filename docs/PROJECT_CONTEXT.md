@@ -157,8 +157,8 @@ table" does not treat TrainerHQ's ~29 tables as WiFit's problem.
 is WiFit's — `{id, user_id, created_at}`, read and written by WiFit's own
 `api/coach.js` (the 60/hour + 400/day gate) on every coach request. To remove
 the ambiguity it was **renamed `ai_coach_usage`** (2026-09-09); see its schema
-entry below. A short-lived `coach_usage` view remains only until the deployed
-`api/coach.js` redeploys with the new name.
+entry below. (A short-lived `coach_usage` alias view was dropped once the
+deploy shipped — #30.)
 
 **WiFit owns:** the 11 base tables and 5 views documented below, and nothing
 else. If a table is not in the schema section that follows, it is not WiFit's.
@@ -336,9 +336,8 @@ default now(). One row per accepted `/api/coach` request. **WiFit's** AI-coach
 rate limiter — renamed because "coach" is ambiguous now that TrainerHQ shares
 this project (its human trainers vs WiFit's AI coach).
 
-A **temporary** `coach_usage` view (security_invoker) still points here so the
-previously-deployed `api/coach.js` keeps rate-limiting until it redeploys with
-the new name. **Drop the view once that deploy lands** (known issue below).
+(A temporary `coach_usage` view briefly aliased this during the rename deploy;
+dropped 2026-09-09 once `api/coach.js` shipped the new name — #30.)
 
 Index: `ai_coach_usage_user_created_idx (user_id, created_at DESC)` — matches the query's
 sort order; the windowed count runs on every request.
@@ -888,15 +887,14 @@ Anthropic response formats are unchanged and out of scope for security work:
     are all kept — flip the flag to re-enable, or point the same proxy at another
     provider. `searchSupp` returns the local catalogue only while off.
 
-22. **Long-tail and restaurant foods have no source.** With USDA off, search is
-    the 43-entry local catalogue, the user's custom foods, and Open Food Facts
-    (packaged goods; v2 relevance is poor, see #18). Anything else — a
-    restaurant meal, a regional brand, a home recipe — has nowhere to come from
-    except the coach's estimate. Four candidate routes, **no decision taken**:
-    grow the local catalogue; Nutritionix (restaurant + branded, paid);
-    FatSecret (broad, free tier, attribution); coach-as-lookup (the model
-    estimates per-100 g and the app labels it as an estimate). The redesign's
-    search surface should be planned against whichever is chosen.
+22. **Long-tail foods now have a source (2026-09-09).** OFF free-text search is
+    live via `api/off.js` (JWT-gated edge proxy over search-a-licious; OFF is
+    CORS-blocked in the browser). Split source: the local catalogue is the
+    instant curated layer for common whole foods (it ranks first — "chicken
+    breast" → the 165-kcal entry, "banana" → 89), OFF fills branded and the
+    long tail, barcode is a separate direct lookup. USDA stays off (#21).
+    Restaurant/menu items still have no structured source — OFF is
+    packaged-goods, so a restaurant meal is a custom food or a coach estimate.
 
 23. **`workout_sessions.prs` — the app's only computed-and-stored value — was
     computed wrong in four ways (Train audit 2026-09-07).** Fixed the same day,
@@ -1009,12 +1007,10 @@ Anthropic response formats are unchanged and out of scope for security work:
     neither bounded by a row count. The class: a `limit` is a correctness
     ceiling on a delay — the same shape as the 20-session `prHistory` window.
 
-30. **Temporary `coach_usage` compatibility view (2026-09-09).** The rate-limit
-    table was renamed `coach_usage` → `ai_coach_usage`; a security_invoker view
-    `coach_usage` still points at it so the currently-deployed `api/coach.js`
-    keeps rate-limiting until it redeploys with the new name. **Drop the view
-    once that deploy lands:** `drop view public.coach_usage;`. Until then two
-    names resolve to one table.
+30. ~~**Temporary `coach_usage` compatibility view.**~~ **RESOLVED 2026-09-09** —
+    `api/coach.js` redeployed writing `ai_coach_usage` directly, the shim view
+    was dropped, and a coach request then recorded to `ai_coach_usage` with the
+    view gone (rate limiting intact). One name for the table.
 
 31. **REQUIRED PRE-LAUNCH (iOS) — App Store privacy label must disclose the
     trainer data-sharing.** WiFit shares health/fitness data with a third party
