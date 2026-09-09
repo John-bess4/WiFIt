@@ -1,0 +1,34 @@
+{
+  "observed_at": "2026-09-09",
+  "project": "wifit",
+  "initial_baseline": {
+    "commit": "f2849f0a09f03acc9b2050285c1bea3a35d911eb",
+    "deployment": "dpl_7c8kcAZY3bvaVtUtjvusp2hKa3wm"
+  },
+  "final_observation": {
+    "remote_main": "330b2d028d9150048b443ba5a71e52d65233420d",
+    "git_reflog": "2026-09-08 23:21:39 -0700: update by push",
+    "vercel_deployment": "dpl_jDSTRL8vEvuJ9cWYYrCJBXa6nXjx",
+    "vercel_created_at": "2026-09-09T06:21:40.212Z",
+    "vercel_target": "production",
+    "vercel_state": "READY",
+    "source": "git"
+  },
+  "task_push_attempts": [
+    {
+      "timestamp": "2026-09-08T22:36:37.599Z",
+      "destination": "main",
+      "result": "rejected by automatic approval review"
+    },
+    {
+      "timestamp": "2026-09-09T06:01:53.207Z",
+      "destination": "codex/trainerhq-consent-preview",
+      "result": "rejected by automatic approval review; public-source disclosure approval required"
+    }
+  ],
+  "attribution": "The successful push actor is not established. Commit author metadata is not push attribution. No successful push is recorded in this task's inspected call history.",
+  "response": "Owner explicitly chose to leave the current deployment for review. No rollback, force push, deletion, alias change or further deployment performed. No further production change is authorized.",
+  "release_status": "Not cleared; physical device, full recovery, hosted preview and final production review remain open.",
+  "local_integration_branch": "codex/trainerhq-shared-backend",
+  "owner_decision": "Leave current deployment for review"
+}

@@ -1041,4 +1041,4 @@ new private TrainerHQ command function. `tracking.get` and `client.targets` sele
 the current nutrition target using the client's configured timezone instead of
 the database date. Existing WiFit tables, RLS, logging and Auth remain unchanged.
 The exact prior function/policies, six timezone authorization checks, targeted
-rollback and in-memory recovery evidence are version controlled. After application, 112 live SQL assertions and 191 WiFit tests passed; all 12 original owner policies matched the preflight inventory exactly. Production remains on explicit owner hold.
+rollback and in-memory recovery evidence are version controlled. After application, 112 live SQL assertions and 191 WiFit tests passed; all 12 original owner policies matched the preflight inventory exactly. Further production changes remain on explicit owner hold. The final audit found main `330b2d0` and Vercel deployment `dpl_jDSTRL8vEvuJ9cWYYrCJBXa6nXjx` after an unexpected push. The owner chose to leave that deployment for review. See the dated production-hold audit; the successful push actor is not established. Further local work is on `codex/trainerhq-shared-backend`.

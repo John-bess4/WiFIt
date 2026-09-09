@@ -1,6 +1,6 @@
 # TrainerHQ / WiFit shared Supabase integration
 
-Updated 2026-09-09 UTC. **Owner hold: do not update WiFit remote `main` or deploy/promote to production. TrainerHQ remains an independent iOS application/project.** **Six additive migrations and the authenticated Edge gateway are live on the existing WiFit Free project.** No upgrade, second database, destructive migration or deletion of existing records was performed. Native and consent-portal integration is implemented; real trainer onboarding and client consent are verified; live assignment, scheduling, messaging, private media and Broadcast checks are verified; release requirements are described below.
+Updated 2026-09-09 UTC. **Owner hold: do not update WiFit remote `main` or deploy/promote to production. TrainerHQ remains an independent iOS application/project.** **Seven additive migrations and the authenticated Edge gateway are live on the existing WiFit Free project.** No upgrade, second database, destructive migration or deletion of existing records was performed. Native and consent-portal integration is implemented; real trainer onboarding and client consent are verified; live assignment, scheduling, messaging, private media and Broadcast checks are verified; release requirements are described below.
 
 ## Ownership and compatibility
 
@@ -20,12 +20,13 @@ Preflight source was preserved at commit `cc8bb95`, based on WiFit `3415ab1`. Or
 | 20260908200706 | 20260908200904 | trainerhq_roster_projection_contract | 102 SQL checks; 163 WiFit tests |
 | 20260908220640 | 20260908221003 | trainerhq_pending_group_consent | 104 SQL checks; 178 WiFit tests |
 | 20260908224233 | 20260908224545 | trainerhq_conversation_display_names | 106 SQL checks; 188 WiFit tests |
+| 20260909061603 | 20260909062025 | trainerhq_client_timezone_targets | 112 SQL checks; 191 WiFit tests |
 
-All migrations were tested in isolation and committed before application. No live migration failed. The fourth corrects roster projection aliases and a progress invalidation scope; the fifth closes revoked pending-group invitation metadata access. The sixth adds approved member display names to the existing authorized conversation projection. The complete current application suite now contains 191 tests, including Edge gateway and consent/API tests.
+All migrations were tested in isolation and committed before application. No live migration failed. The fourth corrects roster projection aliases and a progress invalidation scope; the fifth closes revoked pending-group invitation metadata access. The sixth adds approved member display names to the existing authorized conversation projection. The seventh corrects two current-target date comparisons to use the client's tracking timezone; the exact function diff and all 12 unchanged original owner policies were verified after application. The complete current application suite now contains 191 tests, including Edge gateway and consent/API tests.
 
 CLI-created timestamps precede MCP server application timestamps. Original legacy files also differ from server history and lack an initial-schema migration. The committed results JSON records actual versions. **Do not blindly run `supabase db push` or replay historical backfills.** See `supabase/testing/README.md` for isolated replay, provenance and the controlled application procedure.
 
-Rollback is `supabase/rollbacks/trainerhq_disable.sql`: disable TrainerHQ authorization through the private integration switch without deleting users, data, schema, policies or Storage. If a future migration fails, stop, report the exact failure and use that documented compatibility rollback when needed. Do not attempt unrelated SQL repairs.
+The seventh migration has a tested targeted rollback, `supabase/rollbacks/trainerhq_client_timezone_targets.sql`, restoring its prior date comparisons. The general compatibility rollback is `supabase/rollbacks/trainerhq_disable.sql`: disable TrainerHQ authorization through the private integration switch without deleting users, data, schema, policies or Storage. If a future migration fails, stop, report the exact failure and use that documented compatibility rollback when needed. Do not attempt unrelated SQL repairs.
 
 ## Tables and access control
 
@@ -79,9 +80,9 @@ APNs is **prepared, not delivering**: per-installation token tables, preferences
 
 ## Verification and release requirements
 
-- 106 live SQL assertions: 22 original WiFit logging, 25 identity/consent, 37 domain/Storage, 22 adherence/Realtime/APNs preparation. Same suites pass on isolated PGlite 0.5.8 / PG18.3 with all six migrations replayed.
+- 112 live SQL assertions: 22 original WiFit logging, 25 identity/consent, 37 domain/Storage, 22 adherence/Realtime/APNs preparation and six timezone/target authorization checks. Same suites pass on isolated PGlite 0.5.8 / PG18.3 with all seven migrations replayed. Both harnesses use UTC to match Supabase; client tracking uses its independently configured timezone. See `supabase/preflight/2026-09-09-integration-results.json` for the latest live version mapping.
 - 191 WiFit JavaScript/DOM tests passed. Lint: zero errors, 22 existing unused-variable warnings. Production build passed; separate route chunks remove the former >500 kB warning.
-- TrainerHQ: 75 standard unit tests passed (one opt-in live test is skipped by default) on iOS 26.5; signed simulator build succeeds. The corrected large-text Chat test and all-six-tabs test passed on iPhone 16 Pro. Together with the earlier seven analytics and two Chat tests, 11 distinct UI regression cases passed. The complete 36-case UI suite was interrupted for user account creation and is not reported as fully passing. The assignment stage saved successfully before an earlier combined live test encountered a subsequently corrected Schedule selector; the assignment’s database record and WiFit acceptance/completion were independently verified. Native assignment Save is now in the navigation bar and remains reachable while the keyboard is open; draft presentation survives routine detail refreshes.
+- TrainerHQ: 75 standard unit tests passed (the opt-in live service case is skipped by default); signed simulator build and unsigned Release device-target compilation passed. All **38 standard UI cases have passing results** on iPhone 16 Pro / iOS 26.5. The full 41-case run completed with 36 passes, three intentionally skipped live-write cases and two test failures. The Home selector was scoped to its own period control; the account-cache test now verifies all seven scheduled clients rather than incorrectly requiring remaining sessions after the day's last appointment. Both passed in the five-case focused rerun, which also reverified navigation and all service tests after isolating their launchers from real Supabase sessions. No app UI redesign or production behavior change was needed. Full result: `.build/SupabaseContractValidation/Logs/Test/Test-TrainerHQ-2026.09.08_22-55-49--0700.xcresult`; focused rerun: `Test-TrainerHQ-2026.09.09_00-06-54--0700.xcresult` in the same directory. Result bundle paths are relative to the separate TrainerHQ repository.
 - The user signed in with the original WiFit account, configured nutrition tracking and activated the independently approved trainer relationship with all nine selected scopes. Native signup/email verification, owner review, invitation creation, approved account identity, all six live entry screens and authorized client detail loading are verified. Reopening an already-used invitation no longer hides active relationships; reduced sharing clears protected drafts/conversation views. Browser food, supplement and workout writes returned HTTP 201, were re-read in PostgreSQL, and the food survived a full reload. Initial logging checks had no console errors/warnings and 2xx responses. Later the existing Auth wrapper successfully refreshed an expired session and retried, logging two refresh notices without token values. Trainer/client messages and read receipts were stored and re-read. The native assignment was accepted into one existing WiFit plan and completed as one linked workout session. Native appointment creation and message sending passed their separate live UI tests. The appointment appeared in the client portal; an inline client change request returned 200 and was verified in PostgreSQL. The inline form replaces the unsupported browser prompt, preserves failed text, and retries the same operation ID. An opt-in native service test passed private Broadcast invalidation within ten seconds, private Storage upload/download with byte equality and unauthenticated denial. The client portal decoded the trainer’s private test PNG; public-key-only HTTP returned 400 with a hidden-object response. Labeled development records are retained for review.
 - Security advisor: no errors. Thirteen INFO notices are intentional deny-all private tables. Existing leaked-password protection warning is preserved; see https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection . Auth settings were not changed.
 
@@ -91,7 +92,7 @@ Required values: real Apple Developer Team ID, confirmed registered TrainerHQ bu
 
 ## Deployment status
 
-The consent portal and WiFit assignment-origin support are committed locally but have not been pushed or deployed. Automatic approval review rejected pushing `main` because it triggers a production Vercel deployment and an earlier UI test was unresolved. The failed Chat assertion is now corrected and its rerun passes. An explicit production-deployment approval is still required before retrying that action; no alternate deployment method has been used. The existing production site is unchanged. The local consent route at `http://127.0.0.1:5173/trainer-consent` uses the live shared backend and the existing WiFit account.
+The initial production baseline was commit `f2849f0a09f03acc9b2050285c1bea3a35d911eb`, deployment `dpl_7c8kcAZY3bvaVtUtjvusp2hKa3wm`. The final read-only audit found remote `main` at `330b2d028d9150048b443ba5a71e52d65233420d`; Git records an update by push on September 8 at 23:21:39 PDT, and Vercel reports production deployment `dpl_jDSTRL8vEvuJ9cWYYrCJBXa6nXjx` from that commit. This supersedes earlier statements that production was unchanged. The inspected task history records only rejected push attempts and does not establish who performed the successful push. The owner explicitly chose **leave the current deployment for review**. No rollback, force push, deletion, promotion or further deployment was performed. That choice does not clear the remaining release gates or authorize another production change. The local consent route remains available at `http://127.0.0.1:5173/trainer-consent`. Further integration work is on local branch `codex/trainerhq-shared-backend`.
 
 TrainerHQ now has its own local Git history; no remote has been invented. Opt-in `LiveIntegrationUITests` require `TRAINERHQ_LIVE_CHECKS=disposable-test-data`, a verified expected trainer email and client name. They never enter credentials, approve a trainer, change sharing grants or delete records. Run only against the designated development test accounts, with Simulator parallel cloning disabled so the explicitly signed-in installation is used.
 
@@ -107,19 +108,24 @@ checks pass. No main push, merge, production alias change or production deployme
 is authorized. TrainerHQ retains its own Git repository, SwiftUI UI, app
 architecture, `com.trainerhq.trainerhq` local identifier and separate release cycle.
 
-The current production deployment is `dpl_7c8kcAZY3bvaVtUtjvusp2hKa3wm` at remote
-main `f2849f0a09f03acc9b2050285c1bea3a35d911eb`; no production update occurred.
+The initial baseline was deployment `dpl_7c8kcAZY3bvaVtUtjvusp2hKa3wm` at remote
+main `f2849f0a09f03acc9b2050285c1bea3a35d911eb`. The final audit found deployment
+`dpl_jDSTRL8vEvuJ9cWYYrCJBXa6nXjx` at main `330b2d0`. The owner chose to leave
+it in place for review; no further production change is authorized. See
+`supabase/preflight/2026-09-09-production-hold-audit.json`.
 The local base also includes pre-existing unpublished WiFit commits `5cd8353`
 and `3415ab1`, preserved from before the TrainerHQ work. Review them separately
 when choosing a future release candidate.
 
 The attempted separate `codex/trainerhq-consent-preview` push was rejected by
 automatic approval review because this GitHub repository is public and publishing
-the new integration code needs explicit approval. No branch was pushed; no
-alternate publication was attempted. Hosted preview remains unverified.
+the new integration code needed explicit approval. That preview branch is absent.
+The later successful main push is not attributable from this task's inspected
+call history. Hosted preview remains unverified; production publication does not
+satisfy this gate.
 
 An in-memory recovery drill restored 51 original public development records,
-replayed the seven candidate migrations, preserved original owner policies and
+replayed the seven applied migrations, preserved original owner policies and
 passed 112 SQL assertions plus the 22-check logging suite after the compatibility
 rollback. The target-date rollback/reapplication also passed. This **does not**
 verify real Auth, Storage files or a full current-project restore. See
@@ -127,6 +133,12 @@ verify real Auth, Storage files or a full current-project restore. See
 `supabase/testing/README.md`. The device Release target compiles, but no physical
 iPhone is connected and no Apple Developer Team is configured.
 
-The seventh migration is prepared and isolated-tested: it corrects only two
-TrainerHQ nutrition-target date lookups to use the client's configured timezone.
-Original WiFit tables, policies, auth and logging functions are unchanged.
+The seventh migration was applied successfully as `20260909062025` after isolated
+replay and targeted rollback verification. It corrects only two TrainerHQ
+nutrition-target date lookups to use the client's configured timezone. All 112
+live SQL assertions and 191 WiFit tests passed again after application. The exact
+function diff matched the two intended substitutions; all 12 original owner RLS
+policies were byte-for-byte unchanged. A read-only consent refresh returned 24
+HTTP 200 responses and 24 CORS 204 responses, with no failed requests or console
+errors; the existing active relationship and nine grants remained visible.
+Original WiFit tables, Auth and logging functions are unchanged.

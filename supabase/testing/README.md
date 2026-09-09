@@ -21,7 +21,7 @@ Keep the original WiFit migrations unchanged. Their historical filenames do not
 all match the server-generated migration versions, and there is no original
 initial-schema migration. The CLI-created TrainerHQ files also have slightly
 earlier timestamps than MCP application. The name-to-live-version mapping is
-in `../preflight/2026-09-08-integration-results.json`; file contents remain canonical.
+in `../preflight/2026-09-09-integration-results.json`; file contents remain canonical.
 Do not blindly run `supabase db push` on this legacy directory or replay old
 backfills. Apply reviewed new files once through the Management migration API,
 record the actual version, and rerun the logging and authorization suites after

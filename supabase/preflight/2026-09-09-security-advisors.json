@@ -1,0 +1,156 @@
+{
+  "lints": [
+    {
+      "name": "rls_enabled_no_policy",
+      "title": "RLS Enabled No Policy",
+      "level": "INFO",
+      "facing": "EXTERNAL",
+      "categories": [
+        "SECURITY"
+      ],
+      "description": "Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+      "count": 13,
+      "findings": [
+        {
+          "detail": "Table \\`trainerhq_private.adherence_rules\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "adherence_rules",
+            "type": "table",
+            "schema": "trainerhq_private"
+          },
+          "observed_at": "2026-09-09T06:22:14.751Z"
+        },
+        {
+          "detail": "Table \\`trainerhq_private.adherence_summaries\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "adherence_summaries",
+            "type": "table",
+            "schema": "trainerhq_private"
+          },
+          "observed_at": "2026-09-09T06:22:14.751Z"
+        },
+        {
+          "detail": "Table \\`trainerhq_private.audit_events\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "audit_events",
+            "type": "table",
+            "schema": "trainerhq_private"
+          },
+          "observed_at": "2026-09-09T06:22:14.751Z"
+        },
+        {
+          "detail": "Table \\`trainerhq_private.conversation_relationships\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "conversation_relationships",
+            "type": "table",
+            "schema": "trainerhq_private"
+          },
+          "observed_at": "2026-09-09T06:22:14.751Z"
+        },
+        {
+          "detail": "Table \\`trainerhq_private.device_installations\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "device_installations",
+            "type": "table",
+            "schema": "trainerhq_private"
+          },
+          "observed_at": "2026-09-09T06:22:14.751Z"
+        },
+        {
+          "detail": "Table \\`trainerhq_private.integration_control\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "integration_control",
+            "type": "table",
+            "schema": "trainerhq_private"
+          },
+          "observed_at": "2026-09-09T06:22:14.751Z"
+        },
+        {
+          "detail": "Table \\`trainerhq_private.integration_diagnostics\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "integration_diagnostics",
+            "type": "table",
+            "schema": "trainerhq_private"
+          },
+          "observed_at": "2026-09-09T06:22:14.751Z"
+        },
+        {
+          "detail": "Table \\`trainerhq_private.invitations\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "invitations",
+            "type": "table",
+            "schema": "trainerhq_private"
+          },
+          "observed_at": "2026-09-09T06:22:14.751Z"
+        },
+        {
+          "detail": "Table \\`trainerhq_private.notification_jobs\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "notification_jobs",
+            "type": "table",
+            "schema": "trainerhq_private"
+          },
+          "observed_at": "2026-09-09T06:22:14.751Z"
+        },
+        {
+          "detail": "Table \\`trainerhq_private.operations\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "operations",
+            "type": "table",
+            "schema": "trainerhq_private"
+          },
+          "observed_at": "2026-09-09T06:22:14.751Z"
+        },
+        {
+          "detail": "Table \\`trainerhq_private.platform_administrators\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "platform_administrators",
+            "type": "table",
+            "schema": "trainerhq_private"
+          },
+          "observed_at": "2026-09-09T06:22:14.751Z"
+        },
+        {
+          "detail": "Table \\`trainerhq_private.push_applications\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "push_applications",
+            "type": "table",
+            "schema": "trainerhq_private"
+          },
+          "observed_at": "2026-09-09T06:22:14.751Z"
+        },
+        {
+          "detail": "Table \\`trainerhq_private.trainer_reviews\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "trainer_reviews",
+            "type": "table",
+            "schema": "trainerhq_private"
+          },
+          "observed_at": "2026-09-09T06:22:14.751Z"
+        }
+      ]
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "title": "Leaked Password Protection Disabled",
+      "level": "WARN",
+      "facing": "EXTERNAL",
+      "categories": [
+        "SECURITY"
+      ],
+      "description": "Leaked password protection is currently disabled.",
+      "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection",
+      "count": 1,
+      "findings": [
+        {
+          "detail": "Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.",
+          "metadata": {
+            "type": "auth",
+            "entity": "Auth"
+          }
+        }
+      ]
+    }
+  ]
+}
