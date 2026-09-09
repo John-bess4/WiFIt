@@ -80,6 +80,13 @@ signal lives in the console and the network tab, so:
 
 ## Before every push
 
+**`npm run build` must exit 0 before every push.** `npm test` cannot catch a
+missing export: Vitest resolves the module graph differently from the
+production Rollup build, which is how 201 green tests coexisted with an
+unbuildable `main` (2026-09-09: `App.jsx` imported `withPlanExerciseIDs`
+before `lib/workouts.js` exported it; every Vercel build of `main` failed and
+the site served a stale deployment). Lint and tests are not a substitute.
+
 Run `git log --oneline origin/main..HEAD` and report every commit you did not
 author this session. Not a security check — a review-scope one: a push makes
 you the person who put those commits on a public remote, whatever their origin.
