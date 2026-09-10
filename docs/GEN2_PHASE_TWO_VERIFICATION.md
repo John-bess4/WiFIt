@@ -29,7 +29,7 @@ live acceptance that is not yet established.
 | Web regression suite | 201 passing |
 | Web lint | 0 errors; 22 existing warnings |
 | Web production build | Passed; pre-push hook also passed on reference commit |
-| FitDataKit complete suite | 71 passing, 1 live JWT test explicitly skipped |
+| FitDataKit complete suite | 71 passing after the live QA extensions; all three live tests explicitly skipped without opt-in |
 | WiFitAppCore complete suite | 46 passing |
 | Real macOS Keychain CRUD / service isolation | Passed outside the process sandbox |
 | Xcode package/project resolution | Both local packages, app and UI test target resolve |
@@ -45,6 +45,12 @@ reconciliation, preserved user edits and unrelated server fields, current-day
 write blocking, verified owner/date filters, and profile creation races.
 Five final lifecycle cases also verify coalesced busy refreshes, slow profile
 responses crossing midnight, logout/account replacement and cancellation.
+
+The expanded real-JWT harness now covers profile conflict/narrow-update
+preservation and supplement ownership/upsert/cascade behavior in addition to
+food CRUD/RLS. The supplement test requires a separate explicit opt-in after
+its constraint is applied. The opt-out run compiled and reported three skipped
+tests with zero failures; it performed no live authentication or mutations.
 
 The first UI build used `CODE_SIGNING_ALLOWED=NO`. It launched, but secure
 storage failed before any fixture scenario could enter its expected route.
@@ -82,13 +88,18 @@ recovery point. Re-run under the migration's locks immediately before deployment
 
 ## Live and release gates still open
 
-- Dedicated QA-account choice/access is pending. The existing real JWT test
-  has not run. Neither service-role SQL nor a synthetic UI transport substitutes
-  for real password authentication, row read-back and cross-account RLS.
+- The user explicitly approved creation of two temporary QA accounts and their
+  cleanup. Account creation is still pending dashboard access: the in-app
+  browser reaches Supabase, but redirects to sign-in. No QA accounts have been
+  created and the real JWT checks have not run. Neither service-role SQL nor a
+  synthetic UI transport substitutes for real password authentication, row
+  read-back and cross-account RLS.
 - The proposed supplement-parent ownership constraint is not applied. The
   project is healthy, but available tools exposed no dated backup/PITR recovery
-  range. Dashboard inspection was unavailable while the Mac was locked. A
-  current recovery point and count-only preflight remain deployment prerequisites.
+  range. Native computer control reported the Mac locked; the in-app browser
+  subsequently worked but requires Supabase sign-in. A current recovery point
+  and count-only preflight remain deployment prerequisites. An independent
+  review found no blocking SQL defect in the additive proposal.
 - TrainerHQ's separate Xcode target and same Supabase origin are now verified.
   Its dependency is still `supabase-swift` 2.55.1; no claim is made that both
   apps consume FitDataKit or pass a joint integration test.

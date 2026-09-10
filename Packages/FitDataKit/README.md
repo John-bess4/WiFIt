@@ -89,7 +89,7 @@ Simulator SDK cross-compile. The watch compile does not launch a watch app.
 The [prepared CI workflow](../../docs/ci/README.md) also defines the existing web
 build, lint and tests. It is inactive until GitHub workflow permission is available.
 
-The real JWT/RLS smoke test is skipped by default. To run it, supply these
+The real JWT/RLS tests are skipped by default. To run them, supply these
 variables through a local credential mechanism outside source control:
 
 ```text
@@ -104,12 +104,25 @@ WIFIT_QA_B_PASSWORD
 WIFIT_QA_B_USER_ID
 ```
 
-Use two pre-existing dedicated QA accounts with their exact expected UUIDs.
-The test writes temporary marked food rows, verifies CRUD and server RLS using
-real user JWTs, then awaits bounded cleanup and session logout even on failure.
-A cleanup failure reports only a recovery marker and fails the test. This test
-does not prove every table's live transport, Keychain entitlements, the app
-coordinator or TrainerHQ consent flows.
+Provision two dedicated disposable QA accounts with their exact expected UUIDs;
+account A must initially have no profile. Run the class serially:
+
+```sh
+swift test --package-path Packages/FitDataKit --filter LiveSupabaseTests
+```
+
+The tests verify food CRUD/RLS, profile create-and-read-back, conflict protection,
+and preservation of unrelated fields during a narrow profile update. They refuse
+to overwrite a pre-existing profile. After deploying the reviewed supplement
+parent ownership constraint, also set `WIFIT_RUN_SUPPLEMENT_OWNER_TEST=1` to
+verify cross-owner insert/update rejection, stable daily-upsert UUIDs and cascade
+deletion. Leave that flag unset while its migration is pending.
+
+Each test awaits bounded cleanup of its marked rows and session logout, including
+on failure. Cleanup failure reports only a recovery marker and fails the test.
+Remove the temporary Auth accounts after the QA run and verified cleanup. These
+tests do not prove every table's live transport, Keychain entitlements, the app
+coordinator or TrainerHQ consent flows. A skipped test is not live verification.
 
 See [the accepted contract](../../docs/port/DATA_LAYER.md),
 [live schema reference](../../docs/port/SCHEMA.md) and
