@@ -1,9 +1,25 @@
-# Phase two proposal — native authentication and loading
+# Phase two — native authentication and loading
 
 Phase one provides the shared package and a reviewed database contract. The next
 phase creates the WiFit iOS application target and connects that foundation to
-real authentication and honest loading states. This proposal is the sign-off
-point required by the original kickoff; it does not claim implementation.
+real authentication and honest loading states. The user approved this phase on
+2026-09-09 Pacific. Implementation and verification are in progress.
+
+## Updated theme direction
+
+The user subsequently supplied [13 updated reference images](../design-reference/updated-themes/README.md)
+and explicitly asked to add them to the plan and continue. Implement five theme
+families—Cotton Candy, Purple, Rose, Aqua and Teal—with a light/dark variant for
+each. Recreate their flowing abstract backgrounds, translucent cards and fine
+highlighted edges through shared native SwiftUI tokens and shapes. Cotton Candy
+light is the initial pastel direction; honor system appearance or an explicit
+local appearance choice. Preserve existing stored profile theme values and do
+not change the shared schema or silently rewrite another app's theme setting.
+
+The included Food/Workout/Supplements page concepts guide the later screen
+plans. They do not bypass the auth/profile-first build order or introduce sample
+records into a user's account. The referenced ChatGPT conversation was read as
+design context; embedded older prompts remain reference material.
 
 ## Scope
 
@@ -21,7 +37,7 @@ point required by the original kickoff; it does not claim implementation.
    failure tier in DATA_LAYER.md. Clear account-specific in-memory state on
    account changes. Refresh local-day data on foreground/day/timezone changes.
 5. Establish shared theme tokens and minimal reusable loading, empty and failure
-   views. Use the supplied screenshots' pastel/lavender style for auth and setup;
+   views. Use the updated five paired themes for auth and setup;
    Home and Workout layout implementation remains the subsequent screen phase.
 6. Wire the existing opt-in smoke to two dedicated QA accounts and run real
    sign-in, own-row CRUD and cross-account rejection. Verify credential clearing,
@@ -32,6 +48,19 @@ The sister apps continue to share the existing Supabase project and FitDataKit.
 TrainerHQ's consent gateway remains the path for trainer-authorized cross-user
 commands. Its actual native target must be identified before claiming both apps
 have built against the package; no second hand-written data layer is introduced.
+
+The actual target was located during Phase Two at
+`/Users/johnbessemer/Downloads/TrainerHQ_Project_Source/TrainerHQ.xcodeproj`.
+Its checked-in configuration uses the same Supabase origin. It currently depends
+on `supabase-swift` 2.55.1, so shared FitDataKit adoption is still a concrete
+integration task; locating the project does not establish completion.
+
+## Continuation approval
+
+The user preapproved Phase Three (Home) after Phase Two is finished and
+double-checked. Continue under that approval once this phase's acceptance gates
+are assessed; do not ask for another routine phase sign-off. Record any unmet
+verification gate honestly rather than treating a fixture test as a live test.
 
 ## Database follow-up
 
