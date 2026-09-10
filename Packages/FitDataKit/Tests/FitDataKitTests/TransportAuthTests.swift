@@ -92,6 +92,54 @@ private func mutationReply(id: UUID, owner: UUID? = testUser, day: String? = nil
 }
 
 struct TransportAuthTests {
+    @Test func profileCreateConflictUsesIgnoreDuplicatesThenRequiresReadback() async throws {
+        let existing = ProfileRow(id: testUser, name: "Concurrent saved name", calGoal: 2750, theme: "sister-theme")
+        let transport = MockTransport { request, index in
+            if index == 0 {
+                #expect(request.httpMethod == "POST")
+                #expect(request.value(forHTTPHeaderField: "Prefer") == "resolution=ignore-duplicates,return=representation")
+                #expect(URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?.contains(URLQueryItem(name: "on_conflict", value: "id")) == true)
+                return HTTPResponse(status: 201, body: Data("[]".utf8))
+            }
+            #expect(request.httpMethod == "GET")
+            return HTTPResponse(status: 200, headers: ["content-range": "0-0/1"], body: try! JSONEncoder().encode([existing]))
+        }
+        let client = SupabaseREST(configuration: try configuration(), auth: TokenProvider(), transport: transport)
+        await #expect(throws: DataError.unexpectedRowCount(expected: 1, actual: 0)) {
+            try await client.createProfileIfMissing(ProfileWrite(id: testUser, name: "Stale proposed name", calGoal: 1900))
+        }
+        let verified = try await client.readAll(ProfileRow.self, filters: [.equal("id", uuid: testUser)])
+        #expect(verified == [existing])
+        #expect(await transport.requests.count == 2)
+    }
+
+    @Test func profileCreateAcknowledgesOnlyItsUserAndNeverReplaysUnknownOutcome() async throws {
+        let transport = MockTransport { _, _ in mutationReply(id: testUser, owner: nil) }
+        let client = SupabaseREST(configuration: try configuration(), auth: TokenProvider(), transport: transport)
+        #expect(try await client.createProfileIfMissing(ProfileWrite(id: testUser)).id == testUser)
+        let wrong = MockTransport { _, _ in mutationReply(id: UUID(), owner: nil) }
+        let wrongClient = SupabaseREST(configuration: try configuration(), auth: TokenProvider(), transport: wrong)
+        await #expect(throws: DataError.outcomeUnknown(operation: "profile create")) {
+            try await wrongClient.createProfileIfMissing(ProfileWrite(id: testUser))
+        }
+        #expect(await wrong.requests.count == 1)
+        let disconnected = MockTransport { (_, _) throws(DataError) in throw .network }
+        let disconnectedClient = SupabaseREST(configuration: try configuration(), auth: TokenProvider(), transport: disconnected)
+        await #expect(throws: DataError.outcomeUnknown(operation: "POST")) {
+            try await disconnectedClient.createProfileIfMissing(ProfileWrite(id: testUser))
+        }
+        #expect(await disconnected.requests.count == 1)
+    }
+
+    @Test func profileCreateRejectsAnotherOwnerBeforeRequest() async throws {
+        let transport = MockTransport { (_, _) throws(DataError) in Issue.record("Foreign owner must not issue POST"); throw .network }
+        let client = SupabaseREST(configuration: try configuration(), auth: TokenProvider(), transport: transport)
+        await #expect(throws: DataError.sessionChanged) {
+            try await client.createProfileIfMissing(ProfileWrite(id: UUID()))
+        }
+        #expect(await transport.requests.isEmpty)
+    }
+
     @Test func noSessionIsNotAnAnonymousRead() async throws {
         let transport = MockTransport { (_, _) throws(DataError) in Issue.record("A signed-out client must not issue data requests"); throw .network }
         let auth = Auth(configuration: try configuration(), store: MemoryStore(), transport: transport, now: { testNow })
