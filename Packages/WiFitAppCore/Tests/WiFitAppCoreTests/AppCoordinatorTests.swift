@@ -315,6 +315,84 @@ private final class TestClock: @unchecked Sendable {
         #expect((await service.loadContexts).count == 39)
     }
 
+    @Test func busyLifecycleEventsCoalesceAndDrainWithTheCurrentDayAndTimezone() async {
+        let service = FakeService(), gate = Gate(), clock = TestClock()
+        await service.holdProfile(userA, gate: gate)
+        let app = AppCoordinator(service: service, now: clock.now, timeZone: clock.timeZone)
+        let initial = Task { await app.start() }
+        await gate.waitForEntry()
+        let originalDay = app.localDay
+        clock.advance(86_400)
+        clock.move(to: TimeZone(secondsFromGMT: 14 * 3_600)!)
+        await app.refreshForLifecycle()
+        await app.refreshForLifecycle()
+        #expect(await service.events == ["resolve", "profile"])
+        await gate.release(); await initial.value
+        #expect(app.stage == .ready && !app.isBusy)
+        #expect(app.localDay != originalDay)
+        #expect(app.timeZoneIdentifier == "GMT+1400")
+        #expect(app.resources.values.allSatisfy { $0.context == app.loadContext })
+        #expect((await service.loadContexts).allSatisfy { $0 == app.loadContext })
+        #expect((await service.events).filter { $0 == "resolve" }.count == 2)
+        #expect(app.canWrite(dependingOn: [.waterLog]))
+    }
+
+    @Test func slowProfileChecksTheDayAgainEvenWithoutALifecycleNotification() async {
+        let service = FakeService(), gate = Gate(), clock = TestClock()
+        await service.holdProfile(userA, gate: gate)
+        let app = AppCoordinator(service: service, now: clock.now, timeZone: clock.timeZone)
+        let initial = Task { await app.start() }
+        await gate.waitForEntry()
+        clock.advance(86_400)
+        await gate.release(); await initial.value
+        #expect(app.localDay?.rawValue == "2026-09-10")
+        #expect((await service.loadContexts).allSatisfy { $0.day.rawValue == "2026-09-10" })
+        #expect((await service.events).filter { $0 == "resolve" }.count == 1)
+        #expect(app.canWrite(dependingOn: [.waterLog]))
+    }
+
+    @Test func signOutDropsThePreviousOperationsQueuedLifecycleRefresh() async {
+        let service = FakeService(), gate = Gate(), clock = TestClock()
+        await service.holdProfile(userA, gate: gate)
+        let app = AppCoordinator(service: service, now: clock.now, timeZone: clock.timeZone)
+        let initial = Task { await app.start() }
+        await gate.waitForEntry()
+        clock.advance(86_400)
+        await app.refreshForLifecycle()
+        await app.signOut()
+        await gate.release(); await initial.value
+        #expect(app.stage == .signedOut && app.userID == nil && app.localDay == nil)
+        #expect(await service.events == ["resolve", "profile", "signOut"])
+        #expect(app.resources.values.allSatisfy { $0.payload == nil })
+    }
+
+    @Test func accountReplacementDropsOldQueuedRefreshAndLateProfile() async {
+        let service = FakeService(), gate = Gate(), clock = TestClock()
+        await service.holdProfile(userA, gate: gate)
+        let app = AppCoordinator(service: service, now: clock.now, timeZone: clock.timeZone)
+        let initial = Task { await app.start() }
+        await gate.waitForEntry()
+        await app.refreshForLifecycle()
+        await app.signIn(email: "b@example.test", password: "not-a-live-credential")
+        await gate.release(); await initial.value
+        #expect(app.userID == userB && app.profile?.id == userB)
+        #expect((await service.events).filter { $0 == "resolve" }.count == 1)
+        #expect(app.resources.values.allSatisfy { $0.context?.userID == userB })
+    }
+
+    @Test func cancelledOperationDoesNotReplayAQueuedLifecycleRefresh() async {
+        let service = FakeService(), gate = Gate()
+        await service.holdProfile(userA, gate: gate)
+        let app = AppCoordinator(service: service)
+        let initial = Task { await app.start() }
+        await gate.waitForEntry()
+        await app.refreshForLifecycle()
+        initial.cancel()
+        await gate.release(); await initial.value
+        #expect((await service.events).filter { $0 == "resolve" }.count == 1)
+        #expect(!app.isBusy)
+    }
+
     @Test func lifecycleRevalidationRetainsEnteredDraftAndFreshServerValues() async {
         let service = FakeService()
         var partial = complete(userA); partial.name = nil

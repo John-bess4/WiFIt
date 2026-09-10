@@ -36,7 +36,11 @@ requires every dependent resource to have a successful current-context read and
 checks the actual device day, even before a lifecycle event reaches the app.
 
 Call `refreshForLifecycle()` on foreground, significant time/timezone changes and
-the local-midnight timer. The package does not install lifecycle observers; the
+the local-midnight timer. Events received during a busy operation coalesce into
+one refresh after that operation completes. Logout/account replacement invalidates
+the queued event. A slow profile read also recaptures the device day before any
+day-scoped resource request, even if a notification was missed.
+The package does not install lifecycle observers; the
 native application owns that integration. It does not persist workout/chat drafts,
 implement feature screens, or establish real JWT/Simulator verification by itself.
 

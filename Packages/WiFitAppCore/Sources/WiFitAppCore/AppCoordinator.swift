@@ -27,6 +27,7 @@ public enum AppStage: String, Equatable, Sendable {
     @ObservationIgnored private let now: @Sendable () -> Date
     @ObservationIgnored private let timeZone: @Sendable () -> TimeZone
     @ObservationIgnored private var epoch = UUID()
+    @ObservationIgnored private var pendingLifecycleEpoch: UUID?
     @ObservationIgnored private var resourceRequests: [AppResource: UUID] = [:]
     @ObservationIgnored private var confirmedMissingProfile = false
 
@@ -46,63 +47,63 @@ public enum AppStage: String, Equatable, Sendable {
     }
 
     private func resolve() async {
-        let attempt = beginOperation()
-        stage = userID == nil ? .launching : .loadingProfile
-        defer { if epoch == attempt { isBusy = false } }
-        do throws(DataError) {
-            guard let id = try await service.resolveSession() else {
+        await performOperation { attempt in
+            stage = userID == nil ? .launching : .loadingProfile
+            do throws(DataError) {
+                guard let id = try await service.resolveSession() else {
+                    guard epoch == attempt else { return }
+                    clearAccount(); stage = .signedOut
+                    return
+                }
                 guard epoch == attempt else { return }
-                clearAccount(); stage = .signedOut
-                return
+                adopt(id)
+                try updateDay()
+                await loadProfile(attempt: attempt)
+            } catch {
+                guard epoch == attempt else { return }
+                // Even a temporary refresh failure hides user content while retaining credentials in Auth.
+                enterSessionRecovery(error)
             }
-            guard epoch == attempt else { return }
-            adopt(id)
-            try updateDay()
-            await loadProfile(attempt: attempt)
-        } catch {
-            guard epoch == attempt else { return }
-            // Even a temporary refresh failure hides user content while retaining credentials in Auth.
-            enterSessionRecovery(error)
         }
     }
 
     public func signIn(email: String, password: String) async {
-        let attempt = beginOperation()
-        clearAccount(); stage = .signedOut
-        defer { if epoch == attempt { isBusy = false } }
-        do throws(DataError) {
-            let id = try await service.signIn(email: email.trimmingCharacters(in: .whitespacesAndNewlines), password: password)
-            guard epoch == attempt else { return }
-            adopt(id)
-            try updateDay()
-            await loadProfile(attempt: attempt)
-        } catch {
-            guard epoch == attempt else { return }
-            clearAccount(); stage = .signedOut; failure = error
+        await performOperation { attempt in
+            clearAccount(); stage = .signedOut
+            do throws(DataError) {
+                let id = try await service.signIn(email: email.trimmingCharacters(in: .whitespacesAndNewlines), password: password)
+                guard epoch == attempt else { return }
+                adopt(id)
+                try updateDay()
+                await loadProfile(attempt: attempt)
+            } catch {
+                guard epoch == attempt else { return }
+                clearAccount(); stage = .signedOut; failure = error
+            }
         }
     }
 
     public func signOut() async {
-        let attempt = beginOperation()
-        // Synchronous clearing happens before Keychain/server work suspends.
-        clearAccount(); stage = .signedOut
-        defer { if epoch == attempt { isBusy = false } }
-        do throws(DataError) { try await service.signOut() }
-        catch {
-            guard epoch == attempt else { return }
-            failure = error
-            // A Keychain deletion failure must be retried before restoring a stored session.
-            if case .storage = error { stage = .sessionRecovery }
+        await performOperation { attempt in
+            // Synchronous clearing happens before Keychain/server work suspends.
+            clearAccount(); stage = .signedOut
+            do throws(DataError) { try await service.signOut() }
+            catch {
+                guard epoch == attempt else { return }
+                failure = error
+                // A Keychain deletion failure must be retried before restoring a stored session.
+                if case .storage = error { stage = .sessionRecovery }
+            }
         }
     }
 
     public func retryProfile() async {
         guard userID != nil else { await resolve(); return }
-        let attempt = beginOperation()
-        defer { if epoch == attempt { isBusy = false } }
-        do throws(DataError) { try updateDay() }
-        catch { failure = error; stage = .profileFailure; return }
-        await loadProfile(attempt: attempt)
+        await performOperation { attempt in
+            do throws(DataError) { try updateDay() }
+            catch { failure = error; stage = .profileFailure; return }
+            await loadProfile(attempt: attempt)
+        }
     }
 
     public func completeProfile(_ draft: ProfileCompletionDraft, userID expectedUserID: UUID) async {
@@ -118,26 +119,26 @@ public enum AppStage: String, Equatable, Sendable {
             if profile != nil { mutation = .patch(try draft.buildPatch(userID: id)) }
             else { mutation = .create(try draft.buildCreate(userID: id)) }
         } catch { failure = error; return }
-        let attempt = beginOperation()
-        pendingProfileDraft = draft
-        defer { if epoch == attempt { isBusy = false } }
-        do throws(DataError) {
-            let saved: ProfileRow
-            switch mutation {
-            case .patch(let patch): saved = try await service.saveProfile(userID: id, patch: patch)
-            case .create(let value): saved = try await service.createProfile(value: value)
+        await performOperation { attempt in
+            pendingProfileDraft = draft
+            do throws(DataError) {
+                let saved: ProfileRow
+                switch mutation {
+                case .patch(let patch): saved = try await service.saveProfile(userID: id, patch: patch)
+                case .create(let value): saved = try await service.createProfile(value: value)
+                }
+                guard epoch == attempt, userID == id else { return }
+                guard saved.id == id else { throw .outcomeUnknown(operation: "profile save") }
+                // A returned representation alone never opens the feature gate.
+                profileNeedsReconciliation = true
+                await loadProfile(attempt: attempt, requireExisting: true)
+            } catch {
+                guard epoch == attempt, userID == id else { return }
+                profileNeedsReconciliation = true
+                failure = error
+                if isAuthFailure(error) { enterSessionRecovery(error) }
+                else { stage = .profileFailure }
             }
-            guard epoch == attempt, userID == id else { return }
-            guard saved.id == id else { throw .outcomeUnknown(operation: "profile save") }
-            // A returned representation alone never opens the feature gate.
-            profileNeedsReconciliation = true
-            await loadProfile(attempt: attempt, requireExisting: true)
-        } catch {
-            guard epoch == attempt, userID == id else { return }
-            profileNeedsReconciliation = true
-            failure = error
-            if isAuthFailure(error) { enterSessionRecovery(error) }
-            else { stage = .profileFailure }
         }
     }
 
@@ -152,6 +153,9 @@ public enum AppStage: String, Equatable, Sendable {
             guard epoch == attempt, userID == id else { return }
             guard loaded == nil || loaded?.id == id else { throw .invalidResponse }
             if requireExisting && loaded == nil { throw .invalidResponse }
+            // A slow profile request can cross midnight without a notification reaching this task.
+            // Capture the current day before opening the gate or issuing day-scoped reads.
+            try updateDay()
             profile = loaded
             confirmedMissingProfile = loaded == nil
             profileNeedsReconciliation = false
@@ -182,7 +186,12 @@ public enum AppStage: String, Equatable, Sendable {
     /// Call on active scene, significant-time/timezone changes and a midnight timer.
     /// Session and profile are revalidated before dependent loads on every foreground.
     public func refreshForLifecycle() async {
-        guard stage != .signedOut, !isBusy else { return }
+        guard stage != .signedOut else { return }
+        if isBusy {
+            // Multiple foreground/time notifications during one profile/save operation coalesce.
+            pendingLifecycleEpoch = epoch
+            return
+        }
         await resolve()
     }
 
@@ -232,8 +241,20 @@ public enum AppStage: String, Equatable, Sendable {
         }
     }
 
+    private func performOperation(_ body: (UUID) async -> Void) async {
+        let attempt = beginOperation()
+        await body(attempt)
+        guard epoch == attempt else { return }
+        isBusy = false
+        let shouldRefresh = pendingLifecycleEpoch == attempt
+        pendingLifecycleEpoch = nil
+        guard shouldRefresh, !Task.isCancelled, userID != nil, stage != .signedOut else { return }
+        await resolve()
+    }
+
     private func beginOperation() -> UUID {
         epoch = UUID(); resourceRequests.removeAll()
+        pendingLifecycleEpoch = nil
         isBusy = true; failure = nil
         return epoch
     }
@@ -258,7 +279,7 @@ public enum AppStage: String, Equatable, Sendable {
     }
     private func enterSessionRecovery(_ error: DataError) {
         // Invalidate every outstanding response and remove all account-visible state.
-        epoch = UUID(); clearAccount(); isBusy = false
+        epoch = UUID(); pendingLifecycleEpoch = nil; clearAccount(); isBusy = false
         failure = error; stage = .sessionRecovery
     }
     private func isAuthFailure(_ error: DataError) -> Bool {
