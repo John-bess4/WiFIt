@@ -86,6 +86,14 @@ production Rollup build, which is how 201 green tests coexisted with an
 unbuildable `main` (2026-09-09: `App.jsx` imported `withPlanExerciseIDs`
 before `lib/workouts.js` exported it; every Vercel build of `main` failed and
 the site served a stale deployment). Lint and tests are not a substitute.
+`.githooks/pre-push` runs the build and refuses the push on failure; `npm
+install` activates it (`prepare` sets `core.hooksPath`). If a push is ever
+made with `--no-verify`, say so in the PR.
+
+`main` takes pull requests only, with the Vercel check required. Work on a
+short-lived task branch in your **own worktree** (`git worktree add`), never in
+a tree another agent is committing from — a shared tree is how a643849 staged
+someone else's half-finished edit. See DECISIONS 2026-09-09.
 
 Run `git log --oneline origin/main..HEAD` and report every commit you did not
 author this session. Not a security check — a review-scope one: a push makes

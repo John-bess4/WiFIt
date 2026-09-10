@@ -1,0 +1,25 @@
+#!/bin/sh
+# pre-push: the production build must pass before anything leaves this machine.
+#
+# `npm test` resolves the module graph differently from the Rollup build that
+# Vercel runs, so a missing named export passes every test and still fails the
+# deploy (2026-09-09: App.jsx imported withPlanExerciseIDs before
+# lib/workouts.js exported it). AGENTS.md states the rule; this hook enforces it.
+#
+# Activated by `npm install` via the "prepare" script (core.hooksPath=.githooks).
+# Worktrees share the repo config, so it applies to every checkout of this repo.
+# Bypass only with `git push --no-verify`, and say so in the commit or PR.
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+log="$(mktemp)"
+printf '[pre-push] npm run build ... '
+if npm run build --silent >"$log" 2>&1; then
+  echo "ok"
+  rm -f "$log"
+  exit 0
+fi
+echo "FAILED"
+cat "$log"
+rm -f "$log"
+echo "[pre-push] push refused: production build failed (see above)."
+exit 1

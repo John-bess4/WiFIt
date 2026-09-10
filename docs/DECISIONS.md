@@ -16,6 +16,44 @@ careful.
 
 ---
 
+## 2026-09-09 — The test suite resolves the module graph differently than the production Rollup build
+
+**What happened.** `App.jsx` imported `withPlanExerciseIDs` from
+`lib/workouts.js` before that file exported it. The import arrived in
+`a643849` (the BMR/TDEE extraction): two agents were committing from one
+working tree, and `git add src/App.jsx` staged the other agent's half-finished
+edit to App.jsx while its matching change to workouts.js stayed unstaged. The
+commit was pushed to `main` as part of a three-commit push, so Vercel built
+only the tip. **One production build failed**, Vercel kept serving the prior
+deployment, and the site looked fine. Not "every build since" — the accurate
+count is one, and the gap lasted until the next session ran `vite build` by
+hand.
+
+**Why it was invisible.** 201 tests were green and the push succeeded, and
+both reported fine. Vitest resolves the module graph differently than the
+production Rollup build: an unresolved named import is `undefined` at call
+time under Vitest and is only an error if a test reaches that call, whereas
+Rollup fails the whole build at link time. Nothing the suite could do would
+have caught it — that is the sentence worth keeping.
+
+**Decision.** Three gates, each of which alone would have stopped this:
+
+1. `npm run build` must exit 0 before every push. Written in `AGENTS.md` for
+   agents to read, and enforced by `.githooks/pre-push` for agents that forget;
+   `npm install` activates the hook through the `prepare` script
+   (`core.hooksPath=.githooks`), and worktrees share it.
+2. `main` accepts pull requests only, with the Vercel status check required.
+   Branch-tip pushes to `main` stop; the preview build is the gate, whichever
+   agent made the mistake.
+3. One git worktree per agent. A commit can then only contain its author's
+   edits, which removes the class rather than the instance. The long-lived
+   `codex/trainerhq-shared-backend` branch is retired in favour of short-lived
+   task branches.
+
+**What would structurally prevent it.** Gate 2 is the one that does not
+depend on anyone remembering anything. Gates 1 and 3 make the failure rare;
+gate 2 makes it unreachable.
+
 ## 2026-09-06 — Verify reachability before fixing reachability
 
 **A code pattern that permits a bug is not the same as a bug a user can reach.**
