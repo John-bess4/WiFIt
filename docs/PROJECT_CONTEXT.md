@@ -414,7 +414,7 @@ The application never references it. Plans live in `workout_plans`.
 
 ## The `sb` wrapper — read this before touching any data code
 
-`sb` is a hand-rolled Supabase REST client (module-level in `App.jsx`, ~line 4524).
+`sb` is a hand-rolled Supabase REST client (`src/lib/supabase.js`; it was module-level in `App.jsx` until the 2026-09-08 port-layer extraction).
 **No `@supabase/supabase-js`.** `sb.headers()` reads `sb._session` at call time, so a
 just-refreshed token is used automatically.
 
@@ -880,7 +880,7 @@ Anthropic response formats are unchanged and out of scope for security work:
     Vercel), quantity edit and slot change (do not exist).
 
 21. **USDA search is OFF by design (2026-09-07), not broken.** `USDA_ENABLED =
-    false` in `App.jsx` gates the fan-out: the proxy is never called and search
+    false` in `src/lib/search.js` gates the fan-out: the proxy is never called and search
     reports only the sources that ran, so an empty result is an empty state. The
     branded dataset's search relevance was not worth the dependency. `api/usda.js`,
     the client, the `USDA_API_KEY` env contract and the honest failed-search UI
