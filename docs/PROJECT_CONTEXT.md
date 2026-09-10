@@ -7,6 +7,13 @@ WiFit and TrainerHQ are sister apps on the same Supabase project.
 it before claiming cross-app integration. No TrainerHQ iOS target exists in this
 repository yet. Its consented gateway stays a separate module usable by both apps.
 
+Phase Two located TrainerHQ's separate native target at
+`/Users/johnbessemer/Downloads/TrainerHQ_Project_Source/TrainerHQ.xcodeproj`.
+Its public configuration points to the same Supabase project, but it currently
+links `supabase-swift` 2.55.1 rather than FitDataKit. Shared-package adoption and
+an actual two-app integration check remain unfinished; the target is no longer
+unknown. No TrainerHQ files were changed during this discovery.
+
 The user approved explicit Swift failures instead of copying React
 `sb.select` swallowing. See `docs/GEN2_PHASE_ONE.md`, `docs/port/DATA_LAYER.md`
 and the refreshed complete `docs/port/SCHEMA.md`. These are the current Gen 2

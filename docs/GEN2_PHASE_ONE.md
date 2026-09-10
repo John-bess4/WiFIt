@@ -198,6 +198,10 @@ The absence of the TrainerHQ iOS target, complete gateway command schemas and
 native app/device evidence is explicit. It does not justify guessing at those
 contracts, claiming cross-app completion, or silently removing requirements.
 
+**Phase Two update:** the separate TrainerHQ target has since been located and
+its shared Supabase origin verified. Its existing SDK dependency still needs
+FitDataKit adoption; see [the current verification record](GEN2_PHASE_TWO_VERIFICATION.md).
+
 ## Git and release discipline
 
 Work stays in an isolated task worktree. Review the final changes before

@@ -170,6 +170,19 @@ public struct SupabaseREST: Sendable {
         return try writtenRow(response, table: table, operation: "upsert", expectedOwner: owner, expectedConflict: keys)
     }
 
+    /// Onboarding must not overwrite a profile concurrently created by another app/device.
+    /// A conflicting existing row is left untouched; zero returned rows requires a fresh read.
+    public func createProfileIfMissing(_ value: ProfileWrite) async throws(DataError) -> ProfileRow {
+        try value.validate()
+        let body = try encode(value)
+        let keys = try submittedKeys(body, table: .profiles, upsert: true)
+        let response = try await request(.profiles, method: "POST",
+            query: [URLQueryItem(name: "on_conflict", value: "id")], body: body,
+            prefer: "resolution=ignore-duplicates,return=representation", expectedOwner: value.id)
+        return try writtenRow(response, table: .profiles, operation: "profile create",
+                              expectedOwner: value.id, expectedConflict: keys)
+    }
+
     /// UUID is required before a mutation is representable. Identity/owner filters are built here, never UI strings.
     public func update<Patch: DatabaseWrite, Row: Decodable & Sendable>(_ table: DatabaseTable,
         id: UUID, ownerID: UUID, changes: Patch, returning: Row.Type) async throws(DataError) -> Row {

@@ -1,5 +1,11 @@
 # WiFit Gen 2 design reference
 
+**Latest update (2026-09-09 Pacific):** the user supplied five new paired
+light/dark theme families and three page concepts during Phase Two. See
+[updated-themes/README.md](updated-themes/README.md) for the current background,
+surface and palette authority. The earlier references below retain layout
+context where the newer examples do not replace it.
+
 The user's supplied screenshots are the authority for **Home and Workout
 layout, hierarchy and proportion**. This supersedes contradictory bundle and
 Claude conversation prose. The user approved coherent improvisation for other

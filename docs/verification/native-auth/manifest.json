@@ -1,0 +1,98 @@
+[
+  {
+    "variant": "teal-dark",
+    "file": "teal-dark.png",
+    "sha256": "b7c1b8380e2a19db535d2993924b5bec7dcf04a465208fcb626f49be377ff9d3",
+    "device": "iPhone 17 Pro",
+    "deviceID": "D896C45A-1BC0-49A4-B2CF-40E5D3482B8D",
+    "timestamp": 1789009363.036
+  },
+  {
+    "variant": "teal-light",
+    "file": "teal-light.png",
+    "sha256": "02343f1f449e7add636902a797a16dc02f1cf5680695e64f30c116b8687acdc1",
+    "device": "iPhone 17 Pro",
+    "deviceID": "D896C45A-1BC0-49A4-B2CF-40E5D3482B8D",
+    "timestamp": 1789009356.67
+  },
+  {
+    "variant": "aqua-dark",
+    "file": "aqua-dark.png",
+    "sha256": "2f10b9bf03fdefaab0ffaefe90190d8cd608df834fa41efe1a8affd72840f86c",
+    "device": "iPhone 17 Pro",
+    "deviceID": "D896C45A-1BC0-49A4-B2CF-40E5D3482B8D",
+    "timestamp": 1789009350.272
+  },
+  {
+    "variant": "aqua-light",
+    "file": "aqua-light.png",
+    "sha256": "3752f47f242dc44979f48ff1af06d4e6be553aa945fc8cf3ec71ebfa81fbf346",
+    "device": "iPhone 17 Pro",
+    "deviceID": "D896C45A-1BC0-49A4-B2CF-40E5D3482B8D",
+    "timestamp": 1789009343.849
+  },
+  {
+    "variant": "rose-dark",
+    "file": "rose-dark.png",
+    "sha256": "0dba307ac7301c90c99529356e79fe7a9fd042be4aa3a3eb6a1e506e04f4c9cd",
+    "device": "iPhone 17 Pro",
+    "deviceID": "D896C45A-1BC0-49A4-B2CF-40E5D3482B8D",
+    "timestamp": 1789009337.48
+  },
+  {
+    "variant": "rose-light",
+    "file": "rose-light.png",
+    "sha256": "b1f0cfadb208cc66c2545f2ff1e2c38d6575ca53ac15db39238d2f06f2638f43",
+    "device": "iPhone 17 Pro",
+    "deviceID": "D896C45A-1BC0-49A4-B2CF-40E5D3482B8D",
+    "timestamp": 1789009331.035
+  },
+  {
+    "variant": "purple-dark",
+    "file": "purple-dark.png",
+    "sha256": "c04c959853f7d1dde8a42c51b3be5a106a3cf2105c6a090b6bc4f1c16b688a06",
+    "device": "iPhone 17 Pro",
+    "deviceID": "D896C45A-1BC0-49A4-B2CF-40E5D3482B8D",
+    "timestamp": 1789009324.72
+  },
+  {
+    "variant": "purple-light",
+    "file": "purple-light.png",
+    "sha256": "b849e8d08b85d3a5504e928a97c84a31a95a27caee45bc71ca059fd566a151bf",
+    "device": "iPhone 17 Pro",
+    "deviceID": "D896C45A-1BC0-49A4-B2CF-40E5D3482B8D",
+    "timestamp": 1789009318.378
+  },
+  {
+    "variant": "cottonCandy-dark",
+    "file": "cottonCandy-dark.png",
+    "sha256": "7a661daf5145ef5dbb16e62f2113b1d685a6b9865064503cd5236d5b3f8488c1",
+    "device": "iPhone 17 Pro",
+    "deviceID": "D896C45A-1BC0-49A4-B2CF-40E5D3482B8D",
+    "timestamp": 1789009312.042
+  },
+  {
+    "variant": "cottonCandy-light",
+    "file": "cottonCandy-light.png",
+    "sha256": "88e5b5ea580a8f1461dfdd6477360ce264cc9615645e94bee6074c34eef1e035",
+    "device": "iPhone 17 Pro",
+    "deviceID": "D896C45A-1BC0-49A4-B2CF-40E5D3482B8D",
+    "timestamp": 1789009305.735
+  },
+  {
+    "variant": "profile-failure",
+    "file": "profile-failure.png",
+    "sha256": "0952085509d984ab85911f7af13c5f84657b18816e57d09b409c480652436081",
+    "device": "iPhone 17 Pro",
+    "deviceID": "D896C45A-1BC0-49A4-B2CF-40E5D3482B8D",
+    "timestamp": 1789009370.935
+  },
+  {
+    "variant": "resource-failure",
+    "file": "resource-failure.png",
+    "sha256": "a9b10140cb353dff248814f9ce5056fc5a0447480f660e7bfe9091e701a2fa9a",
+    "device": "iPhone 17 Pro",
+    "deviceID": "D896C45A-1BC0-49A4-B2CF-40E5D3482B8D",
+    "timestamp": 1789009378.703
+  }
+]

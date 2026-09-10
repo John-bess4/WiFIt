@@ -44,3 +44,5 @@ supabase/.temp/
 DerivedData/
 *.xcuserstate
 xcuserdata/
+*.xcresult/
+iOS/WiFit/Config/Local.xcconfig
