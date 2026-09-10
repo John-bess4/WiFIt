@@ -1,0 +1,15 @@
+#!/bin/sh
+# The production Rollup build catches missing exports that unit tests may miss.
+# Activated by npm install's prepare script; worktrees share repository config.
+cd "$(git rev-parse --show-toplevel)" || exit 1
+build_log="$(mktemp)" || exit 1
+trap 'rm -f "$build_log"' EXIT HUP INT TERM
+printf '[pre-push] npm run build ... '
+if npm run build --silent >"$build_log" 2>&1; then
+  echo "ok"
+  exit 0
+fi
+echo "FAILED"
+cat "$build_log"
+echo "[pre-push] push refused: production build failed."
+exit 1
