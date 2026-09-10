@@ -1,0 +1,12 @@
+// Public Supabase project configuration shared with the sister-app contract.
+// This publishable key is intended for clients. RLS requires the signed-in JWT.
+// The empty expansion avoids xcconfig interpreting the URL as a comment.
+SUPABASE_URL = https:/$()/vghqqksbjpgdzmvfmnru.supabase.co
+SUPABASE_PUBLISHABLE_KEY = sb_publishable_KBGviApj6BMyIsSvdS0pIA_2U9ZQuRC
+
+// The release phase will confirm the registered identifier and signing team.
+PRODUCT_BUNDLE_IDENTIFIER = com.wifit.gen2
+MARKETING_VERSION = 0.1.0
+CURRENT_PROJECT_VERSION = 1
+
+#include? "Local.xcconfig"
