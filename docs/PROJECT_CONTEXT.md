@@ -1086,3 +1086,23 @@ Exercise names and set values are preserved; no database rewrite or migration
 is involved. The three regression cases are in `planExerciseIdentity.test.js`.
 This fix remains local on `codex/trainerhq-shared-backend`; production deployment
 and pushing `main` still require separate owner approval.
+
+
+## Applied WiFit removal compatibility — September 12, 2026
+
+The explicitly approved shared migration `20260912030601 wifit_data_removal`
+adds `wifit_data_generation()`. It returns the authenticated account’s nonnegative
+generation. Personal mutations must freeze this value in
+`x-wifit-data-generation`; old generations are rejected after confirmed removal.
+The shared Auth account, profile, trainer relationships and assigned records stay.
+This web change does not expose or initiate data removal.
+
+`sb.loadDataGeneration` verifies the generation before App loads profile/activity.
+A failed read opens retry recovery; only an exact pre-migration PGRST202 permits
+zero. Refresh/relogin cannot rebase an old page’s drafts. Server or cross-tab
+barriers open explicit reload recovery. Reload clears only this owner’s old
+personal workout/chat cache, retaining assigned workout snapshots. Mutation
+return conventions remain unchanged; failed writes still return null/false and
+failed legacy select still returns an empty array.
+
+Verification and deployment evidence: `docs/WEB_REMOVAL_COMPATIBILITY.md`.

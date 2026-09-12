@@ -6,6 +6,7 @@ const res = (status, body = {}) => ({
   status,
   json: async () => body,
   text: async () => JSON.stringify(body),
+  clone: () => res(status, body),
 });
 
 const isRefresh = (url) => String(url).includes("grant_type=refresh_token");
