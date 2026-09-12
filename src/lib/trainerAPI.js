@@ -20,7 +20,7 @@ export async function readAttachment(attachment) {
   if (!sb.getUser()) throw new Error('Sign in to view this attachment.');
   if (attachment.bucket !== 'trainerhq-message-attachments' || !['image/jpeg','image/png','application/pdf'].includes(attachment.mime_type) || attachment.byte_count > 10485760) throw new Error('Unsupported attachment.');
   const path = attachment.object_path.split('/').map(encodeURIComponent).join('/');
-  const response = await sb._fetch('/storage/v1/object/authenticated/' + attachment.bucket + '/' + path, { cache: 'no-store' });
+  const response = await sb._fetch('/storage/v1/object/authenticated/' + attachment.bucket + '/' + path + '?cacheNonce=' + crypto.randomUUID(), { cache: 'no-store' });
   if (!response.ok) throw new Error('This attachment is unavailable or your access has changed.');
   const blob = await response.blob();
   if (blob.size !== attachment.byte_count || blob.size > 10485760) throw new Error('The attachment could not be verified.');

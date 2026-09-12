@@ -14,8 +14,13 @@ it('fails closed for unreadable responses', async () => {
 it('rechecks private Storage instead of using a public URL', async () => {
   const a={bucket:'trainerhq-message-attachments',object_path:'message/file.pdf',mime_type:'application/pdf',byte_count:3};
   fake._fetch.mockResolvedValue(new Response('pdf')); expect((await readAttachment(a)).size).toBe(3);
-  expect(fake._fetch.mock.calls[0][0]).toBe('/storage/v1/object/authenticated/trainerhq-message-attachments/message/file.pdf');
+  const first = new URL(fake._fetch.mock.calls[0][0], 'https://test.invalid');
+  expect(first.pathname).toBe('/storage/v1/object/authenticated/trainerhq-message-attachments/message/file.pdf');
+  expect(first.searchParams.get('cacheNonce')).toMatch(/^[a-f0-9-]{36}$/i);
   fake._fetch.mockResolvedValue(new Response('',{status:403})); await expect(readAttachment(a)).rejects.toThrow('access has changed');
+  const second = new URL(fake._fetch.mock.calls[1][0], 'https://test.invalid');
+  expect(second.pathname).toBe(first.pathname);
+  expect(second.searchParams.get('cacheNonce')).not.toBe(first.searchParams.get('cacheNonce'));
 });
 it('rejects tampered attachment sizes', async () => {
   fake._fetch.mockResolvedValue(new Response('short')); await expect(readAttachment({bucket:'trainerhq-message-attachments',object_path:'a',mime_type:'image/png',byte_count:100})).rejects.toThrow('verified');

@@ -1106,3 +1106,13 @@ return conventions remain unchanged; failed writes still return null/false and
 failed legacy select still returns an empty array.
 
 Verification and deployment evidence: `docs/WEB_REMOVAL_COMPATIBILITY.md`.
+
+
+## Private attachment read freshness — September 12
+
+Private Storage GETs use `/storage/v1/object/authenticated/` and a distinct
+`cacheNonce` per read; no-store alone did not avoid an observed cached response
+after consent changed. Upload paths and retained operation IDs stay unchanged.
+Fresh paused/unshared trainer reads are denied; client history remains available.
+Removing messaging archives the old direct thread permanently; regrant creates a
+new canonical thread. See `docs/port/PRIVATE_ATTACHMENT_READS.md` for live evidence.
