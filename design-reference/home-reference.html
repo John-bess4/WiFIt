@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WiFIt — Home reference</title>
+<!--
+  Framework-free reference of the same screen HomeScreen.jsx renders.
+  Every color is a CSS custom property written onto #screen by themes.js.
+  Serve over http (Vite dev server / `npx serve`) — it uses an ES module import.
+-->
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; display:flex; flex-direction:column; align-items:center; gap:14px;
+         padding:20px; background:#101014; font-family:-apple-system,'SF Pro Text',system-ui,sans-serif; }
+  #picker { display:flex; gap:8px; align-items:center; color:#c9c6d0; font-size:13px; }
+  #picker select { background:#1c1c22; color:#f2f0f6; border:1px solid #34343e; border-radius:8px; padding:6px 10px; font:inherit; }
+
+  #screen { width:390px; min-height:1180px; position:relative; overflow:hidden; border-radius:34px;
+            background:var(--bg); color:var(--txt); }
+
+  .mono { font:600 10px/1 ui-monospace,Menlo,monospace; }
+  .card { margin:12px 18px 0; border-radius:22px; background:var(--surf); box-shadow:var(--lift); }
+  .row  { display:flex; align-items:center; }
+  .between { display:flex; justify-content:space-between; align-items:baseline; }
+  button { font:inherit; background:none; border:none; padding:0; cursor:pointer; color:inherit; }
+
+  /* header */
+  .head { padding:12px 24px 0; display:flex; align-items:flex-start; justify-content:space-between; }
+  .greet { font-size:21px; font-weight:650; letter-spacing:-.02em; }
+  .datelabel { font:600 9px/1 ui-monospace,Menlo,monospace; letter-spacing:.22em; color:var(--faint); }
+  .streak { font:600 11px/1 ui-monospace,Menlo,monospace; color:var(--chipTxt); background:var(--chipBg);
+            border:1px solid var(--chipLine); padding:6px 8px; border-radius:9px; }
+  .iconbtn { width:32px; height:32px; border-radius:11px; background:var(--surf); border:1px solid var(--line);
+             display:grid; place-items:center; }
+  .avatar { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-size:13px;
+            font-weight:650; color:var(--onAcc); background:linear-gradient(150deg,var(--av1),var(--av2)); }
+
+  /* week rail */
+  .week { margin:10px 14px 0; padding:7px 10px 6px; border-radius:18px; background:var(--surf);
+          border:1px solid var(--line); box-shadow:var(--lift); }
+  .weekgrid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .day { display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 0 3px; border-radius:11px;
+         border:1px solid transparent; }
+  .day.today { background:var(--glowInner); border-color:var(--accLine); }
+  .day .dow  { font:600 7.5px/1 ui-monospace,Menlo,monospace; letter-spacing:.08em; color:var(--faint); }
+  .day.today .dow, .day.today .kcal { color:var(--accTxt); }
+  .day .kcal { font:600 7px/1 ui-monospace,Menlo,monospace; color:var(--faint); }
+  .daynum { position:absolute; inset:0; display:grid; place-items:center; font-size:9.5px; font-weight:650; color:var(--dim); }
+  .day.today .daynum { color:var(--txt); }
+
+  /* calories hero */
+  .hero { position:relative; margin:10px 14px 0; border-radius:28px; padding:2.5px; overflow:hidden;
+          box-shadow:0 0 46px var(--glowSoft); }
+  .tracer { position:absolute; top:-120%; left:-30%; width:160%; height:340%; filter:blur(.4px);
+            animation:wfTrace 3.4s linear infinite;
+            background:conic-gradient(from 0deg,transparent 0deg,transparent 232deg,var(--tr0) 268deg,
+                       var(--tr1) 296deg,var(--tr2) 314deg,var(--tr0) 332deg,transparent 350deg); }
+  .heroInner { position:relative; border-radius:27px; background:var(--heroBg); border:1px solid var(--line); height:248px; }
+  .kcalBig { font-size:86px; font-weight:700; letter-spacing:-.05em; line-height:.86; }
+  .kcalStack { position:absolute; top:74px; left:0; right:0; display:flex; flex-direction:column; align-items:center; gap:9px; }
+  .kcalCap { font:600 10px/1 ui-monospace,Menlo,monospace; letter-spacing:.24em; color:var(--faint); }
+  .kcalPct { font:600 11.5px/1 ui-monospace,Menlo,monospace; letter-spacing:.1em; color:var(--accTxt); }
+  .kcalFoot { position:absolute; bottom:10px; left:56px; right:56px; display:flex; justify-content:space-between;
+              font:600 9.5px/1 ui-monospace,Menlo,monospace; letter-spacing:.16em; color:var(--faint); }
+
+  /* macros */
+  .macros { margin:2px 18px 0; padding:16px 18px 14px; border-radius:22px; background:var(--accSoft);
+            border:1px solid var(--accLine); box-shadow:0 0 26px var(--glowSoft), inset 0 0 26px var(--glowInner);
+            display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .macro { display:flex; flex-direction:column; gap:8px; }
+  .macro b { font-size:17px; font-weight:650; }
+  .macro small { font-size:11px; color:var(--faint); }
+  .macro .cap { font:600 8.5px/1 ui-monospace,Menlo,monospace; letter-spacing:.2em; color:var(--faint); }
+  .bar { height:4px; border-radius:3px; background:var(--track); }
+  .bar > i { display:block; height:100%; border-radius:3px; }
+
+  /* workout */
+  .session { margin:10px 18px 0; padding:14px 18px; border-radius:22px; position:relative; overflow:hidden;
+             background:var(--sessionBg); border:1px solid var(--accLine); }
+  .session .orb { position:absolute; right:-46px; top:-56px; width:170px; height:170px; border-radius:50%;
+                  background:radial-gradient(circle,var(--glow),transparent 65%); pointer-events:none; z-index:0; }
+  .session .body { position:relative; z-index:1; display:flex; align-items:flex-start; justify-content:space-between; }
+  .upnext { font:600 8.5px/1 ui-monospace,Menlo,monospace; letter-spacing:.2em; color:var(--accTxt); }
+  .start { padding:10px 18px; border-radius:14px; background:var(--startBg); color:var(--startTxt);
+           font-size:13px; font-weight:650; box-shadow:0 8px 22px var(--glowSoft); }
+  .pills { position:relative; z-index:1; display:flex; gap:6px; margin-top:14px; }
+  .pills span { font:600 9.5px/1 ui-monospace,Menlo,monospace; color:var(--dim); background:var(--pillBg);
+                padding:6px 9px; border-radius:9px; }
+
+  /* water */
+  .water { border:1px solid var(--watLine); box-shadow:0 0 22px var(--watGlow), var(--lift); padding:13px 16px; gap:12px; }
+  .waterTrack { flex:1; position:relative; height:12px; border-radius:7px; background:var(--track);
+                border:1px solid var(--watLine); overflow:hidden; }
+  .waterFill { position:absolute; inset:0 auto 0 0; border-radius:7px; transition:width .45s ease;
+               background:linear-gradient(90deg,var(--watD),var(--wat)); box-shadow:0 0 14px var(--watGlow); }
+  .waterVal { font:600 11px/1 ui-monospace,Menlo,monospace; letter-spacing:.06em; color:var(--watTxt); }
+
+  /* supplements */
+  .supps { border:1px solid var(--supLine); padding:14px 16px 13px; }
+  .suppGrid { display:grid; grid-template-columns:repeat(5,1fr); gap:9px; }
+  .supp { display:flex; flex-direction:column; align-items:center; gap:7px; }
+  .suppCell { position:relative; width:100%; height:38px; border-radius:13px; overflow:hidden;
+              background:var(--pillBg); border:1px solid var(--line); }
+  .supp[aria-pressed="true"] .suppCell { background:var(--glowInner); border-color:var(--supLine); }
+  .suppFill { position:absolute; inset:auto 0 0 0; height:0; transition:height .32s cubic-bezier(.4,0,.2,1);
+              background:linear-gradient(180deg,var(--sup),var(--supD)); }
+  .supp[aria-pressed="true"] .suppFill { height:100%; }
+  .suppSeam { position:absolute; left:0; right:0; top:50%; height:1px; background:var(--pillLine); }
+  .supp span { font-size:9.5px; font-weight:600; line-height:1.15; text-align:center; color:var(--faint); }
+  .supp[aria-pressed="true"] span { color:var(--supTxt); }
+  .suppFoot { display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:11px;
+              border-top:1px solid var(--line); }
+  .suppFoot .left { font:600 9px/1 ui-monospace,Menlo,monospace; letter-spacing:.14em; color:var(--faint); }
+  .suppFoot .log  { font:600 10.5px/1 ui-monospace,Menlo,monospace; letter-spacing:.12em; color:var(--supTxt); }
+
+  /* meals */
+  .meals { border:1px solid var(--accLine); box-shadow:0 0 20px var(--glowInner), var(--lift); padding:14px 16px 8px; }
+  .meal { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); }
+  .meal .t { font:600 9px/1 ui-monospace,Menlo,monospace; color:var(--faint); width:52px; }
+  .meal .n { flex:1; display:flex; flex-direction:column; gap:3px; font-size:13.5px; }
+  .meal .m { font:600 8.5px/1 ui-monospace,Menlo,monospace; letter-spacing:.14em; color:var(--faint); }
+  .meal .k { font-size:13px; font-weight:650; }
+  .more { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:12px 0 11px;
+          font:600 10px/1 ui-monospace,Menlo,monospace; letter-spacing:.14em; color:var(--accTxt); }
+
+  /* tab bar */
+  .nav { position:absolute; left:0; right:0; bottom:0; padding:0 12px 16px; }
+  .navInner { position:relative; height:104px; }
+  .navSvg { position:absolute; left:0; bottom:0; filter:drop-shadow(var(--navShadow)); }
+  .navEdge { animation:wfNavBreathe 4.6s ease-in-out infinite; }
+  .tabs { position:absolute; left:0; right:0; bottom:0; height:66px; display:grid; grid-template-columns:repeat(5,1fr);
+          align-items:center; }
+  .tab { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:6px;
+         font-size:9px; font-weight:500; color:var(--navOff); transition:color .3s; }
+  .tab svg { transition:transform .34s cubic-bezier(.5,1.5,.4,1); }
+  .tab[aria-current="page"] { color:var(--navOn); font-weight:650; }
+  .tab[aria-current="page"] svg { transform:scale(1.12) translateY(-1px); }
+  .indicator { position:absolute; top:6px; width:52px; height:54px; border-radius:18px;
+               background:linear-gradient(180deg,var(--glow),transparent); border:1px solid var(--accLine);
+               box-shadow:0 0 26px var(--glowSoft), inset 0 1px 0 rgba(255,255,255,.14);
+               transition:left .44s cubic-bezier(.5,1.5,.4,1); }
+  .underline { position:absolute; bottom:-4px; width:52px; display:grid; place-items:center;
+               transition:left .44s cubic-bezier(.5,1.5,.4,1); }
+  .underline i { display:block; width:26px; height:3px; border-radius:3px; background:var(--fab1); box-shadow:0 0 14px var(--glow); }
+  .fab { position:absolute; left:50%; bottom:37px; width:58px; height:58px; margin-left:-29px; z-index:5; }
+  .fabHalo { position:absolute; inset:-8px; border-radius:50%; filter:blur(7px); animation:wfFabHalo 3.6s ease-in-out infinite;
+             background:radial-gradient(circle,var(--glow) 0%,var(--glowSoft) 45%,transparent 72%); }
+  .fabRing { position:absolute; inset:0; border-radius:50%; padding:2px; overflow:hidden;
+             background:conic-gradient(from 210deg,var(--fab1),var(--fab2) 45%,var(--fab3) 75%,var(--fab1));
+             box-shadow:0 10px 22px var(--glowSoft), 0 0 18px var(--glow);
+             transition:transform .34s cubic-bezier(.5,1.5,.4,1); }
+  .fabTracer { position:absolute; top:-50%; left:-50%; width:200%; height:200%; filter:blur(.4px);
+               animation:wfTrace 3.4s linear infinite;
+               background:conic-gradient(from 0deg,transparent 0deg,transparent 232deg,var(--tr0) 268deg,
+                          var(--tr1) 296deg,var(--tr2) 314deg,var(--tr0) 332deg,transparent 350deg); }
+  .fabCore { position:relative; width:100%; height:100%; border-radius:50%; display:grid; place-items:center;
+             background:linear-gradient(160deg,var(--fab2),var(--fabB)); box-shadow:inset 0 2px 0 rgba(255,255,255,.3); }
+  .fabCore svg { transition:transform .34s cubic-bezier(.5,1.5,.4,1); }
+  .nav[data-open="true"] .fabRing { transform:scale(1.06); }
+  .nav[data-open="true"] .fabCore svg { transform:rotate(135deg); }
+  .scrim { position:absolute; left:0; right:0; bottom:0; height:1400px; background:rgba(7,5,12,.74);
+           backdrop-filter:blur(6px); opacity:0; pointer-events:none; transition:opacity .3s ease; }
+  .nav[data-open="true"] .scrim { opacity:1; pointer-events:auto; }
+  .qa { position:absolute; width:54px; z-index:4; display:flex; flex-direction:column; align-items:center; gap:7px;
+        opacity:0; transform:scale(.3) translateY(26px); pointer-events:none;
+        transition:transform .34s cubic-bezier(.4,1.5,.4,1), opacity .26s ease; }
+  .nav[data-open="true"] .qa { opacity:1; transform:scale(1) translateY(0); pointer-events:auto; }
+  .qa i { width:54px; height:54px; border-radius:20px; display:grid; place-items:center; font-style:normal;
+          font-size:17px; font-weight:700; background:linear-gradient(165deg,rgba(28,20,40,.96),rgba(12,8,18,.96));
+          box-shadow:0 10px 24px rgba(0,0,0,.45); }
+  .qa span { font-size:9.5px; font-weight:600; color:rgba(244,241,248,.82); white-space:nowrap; }
+
+  @keyframes wfTrace { to { transform:rotate(360deg); } }
+  @keyframes wfFabHalo { 0%,100% { opacity:.6; transform:scale(1); } 50% { opacity:1; transform:scale(1.06); } }
+  @keyframes wfNavBreathe { 0%,100% { opacity:.5; } 50% { opacity:1; } }
+</style>
+</head>
+<body>
+
+<div id="picker">
+  <label for="themeSelect">Theme</label>
+  <select id="themeSelect"></select>
+</div>
+
+<div id="screen">
+  <!-- header -->
+  <div class="head">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <span class="datelabel">SUN · JUL 26</span>
+      <span class="greet">Evening, Johnny</span>
+    </div>
+    <div class="row" style="gap:8px">
+      <span class="streak">7d</span>
+      <button class="iconbtn" aria-label="Calendar">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accTxt)" stroke-width="1.7" stroke-linejoin="round">
+          <rect x="3.6" y="5.4" width="16.8" height="15" rx="3.2"></rect>
+          <path d="M8 3.4v3.4M16 3.4v3.4M3.6 10.4h16.8"></path>
+        </svg>
+      </button>
+      <button class="avatar" aria-label="Profile">J</button>
+    </div>
+  </div>
+
+  <!-- week rail -->
+  <section class="week">
+    <div class="between" style="padding:0 6px 6px">
+      <span style="font:600 8.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.2em;color:var(--faint)">JUL 20 — 26</span>
+      <span id="weekOnTarget" style="font:600 9.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:var(--accTxt)">3 / 6 ON TARGET</span>
+    </div>
+    <div class="weekgrid" id="weekGrid"></div>
+  </section>
+
+  <!-- calories left -->
+  <section class="hero">
+    <div class="tracer"></div>
+    <div class="heroInner">
+      <svg width="356" height="196" viewBox="0 0 330 182" fill="none" style="position:absolute;top:10px;left:1px">
+        <defs>
+          <linearGradient id="arcGrad" x1="0" y1="1" x2="1" y2="0">
+            <stop stop-color="var(--arc1)"></stop>
+            <stop offset="0.55" stop-color="var(--arc2)"></stop>
+            <stop offset="1" stop-color="var(--arc3)"></stop>
+          </linearGradient>
+        </defs>
+        <path d="M20 162 A 145 145 0 0 1 310 162" stroke="var(--track)" stroke-width="17" stroke-linecap="round"></path>
+        <path d="M20 162 A 145 145 0 0 1 310 162" stroke="url(#arcGrad)" stroke-width="17" stroke-linecap="round"
+              stroke-dasharray="455.5" stroke-dashoffset="164" style="filter:drop-shadow(0 0 14px var(--glow))"></path>
+      </svg>
+      <div class="kcalStack">
+        <span class="kcalBig">1,410</span>
+        <span class="kcalCap">KCAL LEFT</span>
+        <span class="kcalPct">64% OF 2,200</span>
+      </div>
+      <div class="kcalFoot"><span>790 EATEN</span><span>320 BURNED</span></div>
+    </div>
+  </section>
+
+  <!-- macros -->
+  <section class="macros">
+    <div class="macro"><div><b>96</b><small>/140g</small></div><div class="bar"><i style="width:68%;background:linear-gradient(90deg,var(--m1d),var(--m1));box-shadow:0 0 10px var(--glow)"></i></div><span class="cap">PROTEIN</span></div>
+    <div class="macro"><div><b>118</b><small>/180g</small></div><div class="bar"><i style="width:65%;background:linear-gradient(90deg,var(--m2d),var(--m2))"></i></div><span class="cap">CARBS</span></div>
+    <div class="macro"><div><b>41</b><small>/78g</small></div><div class="bar"><i style="width:53%;background:linear-gradient(90deg,var(--m3d),var(--m3))"></i></div><span class="cap">FAT</span></div>
+  </section>
+
+  <!-- next workout -->
+  <section class="session">
+    <div class="orb"></div>
+    <div class="body">
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <span class="upnext">UP NEXT · 6:00 PM</span>
+        <span style="font-size:20px;font-weight:700;letter-spacing:-.02em">Push day</span>
+        <span style="font-size:11.5px;color:var(--dim)">6 exercises · 20 sets · ~58 min</span>
+      </div>
+      <button class="start">Start</button>
+    </div>
+    <div class="pills"><span>BENCH 4×8</span><span>OHP 4×6</span><span>+4 MORE</span></div>
+  </section>
+
+  <!-- water -->
+  <section class="card water row">
+    <svg width="19" height="24" viewBox="0 0 24 30" fill="none" style="flex:none">
+      <defs><clipPath id="dropClip"><path d="M12 1C12 1 3 12 3 19a9 9 0 0 0 18 0C21 12 12 1 12 1Z"></path></clipPath></defs>
+      <g clip-path="url(#dropClip)"><rect id="dropFill" x="0" y="12" width="24" height="30" fill="var(--wat)" style="transition:y .45s ease"></rect></g>
+      <path d="M12 1C12 1 3 12 3 19a9 9 0 0 0 18 0C21 12 12 1 12 1Z" stroke="var(--watLine)" stroke-width="1.4"></path>
+    </svg>
+    <span style="font-size:14.5px">Water</span>
+    <div class="waterTrack"><div class="waterFill" id="waterFill" style="width:60%"></div></div>
+    <span class="waterVal" id="waterVal">48/80</span>
+    <button id="addWater" style="font-size:13px;font-weight:600;color:var(--watTxt)">+8</button>
+  </section>
+
+  <!-- supplement stack -->
+  <section class="card supps">
+    <div class="between" style="margin-bottom:12px">
+      <span style="font-size:14px;font-weight:650;letter-spacing:-.01em">Supplement stack</span>
+      <span id="suppSummary" style="font:600 10.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:var(--supTxt)">2 of 5 · 40%</span>
+    </div>
+    <div class="suppGrid" id="suppGrid"></div>
+    <div class="suppFoot">
+      <span class="left" id="suppFoot">3 LEFT TODAY · NEXT CREATINE · 5:30P</span>
+      <span class="log">LOG</span>
+    </div>
+  </section>
+
+  <!-- meals today -->
+  <section class="card meals">
+    <div class="between" style="margin-bottom:6px">
+      <span style="font-size:14px;font-weight:650;letter-spacing:-.01em">Meals today</span>
+      <span style="font:600 10.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:var(--m2Txt)">790 KCAL · 2 LOGGED</span>
+    </div>
+    <div class="meal"><span class="t">8:20 AM</span><span class="n">Oats, whey &amp; blueberries<span class="m">BREAKFAST · P32 C48 F9</span></span><span class="k">340</span></div>
+    <div class="meal"><span class="t">12:05 PM</span><span class="n">Chicken rice bowl<span class="m">LUNCH · P64 C70 F32</span></span><span class="k">450</span></div>
+    <button class="more">+ 2 MORE PLANNED
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accTxt)" stroke-width="2.2" stroke-linecap="round"><path d="M6 9.5 12 15.5l6-6"></path></svg>
+    </button>
+  </section>
+
+  <div style="height:128px"></div>
+
+  <!-- tab bar -->
+  <div class="nav" id="nav" data-open="false">
+    <div class="scrim" id="scrim"></div>
+    <div class="navInner">
+      <svg class="navSvg" width="366" height="76" viewBox="0 0 366 76" fill="none">
+        <defs>
+          <linearGradient id="navFill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="var(--navA)"></stop><stop offset="1" stop-color="var(--navB)"></stop></linearGradient>
+          <linearGradient id="navEdge" x1="0" y1="0" x2="1" y2="0"><stop stop-color="transparent"></stop><stop offset="0.3" stop-color="var(--fab1)"></stop><stop offset="0.7" stop-color="var(--fab3)"></stop><stop offset="1" stop-color="transparent"></stop></linearGradient>
+        </defs>
+        <path d="M22 10 H148 A35 35 0 0 0 218 10 H344 A22 22 0 0 1 366 32 V54 A22 22 0 0 1 344 76 H22 A22 22 0 0 1 0 54 V32 A22 22 0 0 1 22 10 Z" fill="url(#navFill)"></path>
+        <path class="navEdge" d="M22 10 H148 A35 35 0 0 0 218 10 H344" stroke="url(#navEdge)" stroke-width="1.5" stroke-linecap="round"></path>
+      </svg>
+
+      <div class="tabs" id="tabs">
+        <div class="indicator" id="indicator" style="left:calc(10% - 26px)"></div>
+        <div class="underline" id="underline" style="left:calc(10% - 26px)"><i></i></div>
+
+        <button class="tab" data-tab="home" aria-current="page">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.4 12 4l8 6.4V20h-5.4v-5.2H9.4V20H4z"></path></svg>Home
+        </button>
+        <button class="tab" data-tab="food">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4.2l3 1.8"></path></svg>Food
+        </button>
+        <div></div>
+        <button class="tab" data-tab="train">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 9v6M8 7v10M16 7v10M19 9v6M8 12h8"></path></svg>Train
+        </button>
+        <button class="tab" data-tab="supps">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.4" y="8.6" width="17" height="7" rx="3.5" transform="rotate(-38 12 12)"></rect><path d="M9.4 14.6 14.6 9.4"></path></svg>Supps
+        </button>
+      </div>
+
+      <div id="quickAdd"></div>
+
+      <button class="fab" id="fab" aria-label="Quick add">
+        <span class="fabHalo"></span>
+        <span class="fabRing">
+          <span class="fabTracer"></span>
+          <span class="fabCore">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--fabIn)" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+          </span>
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { buildThemeVars, THEME_META, THEME_ORDER, DEFAULT_THEME } from './themes.js';
+
+const screen = document.getElementById('screen');
+
+// --- theme ------------------------------------------------------------------
+function applyTheme(name) {
+  const vars = buildThemeVars(name);
+  for (const [k, v] of Object.entries(vars)) screen.style.setProperty(k, v);
+}
+const select = document.getElementById('themeSelect');
+for (const key of THEME_ORDER) {
+  const o = document.createElement('option');
+  o.value = key;
+  o.textContent = THEME_META[key].label + ' — ' + THEME_META[key].mode;
+  select.append(o);
+}
+select.value = DEFAULT_THEME;
+select.addEventListener('change', () => applyTheme(select.value));
+applyTheme(DEFAULT_THEME);
+
+// --- week rail --------------------------------------------------------------
+const WEEK = [
+  { day:'M', date:20, kcal:1860 }, { day:'T', date:21, kcal:2077 }, { day:'W', date:22, kcal:1934 },
+  { day:'T', date:23, kcal:2251 }, { day:'F', date:24, kcal:2008 }, { day:'S', date:25, kcal:2405 },
+  { day:'S', date:26, kcal:790, today:true }
+];
+const CAL_GOAL = 2200, BAND = [1980, 2320];
+
+document.getElementById('weekGrid').innerHTML = WEEK.map(function (d) {
+  const off = (88 * (1 - Math.min(1, d.kcal / CAL_GOAL))).toFixed(1);
+  const ring = d.today ? 'var(--arc3)' : 'var(--acc)';
+  return '<div class="day' + (d.today ? ' today' : '') + '">' +
+    '<span class="dow">' + d.day + '</span>' +
+    '<div style="position:relative;width:26px;height:26px">' +
+      '<svg width="26" height="26" viewBox="0 0 34 34" style="position:absolute;inset:0">' +
+        '<circle cx="17" cy="17" r="14" stroke="var(--track)" stroke-width="3.4" fill="none"></circle>' +
+        '<circle cx="17" cy="17" r="14" stroke="' + ring + '" stroke-width="3.4" fill="none" stroke-linecap="round"' +
+        ' stroke-dasharray="88" stroke-dashoffset="' + off + '" transform="rotate(-90 17 17)"></circle>' +
+      '</svg>' +
+      '<div class="daynum">' + d.date + '</div>' +
+    '</div>' +
+    '<span class="kcal">' + d.kcal + '</span>' +
+  '</div>';
+}).join('');
+
+const finished = WEEK.filter(function (d) { return !d.today; });
+const onTarget = finished.filter(function (d) { return d.kcal >= BAND[0] && d.kcal <= BAND[1]; });
+document.getElementById('weekOnTarget').textContent = onTarget.length + ' / ' + finished.length + ' ON TARGET';
+
+// --- water ------------------------------------------------------------------
+const WATER_GOAL = 80, WATER_STEP = 8;
+let waterOz = 48;
+function renderWater() {
+  const pct = Math.min(100, Math.round((waterOz / WATER_GOAL) * 100));
+  document.getElementById('waterFill').style.width = pct + '%';
+  document.getElementById('waterVal').textContent = waterOz + '/' + WATER_GOAL;
+  document.getElementById('dropFill').setAttribute('y', (30 - 30 * (pct / 100)).toFixed(1));
+}
+document.getElementById('addWater').addEventListener('click', () => {
+  waterOz = Math.min(WATER_GOAL + 40, waterOz + WATER_STEP);
+  renderWater();
+});
+renderWater();
+
+// --- supplements -------------------------------------------------------------
+const SUPPS = [
+  { id:'d3', name:'Vit D3', taken:true, due:'8:00a' },
+  { id:'omega', name:'Omega-3', taken:true, due:'8:00a' },
+  { id:'creat', name:'Creatine', taken:false, due:'5:30p' },
+  { id:'mag', name:'Magnesium', taken:false, due:'9:30p' },
+  { id:'zma', name:'Zinc', taken:false, due:'9:30p' }
+];
+const suppGrid = document.getElementById('suppGrid');
+function renderSupps() {
+  suppGrid.innerHTML = SUPPS.map(function (s) {
+    return '<button class="supp" data-id="' + s.id + '" aria-pressed="' + s.taken + '">' +
+      '<span class="suppCell"><span class="suppFill"></span><span class="suppSeam"></span></span>' +
+      '<span>' + s.name + '</span>' +
+    '</button>';
+  }).join('');
+  const taken = SUPPS.filter((s) => s.taken).length;
+  const next = SUPPS.find((s) => !s.taken);
+  document.getElementById('suppSummary').textContent =
+    taken + ' of ' + SUPPS.length + ' · ' + Math.round((taken / SUPPS.length) * 100) + '%';
+  document.getElementById('suppFoot').textContent =
+    (SUPPS.length - taken) + ' LEFT TODAY' + (next ? ' · NEXT ' + next.name.toUpperCase() + ' · ' + next.due.toUpperCase() : '');
+}
+suppGrid.addEventListener('click', (e) => {
+  const btn = e.target.closest('.supp');
+  if (!btn) return;
+  const s = SUPPS.find((x) => x.id === btn.dataset.id);
+  s.taken = !s.taken;
+  renderSupps();
+});
+renderSupps();
+
+// --- tab bar ------------------------------------------------------------------
+const ORDER = ['home', 'food', null, 'train', 'supps'];
+const QUICK_ADD = {
+  home:  [['Meal','+','#2dd4bf'], ['Water','~','#38bdf8'], ['Dose','/','#a3e635'], ['Workout','↑','#c9a2ff']],
+  food:  [['Meal','+','#2dd4bf'], ['Scan','|||','#7dd3fc'], ['Recipe','≡','#e8b98a'], ['Water','~','#38bdf8']],
+  train: [['Session','↑','#c9a2ff'], ['Exercise','+','#e2caff'], ['Cardio','∿','#fb7185'], ['New PR','★','#e8b98a']],
+  supps: [['Dose','/','#a3e635'], ['New supp','+','#bef264'], ['Reminder','◔','#7dd3fc'], ['Refill','↻','#e8b98a']]
+};
+let activeTab = 'home';
+const nav = document.getElementById('nav');
+
+function renderQuickAdd() {
+  document.getElementById('quickAdd').innerHTML = (QUICK_ADD[activeTab] || QUICK_ADD.home).map(function (action, i) {
+    const label = action[0], mark = action[1], color = action[2];
+    const deg = [-54, -18, 18, 54][i] * Math.PI / 180;
+    const dx = Math.round(108 * Math.sin(deg)), dy = Math.round(-108 * Math.cos(deg));
+    return '<button class="qa" style="left:calc(50% + ' + (dx - 27) + 'px);top:' + (-75 + dy) + 'px;transition-delay:' + (i * 45) + 'ms">' +
+      '<i style="color:' + color + ';border:1px solid ' + color +
+      ';box-shadow:0 10px 24px rgba(0,0,0,.45),0 0 22px ' + color + '4d">' + mark + '</i>' +
+      '<span>' + label + '</span>' +
+    '</button>';
+  }).join('');
+}
+function setTab(key) {
+  activeTab = key;
+  const slot = ORDER.indexOf(key);
+  const left = 'calc(' + ((slot + 0.5) * 20) + '% - 26px)';
+  document.getElementById('indicator').style.left = left;
+  document.getElementById('underline').style.left = left;
+  document.querySelectorAll('.tab').forEach((t) => {
+    if (t.dataset.tab === key) t.setAttribute('aria-current', 'page');
+    else t.removeAttribute('aria-current');
+  });
+  renderQuickAdd();
+}
+document.getElementById('tabs').addEventListener('click', (e) => {
+  const t = e.target.closest('.tab');
+  if (t) { setTab(t.dataset.tab); nav.dataset.open = 'false'; }
+});
+document.getElementById('fab').addEventListener('click', () => {
+  nav.dataset.open = nav.dataset.open === 'true' ? 'false' : 'true';
+});
+document.getElementById('scrim').addEventListener('click', () => { nav.dataset.open = 'false'; });
+document.getElementById('quickAdd').addEventListener('click', () => { nav.dataset.open = 'false'; });
+setTab('home');
+</script>
+</body>
+</html>

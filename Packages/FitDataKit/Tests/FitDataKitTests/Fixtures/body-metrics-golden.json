@@ -1,0 +1,3729 @@
+{
+  "_comment": "Frozen 2026-09-10 from src/lib/bodyMetrics.js + src/lib/constants.js reference. All 4 profiles x 7 activities x 7 rates = 196 cases. Swift tests read these constants; they do not derive expected results from production Swift formulas or constants. Regenerate only when a reviewed contract change intentionally changes user goals.",
+  "cases": [
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "bmr",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 1987,
+        "cal": 1200,
+        "protein": 164,
+        "carbs": 62,
+        "fat": 33
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "bmr",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 1987,
+        "cal": 1487,
+        "protein": 164,
+        "carbs": 116,
+        "fat": 41
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "bmr",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 1987,
+        "cal": 1737,
+        "protein": 164,
+        "carbs": 162,
+        "fat": 48
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "bmr",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 1987,
+        "cal": 1987,
+        "protein": 164,
+        "carbs": 209,
+        "fat": 55
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "bmr",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 1987,
+        "cal": 2237,
+        "protein": 164,
+        "carbs": 256,
+        "fat": 62
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "bmr",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 1987,
+        "cal": 2487,
+        "protein": 164,
+        "carbs": 303,
+        "fat": 69
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "bmr",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 1987,
+        "cal": 2987,
+        "protein": 164,
+        "carbs": 396,
+        "fat": 83
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "sedentary",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 2384,
+        "cal": 1384,
+        "protein": 164,
+        "carbs": 97,
+        "fat": 38
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "sedentary",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 2384,
+        "cal": 1884,
+        "protein": 164,
+        "carbs": 190,
+        "fat": 52
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "sedentary",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 2384,
+        "cal": 2134,
+        "protein": 164,
+        "carbs": 237,
+        "fat": 59
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "sedentary",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 2384,
+        "cal": 2384,
+        "protein": 164,
+        "carbs": 284,
+        "fat": 66
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "sedentary",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 2384,
+        "cal": 2634,
+        "protein": 164,
+        "carbs": 330,
+        "fat": 73
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "sedentary",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 2384,
+        "cal": 2884,
+        "protein": 164,
+        "carbs": 377,
+        "fat": 80
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "sedentary",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 2384,
+        "cal": 3384,
+        "protein": 164,
+        "carbs": 471,
+        "fat": 94
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "light",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 2732,
+        "cal": 1732,
+        "protein": 164,
+        "carbs": 161,
+        "fat": 48
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "light",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 2732,
+        "cal": 2232,
+        "protein": 164,
+        "carbs": 255,
+        "fat": 62
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "light",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 2732,
+        "cal": 2482,
+        "protein": 164,
+        "carbs": 301,
+        "fat": 69
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "light",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 2732,
+        "cal": 2732,
+        "protein": 164,
+        "carbs": 348,
+        "fat": 76
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "light",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 2732,
+        "cal": 2982,
+        "protein": 164,
+        "carbs": 395,
+        "fat": 83
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "light",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 2732,
+        "cal": 3232,
+        "protein": 164,
+        "carbs": 442,
+        "fat": 90
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "light",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 2732,
+        "cal": 3732,
+        "protein": 164,
+        "carbs": 535,
+        "fat": 104
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "moderate",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3079,
+        "cal": 2079,
+        "protein": 164,
+        "carbs": 225,
+        "fat": 58
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "moderate",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3079,
+        "cal": 2579,
+        "protein": 164,
+        "carbs": 319,
+        "fat": 72
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "moderate",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3079,
+        "cal": 2829,
+        "protein": 164,
+        "carbs": 366,
+        "fat": 79
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "moderate",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3079,
+        "cal": 3079,
+        "protein": 164,
+        "carbs": 412,
+        "fat": 86
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "moderate",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3079,
+        "cal": 3329,
+        "protein": 164,
+        "carbs": 461,
+        "fat": 92
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "moderate",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3079,
+        "cal": 3579,
+        "protein": 164,
+        "carbs": 508,
+        "fat": 99
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "moderate",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3079,
+        "cal": 4079,
+        "protein": 164,
+        "carbs": 602,
+        "fat": 113
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "active",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3427,
+        "cal": 2427,
+        "protein": 164,
+        "carbs": 292,
+        "fat": 67
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "active",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3427,
+        "cal": 2927,
+        "protein": 164,
+        "carbs": 386,
+        "fat": 81
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "active",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3427,
+        "cal": 3177,
+        "protein": 164,
+        "carbs": 432,
+        "fat": 88
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "active",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3427,
+        "cal": 3427,
+        "protein": 164,
+        "carbs": 479,
+        "fat": 95
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "active",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3427,
+        "cal": 3677,
+        "protein": 164,
+        "carbs": 526,
+        "fat": 102
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "active",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3427,
+        "cal": 3927,
+        "protein": 164,
+        "carbs": 573,
+        "fat": 109
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "active",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3427,
+        "cal": 4427,
+        "protein": 164,
+        "carbs": 666,
+        "fat": 123
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "very_active",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3775,
+        "cal": 2775,
+        "protein": 164,
+        "carbs": 357,
+        "fat": 77
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "very_active",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3775,
+        "cal": 3275,
+        "protein": 164,
+        "carbs": 450,
+        "fat": 91
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "very_active",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3775,
+        "cal": 3525,
+        "protein": 164,
+        "carbs": 497,
+        "fat": 98
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "very_active",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3775,
+        "cal": 3775,
+        "protein": 164,
+        "carbs": 544,
+        "fat": 105
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "very_active",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3775,
+        "cal": 4025,
+        "protein": 164,
+        "carbs": 590,
+        "fat": 112
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "very_active",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3775,
+        "cal": 4275,
+        "protein": 164,
+        "carbs": 637,
+        "fat": 119
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "very_active",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3775,
+        "cal": 4775,
+        "protein": 164,
+        "carbs": 731,
+        "fat": 133
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "extremely",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3973,
+        "cal": 2973,
+        "protein": 164,
+        "carbs": 393,
+        "fat": 83
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "extremely",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3973,
+        "cal": 3473,
+        "protein": 164,
+        "carbs": 488,
+        "fat": 96
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "extremely",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3973,
+        "cal": 3723,
+        "protein": 164,
+        "carbs": 535,
+        "fat": 103
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "extremely",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3973,
+        "cal": 3973,
+        "protein": 164,
+        "carbs": 582,
+        "fat": 110
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "extremely",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3973,
+        "cal": 4223,
+        "protein": 164,
+        "carbs": 629,
+        "fat": 117
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "extremely",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3973,
+        "cal": 4473,
+        "protein": 164,
+        "carbs": 675,
+        "fat": 124
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 200,
+        "heightIn": 70,
+        "age": 30,
+        "activityId": "extremely",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1986.6686048000006,
+      "expected": {
+        "bmr": 1987,
+        "tdee": 3973,
+        "cal": 4973,
+        "protein": 164,
+        "carbs": 769,
+        "fat": 138
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "bmr",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 1467,
+        "cal": 1200,
+        "protein": 123,
+        "carbs": 103,
+        "fat": 33
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "bmr",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 1467,
+        "cal": 1200,
+        "protein": 123,
+        "carbs": 103,
+        "fat": 33
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "bmr",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 1467,
+        "cal": 1217,
+        "protein": 123,
+        "carbs": 105,
+        "fat": 34
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "bmr",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 1467,
+        "cal": 1467,
+        "protein": 123,
+        "carbs": 152,
+        "fat": 41
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "bmr",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 1467,
+        "cal": 1717,
+        "protein": 123,
+        "carbs": 198,
+        "fat": 48
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "bmr",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 1467,
+        "cal": 1967,
+        "protein": 123,
+        "carbs": 245,
+        "fat": 55
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "bmr",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 1467,
+        "cal": 2467,
+        "protein": 123,
+        "carbs": 339,
+        "fat": 69
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "sedentary",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 1760,
+        "cal": 1200,
+        "protein": 123,
+        "carbs": 103,
+        "fat": 33
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "sedentary",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 1760,
+        "cal": 1260,
+        "protein": 123,
+        "carbs": 113,
+        "fat": 35
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "sedentary",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 1760,
+        "cal": 1510,
+        "protein": 123,
+        "carbs": 160,
+        "fat": 42
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "sedentary",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 1760,
+        "cal": 1760,
+        "protein": 123,
+        "carbs": 207,
+        "fat": 49
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "sedentary",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 1760,
+        "cal": 2010,
+        "protein": 123,
+        "carbs": 254,
+        "fat": 56
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "sedentary",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 1760,
+        "cal": 2260,
+        "protein": 123,
+        "carbs": 300,
+        "fat": 63
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "sedentary",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 1760,
+        "cal": 2760,
+        "protein": 123,
+        "carbs": 394,
+        "fat": 77
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "light",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2017,
+        "cal": 1200,
+        "protein": 123,
+        "carbs": 103,
+        "fat": 33
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "light",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2017,
+        "cal": 1517,
+        "protein": 123,
+        "carbs": 162,
+        "fat": 42
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "light",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2017,
+        "cal": 1767,
+        "protein": 123,
+        "carbs": 209,
+        "fat": 49
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "light",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2017,
+        "cal": 2017,
+        "protein": 123,
+        "carbs": 255,
+        "fat": 56
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "light",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2017,
+        "cal": 2267,
+        "protein": 123,
+        "carbs": 302,
+        "fat": 63
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "light",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2017,
+        "cal": 2517,
+        "protein": 123,
+        "carbs": 349,
+        "fat": 70
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "light",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2017,
+        "cal": 3017,
+        "protein": 123,
+        "carbs": 442,
+        "fat": 84
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "moderate",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2274,
+        "cal": 1274,
+        "protein": 123,
+        "carbs": 117,
+        "fat": 35
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "moderate",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2274,
+        "cal": 1774,
+        "protein": 123,
+        "carbs": 210,
+        "fat": 49
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "moderate",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2274,
+        "cal": 2024,
+        "protein": 123,
+        "carbs": 257,
+        "fat": 56
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "moderate",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2274,
+        "cal": 2274,
+        "protein": 123,
+        "carbs": 304,
+        "fat": 63
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "moderate",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2274,
+        "cal": 2524,
+        "protein": 123,
+        "carbs": 351,
+        "fat": 70
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "moderate",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2274,
+        "cal": 2774,
+        "protein": 123,
+        "carbs": 397,
+        "fat": 77
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "moderate",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2274,
+        "cal": 3274,
+        "protein": 123,
+        "carbs": 491,
+        "fat": 91
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "active",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2531,
+        "cal": 1531,
+        "protein": 123,
+        "carbs": 163,
+        "fat": 43
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "active",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2531,
+        "cal": 2031,
+        "protein": 123,
+        "carbs": 259,
+        "fat": 56
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "active",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2531,
+        "cal": 2281,
+        "protein": 123,
+        "carbs": 306,
+        "fat": 63
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "active",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2531,
+        "cal": 2531,
+        "protein": 123,
+        "carbs": 352,
+        "fat": 70
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "active",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2531,
+        "cal": 2781,
+        "protein": 123,
+        "carbs": 399,
+        "fat": 77
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "active",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2531,
+        "cal": 3031,
+        "protein": 123,
+        "carbs": 446,
+        "fat": 84
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "active",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2531,
+        "cal": 3531,
+        "protein": 123,
+        "carbs": 539,
+        "fat": 98
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "very_active",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2787,
+        "cal": 1787,
+        "protein": 123,
+        "carbs": 211,
+        "fat": 50
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "very_active",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2787,
+        "cal": 2287,
+        "protein": 123,
+        "carbs": 305,
+        "fat": 64
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "very_active",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2787,
+        "cal": 2537,
+        "protein": 123,
+        "carbs": 354,
+        "fat": 70
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "very_active",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2787,
+        "cal": 2787,
+        "protein": 123,
+        "carbs": 401,
+        "fat": 77
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "very_active",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2787,
+        "cal": 3037,
+        "protein": 123,
+        "carbs": 447,
+        "fat": 84
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "very_active",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2787,
+        "cal": 3287,
+        "protein": 123,
+        "carbs": 494,
+        "fat": 91
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "very_active",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2787,
+        "cal": 3787,
+        "protein": 123,
+        "carbs": 588,
+        "fat": 105
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "extremely",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2934,
+        "cal": 1934,
+        "protein": 123,
+        "carbs": 239,
+        "fat": 54
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "extremely",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2934,
+        "cal": 2434,
+        "protein": 123,
+        "carbs": 333,
+        "fat": 68
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "extremely",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2934,
+        "cal": 2684,
+        "protein": 123,
+        "carbs": 379,
+        "fat": 75
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "extremely",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2934,
+        "cal": 2934,
+        "protein": 123,
+        "carbs": 426,
+        "fat": 82
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "extremely",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2934,
+        "cal": 3184,
+        "protein": 123,
+        "carbs": 475,
+        "fat": 88
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "extremely",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2934,
+        "cal": 3434,
+        "protein": 123,
+        "carbs": 522,
+        "fat": 95
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 150,
+        "heightIn": 65,
+        "age": 28,
+        "activityId": "extremely",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1466.9875836,
+      "expected": {
+        "bmr": 1467,
+        "tdee": 2934,
+        "cal": 3934,
+        "protein": 123,
+        "carbs": 615,
+        "fat": 109
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "bmr",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 1821,
+        "cal": 1200,
+        "protein": 139,
+        "carbs": 87,
+        "fat": 33
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "bmr",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 1821,
+        "cal": 1321,
+        "protein": 139,
+        "carbs": 108,
+        "fat": 37
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "bmr",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 1821,
+        "cal": 1571,
+        "protein": 139,
+        "carbs": 155,
+        "fat": 44
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "bmr",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 1821,
+        "cal": 1821,
+        "protein": 139,
+        "carbs": 202,
+        "fat": 51
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "bmr",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 1821,
+        "cal": 2071,
+        "protein": 139,
+        "carbs": 248,
+        "fat": 58
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "bmr",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 1821,
+        "cal": 2321,
+        "protein": 139,
+        "carbs": 297,
+        "fat": 64
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "bmr",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 1821,
+        "cal": 2821,
+        "protein": 139,
+        "carbs": 391,
+        "fat": 78
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "sedentary",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2185,
+        "cal": 1200,
+        "protein": 139,
+        "carbs": 87,
+        "fat": 33
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "sedentary",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2185,
+        "cal": 1685,
+        "protein": 139,
+        "carbs": 177,
+        "fat": 47
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "sedentary",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2185,
+        "cal": 1935,
+        "protein": 139,
+        "carbs": 223,
+        "fat": 54
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "sedentary",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2185,
+        "cal": 2185,
+        "protein": 139,
+        "carbs": 270,
+        "fat": 61
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "sedentary",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2185,
+        "cal": 2435,
+        "protein": 139,
+        "carbs": 317,
+        "fat": 68
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "sedentary",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2185,
+        "cal": 2685,
+        "protein": 139,
+        "carbs": 364,
+        "fat": 75
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "sedentary",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2185,
+        "cal": 3185,
+        "protein": 139,
+        "carbs": 459,
+        "fat": 88
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "light",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2503,
+        "cal": 1503,
+        "protein": 139,
+        "carbs": 142,
+        "fat": 42
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "light",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2503,
+        "cal": 2003,
+        "protein": 139,
+        "carbs": 236,
+        "fat": 56
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "light",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2503,
+        "cal": 2253,
+        "protein": 139,
+        "carbs": 283,
+        "fat": 63
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "light",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2503,
+        "cal": 2503,
+        "protein": 139,
+        "carbs": 329,
+        "fat": 70
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "light",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2503,
+        "cal": 2753,
+        "protein": 139,
+        "carbs": 378,
+        "fat": 76
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "light",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2503,
+        "cal": 3003,
+        "protein": 139,
+        "carbs": 425,
+        "fat": 83
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "light",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2503,
+        "cal": 3503,
+        "protein": 139,
+        "carbs": 519,
+        "fat": 97
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "moderate",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2822,
+        "cal": 1822,
+        "protein": 139,
+        "carbs": 202,
+        "fat": 51
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "moderate",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2822,
+        "cal": 2322,
+        "protein": 139,
+        "carbs": 295,
+        "fat": 65
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "moderate",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2822,
+        "cal": 2572,
+        "protein": 139,
+        "carbs": 344,
+        "fat": 71
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "moderate",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2822,
+        "cal": 2822,
+        "protein": 139,
+        "carbs": 391,
+        "fat": 78
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "moderate",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2822,
+        "cal": 3072,
+        "protein": 139,
+        "carbs": 438,
+        "fat": 85
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "moderate",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2822,
+        "cal": 3322,
+        "protein": 139,
+        "carbs": 485,
+        "fat": 92
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "moderate",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 2822,
+        "cal": 3822,
+        "protein": 139,
+        "carbs": 578,
+        "fat": 106
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "active",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3140,
+        "cal": 2140,
+        "protein": 139,
+        "carbs": 263,
+        "fat": 59
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "active",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3140,
+        "cal": 2640,
+        "protein": 139,
+        "carbs": 357,
+        "fat": 73
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "active",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3140,
+        "cal": 2890,
+        "protein": 139,
+        "carbs": 404,
+        "fat": 80
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "active",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3140,
+        "cal": 3140,
+        "protein": 139,
+        "carbs": 450,
+        "fat": 87
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "active",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3140,
+        "cal": 3390,
+        "protein": 139,
+        "carbs": 497,
+        "fat": 94
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "active",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3140,
+        "cal": 3640,
+        "protein": 139,
+        "carbs": 544,
+        "fat": 101
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "active",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3140,
+        "cal": 4140,
+        "protein": 139,
+        "carbs": 637,
+        "fat": 115
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "very_active",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3459,
+        "cal": 2459,
+        "protein": 139,
+        "carbs": 323,
+        "fat": 68
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "very_active",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3459,
+        "cal": 2959,
+        "protein": 139,
+        "carbs": 416,
+        "fat": 82
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "very_active",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3459,
+        "cal": 3209,
+        "protein": 139,
+        "carbs": 463,
+        "fat": 89
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "very_active",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3459,
+        "cal": 3459,
+        "protein": 139,
+        "carbs": 510,
+        "fat": 96
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "very_active",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3459,
+        "cal": 3709,
+        "protein": 139,
+        "carbs": 557,
+        "fat": 103
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "very_active",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3459,
+        "cal": 3959,
+        "protein": 139,
+        "carbs": 603,
+        "fat": 110
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "very_active",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3459,
+        "cal": 4459,
+        "protein": 139,
+        "carbs": 697,
+        "fat": 124
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "extremely",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3641,
+        "cal": 2641,
+        "protein": 139,
+        "carbs": 357,
+        "fat": 73
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "extremely",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3641,
+        "cal": 3141,
+        "protein": 139,
+        "carbs": 451,
+        "fat": 87
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "extremely",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3641,
+        "cal": 3391,
+        "protein": 139,
+        "carbs": 497,
+        "fat": 94
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "extremely",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3641,
+        "cal": 3641,
+        "protein": 139,
+        "carbs": 544,
+        "fat": 101
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "extremely",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3641,
+        "cal": 3891,
+        "protein": 139,
+        "carbs": 591,
+        "fat": 108
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "extremely",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3641,
+        "cal": 4141,
+        "protein": 139,
+        "carbs": 638,
+        "fat": 115
+      }
+    },
+    {
+      "input": {
+        "gender": "male",
+        "weightLbs": 170,
+        "heightIn": 69,
+        "age": 25,
+        "activityId": "extremely",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1820.5609840800003,
+      "expected": {
+        "bmr": 1821,
+        "tdee": 3641,
+        "cal": 4641,
+        "protein": 139,
+        "carbs": 731,
+        "fat": 129
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "bmr",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 1868,
+        "cal": 1200,
+        "protein": 205,
+        "carbs": 50,
+        "fat": 33
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "bmr",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 1868,
+        "cal": 1368,
+        "protein": 205,
+        "carbs": 52,
+        "fat": 38
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "bmr",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 1868,
+        "cal": 1618,
+        "protein": 205,
+        "carbs": 98,
+        "fat": 45
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "bmr",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 1868,
+        "cal": 1868,
+        "protein": 205,
+        "carbs": 145,
+        "fat": 52
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "bmr",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 1868,
+        "cal": 2118,
+        "protein": 205,
+        "carbs": 192,
+        "fat": 59
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "bmr",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 1868,
+        "cal": 2368,
+        "protein": 205,
+        "carbs": 239,
+        "fat": 66
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "bmr",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 1868,
+        "cal": 2868,
+        "protein": 205,
+        "carbs": 332,
+        "fat": 80
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "sedentary",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2241,
+        "cal": 1241,
+        "protein": 205,
+        "carbs": 50,
+        "fat": 34
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "sedentary",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2241,
+        "cal": 1741,
+        "protein": 205,
+        "carbs": 122,
+        "fat": 48
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "sedentary",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2241,
+        "cal": 1991,
+        "protein": 205,
+        "carbs": 169,
+        "fat": 55
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "sedentary",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2241,
+        "cal": 2241,
+        "protein": 205,
+        "carbs": 216,
+        "fat": 62
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "sedentary",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2241,
+        "cal": 2491,
+        "protein": 205,
+        "carbs": 263,
+        "fat": 69
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "sedentary",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2241,
+        "cal": 2741,
+        "protein": 205,
+        "carbs": 309,
+        "fat": 76
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "sedentary",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2241,
+        "cal": 3241,
+        "protein": 205,
+        "carbs": 403,
+        "fat": 90
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "light",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2568,
+        "cal": 1568,
+        "protein": 205,
+        "carbs": 88,
+        "fat": 44
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "light",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2568,
+        "cal": 2068,
+        "protein": 205,
+        "carbs": 184,
+        "fat": 57
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "light",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2568,
+        "cal": 2318,
+        "protein": 205,
+        "carbs": 231,
+        "fat": 64
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "light",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2568,
+        "cal": 2568,
+        "protein": 205,
+        "carbs": 277,
+        "fat": 71
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "light",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2568,
+        "cal": 2818,
+        "protein": 205,
+        "carbs": 324,
+        "fat": 78
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "light",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2568,
+        "cal": 3068,
+        "protein": 205,
+        "carbs": 371,
+        "fat": 85
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "light",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2568,
+        "cal": 3568,
+        "protein": 205,
+        "carbs": 464,
+        "fat": 99
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "moderate",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2895,
+        "cal": 1895,
+        "protein": 205,
+        "carbs": 150,
+        "fat": 53
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "moderate",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2895,
+        "cal": 2395,
+        "protein": 205,
+        "carbs": 243,
+        "fat": 67
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "moderate",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2895,
+        "cal": 2645,
+        "protein": 205,
+        "carbs": 292,
+        "fat": 73
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "moderate",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2895,
+        "cal": 2895,
+        "protein": 205,
+        "carbs": 339,
+        "fat": 80
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "moderate",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2895,
+        "cal": 3145,
+        "protein": 205,
+        "carbs": 386,
+        "fat": 87
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "moderate",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2895,
+        "cal": 3395,
+        "protein": 205,
+        "carbs": 432,
+        "fat": 94
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "moderate",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 2895,
+        "cal": 3895,
+        "protein": 205,
+        "carbs": 526,
+        "fat": 108
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "active",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3222,
+        "cal": 2222,
+        "protein": 205,
+        "carbs": 211,
+        "fat": 62
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "active",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3222,
+        "cal": 2722,
+        "protein": 205,
+        "carbs": 305,
+        "fat": 76
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "active",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3222,
+        "cal": 2972,
+        "protein": 205,
+        "carbs": 351,
+        "fat": 83
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "active",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3222,
+        "cal": 3222,
+        "protein": 205,
+        "carbs": 398,
+        "fat": 90
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "active",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3222,
+        "cal": 3472,
+        "protein": 205,
+        "carbs": 447,
+        "fat": 96
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "active",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3222,
+        "cal": 3722,
+        "protein": 205,
+        "carbs": 494,
+        "fat": 103
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "active",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3222,
+        "cal": 4222,
+        "protein": 205,
+        "carbs": 587,
+        "fat": 117
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "very_active",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3549,
+        "cal": 2549,
+        "protein": 205,
+        "carbs": 273,
+        "fat": 71
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "very_active",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3549,
+        "cal": 3049,
+        "protein": 205,
+        "carbs": 366,
+        "fat": 85
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "very_active",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3549,
+        "cal": 3299,
+        "protein": 205,
+        "carbs": 413,
+        "fat": 92
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "very_active",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3549,
+        "cal": 3549,
+        "protein": 205,
+        "carbs": 460,
+        "fat": 99
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "very_active",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3549,
+        "cal": 3799,
+        "protein": 205,
+        "carbs": 506,
+        "fat": 106
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "very_active",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3549,
+        "cal": 4049,
+        "protein": 205,
+        "carbs": 555,
+        "fat": 112
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "very_active",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3549,
+        "cal": 4549,
+        "protein": 205,
+        "carbs": 649,
+        "fat": 126
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "extremely",
+        "rateId": "lose_2"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3736,
+        "cal": 2736,
+        "protein": 205,
+        "carbs": 308,
+        "fat": 76
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "extremely",
+        "rateId": "lose_1"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3736,
+        "cal": 3236,
+        "protein": 205,
+        "carbs": 402,
+        "fat": 90
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "extremely",
+        "rateId": "lose_0.5"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3736,
+        "cal": 3486,
+        "protein": 205,
+        "carbs": 448,
+        "fat": 97
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "extremely",
+        "rateId": "maintain"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3736,
+        "cal": 3736,
+        "protein": 205,
+        "carbs": 495,
+        "fat": 104
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "extremely",
+        "rateId": "gain_0.5"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3736,
+        "cal": 3986,
+        "protein": 205,
+        "carbs": 542,
+        "fat": 111
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "extremely",
+        "rateId": "gain_1"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3736,
+        "cal": 4236,
+        "protein": 205,
+        "carbs": 589,
+        "fat": 118
+      }
+    },
+    {
+      "input": {
+        "gender": "female",
+        "weightLbs": 250,
+        "heightIn": 72,
+        "age": 45,
+        "activityId": "extremely",
+        "rateId": "gain_2"
+      },
+      "rawBmr": 1867.8965460000002,
+      "expected": {
+        "bmr": 1868,
+        "tdee": 3736,
+        "cal": 4736,
+        "protein": 205,
+        "carbs": 682,
+        "fat": 132
+      }
+    }
+  ]
+}

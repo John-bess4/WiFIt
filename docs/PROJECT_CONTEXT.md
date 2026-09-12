@@ -1,5 +1,38 @@
 # WiFit — Project Context
 
+## Gen 2 shared contract (2026-09-09 approved phase one)
+
+WiFit and TrainerHQ are sister apps on the same Supabase project.
+`Packages/FitDataKit` is the shared Swift contract; both app targets must consume
+it before claiming cross-app integration. No TrainerHQ iOS target exists in this
+repository yet. Its consented gateway stays a separate module usable by both apps.
+
+The user approved explicit Swift failures instead of copying React
+`sb.select` swallowing. See `docs/GEN2_PHASE_ONE.md`, `docs/port/DATA_LAYER.md`
+and the refreshed complete `docs/port/SCHEMA.md`. These are the current Gen 2
+contract; historical React notes below are not instructions to recreate old bugs.
+The live catalog was checked without schema changes: eleven WiFit tables, five
+security-invoker views. `daily_summary` excludes water-only days, exposes integer
+per-row-rounded calories/macros, and has no fiber/sugar/sodium aggregate columns.
+Positive grams are client validation, not a database CHECK.
+
+**Confirmed supplement ownership gap (2026-09-10; fix proposed, not applied).**
+The live rollback-only `supabase/tests/fitdatakit_contract.sql` completed all
+156 assertions and verified fixture cleanup, but its separate
+`supplement_parent_owner_enforced` diagnostic returned **false**. An
+`authenticated` fixture user could insert its own `supplement_log` row
+referencing a different fixture user's supplement UUID. Row-owner RLS works;
+the existing single-column parent FK does not compare the two owners. See
+[the proposed additive constraint](../supabase/proposals/supplement_parent_ownership.sql)
+and [verification/rollout record](GEN2_PHASE_ONE.md). This used PostgreSQL
+role/claim simulation, not live JWT or Swift/PostgREST authentication.
+
+Latest Home and Workout screenshots in `design-reference/screenshots/` are the
+layout authority. Other screens use their coherent theme; old bundle and Claude
+message descriptions do not override them.
+
+---
+
 **Rewritten 2026-08-13 from the live database and current `src/App.jsx`.**
 
 The previous version of this file was written from inference and drifted ~40 commits
@@ -95,7 +128,7 @@ implementations of these WILL diverge — the same argument that moved derived
 values into Postgres. The `src/lib/` port layer is the JS source of truth to
 translate once, into that package.
 
-**Next extraction candidate — BMR/TDEE (highest value remaining).** The
+**Historical extraction note — superseded by `src/lib/bodyMetrics.js` and FitDataKit BodyMetrics.** The
 Mifflin/Harris-Benedict math still lives inside `OnboardingWizard.calcGoals`
 and `ProfilePage.calcTDEE` (plus `calcCalFromRate`, already in constants).
 It is the only place in the app where a formula produces a number the user
@@ -220,7 +253,7 @@ still maps legacy values (`"lose"` → `"lose_1"`) for backward compatibility.
 | created_at | timestamptz | YES | now() |
 
 `per100_sugar` defaults to **null**, unlike the other `per100_*` columns which default
-to 0. Read it as `r.per100_sugar || 0`.
+to 0. Preserve null for row storage/display (unknown, rendered “—”); aggregate arithmetic may count it as zero while retaining an incomplete-data indication.
 
 Macros are stored **per 100 grams**. `calc()` multiplies by `grams/100`. Any code that
 divides by a serving size must divide by the *gram weight*, never by a raw serving
@@ -308,6 +341,18 @@ into a failed insert surfacing as "couldn't save". Add
 
 **UNIQUE (supplement_id, log_date)** — upsert with `resolution=merge-duplicates`
 updates the day's row rather than appending.
+
+**Parent-owner consistency is currently unenforced.** `user_id` and
+`supplement_id` are both NOT NULL UUIDs, but their separate FKs permit an
+own-user log referencing another user's stack row. Confirmed with synthetic
+users in a fully rolled-back role/claim test on 2026-09-10. The proposal adds
+`supplement_stack UNIQUE (id,user_id)` and
+`supplement_log FOREIGN KEY (supplement_id,user_id) REFERENCES
+supplement_stack(id,user_id) ON DELETE CASCADE`; the existing daily unique
+target and original cascade FK stay. **These new constraints are not applied.**
+The count-only preflight must report zero missing/mismatched parents or abort
+without deleting/reassigning data. See
+[proposal](../supabase/proposals/supplement_parent_ownership.sql).
 
 ### water_log
 `id`, `user_id`, `log_date` date NOT NULL, **`cups` integer default 0**, `created_at`,
@@ -458,7 +503,7 @@ Start would have proceeded with an empty PR baseline. Verified: 500 and a
 network abort both pause Start; 200-with-no-rows lets a session start with no
 baseline and no PR on a first lift.
 
-Used at **exactly one call site**: the mount profile check in `loadUserData`. It exists
+Originally added for the mount profile check in `loadUserData`, and now used by multiple failure-aware readers. It exists
 because `select`'s `[]`-on-error contract makes a 401 look like a brand-new user. It is
 a sibling method, not a replacement — adding callers is fine, changing `select` is not.
 
@@ -658,9 +703,17 @@ Anthropic response formats are unchanged and out of scope for security work:
 
 ## Known issues / not done
 
-1. **10 `sb.*` call sites still ignore the return value.** Re-verified 2026-09-06
-   against the current file — still exactly 10 ignored against 9 checked. Locate by
-   identifier, not by line; these shift:
+**Open Gen 2 database finding, 2026-09-10:** supplement-log parent ownership
+is not enforced. The 156-check rollback suite's separate parent diagnostic
+returned false; do not interpret its other passing assertions as complete
+cross-row isolation. The additive proposal is prepared, with a current verified
+backup/recovery point and isolated validation still prerequisites to rollout.
+No production DDL for this fix has run. Details are in
+[GEN2_PHASE_ONE.md](GEN2_PHASE_ONE.md).
+
+1. **Historical unchecked-write audit — all ten entries below were subsequently fixed.**
+   The dated entries document the fixes; they are not ten currently open defects.
+   Locate by identifier rather than historical line numbers:
 
    | Line | Call | What silently fails |
    |---|---|---|

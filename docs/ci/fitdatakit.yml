@@ -1,0 +1,42 @@
+name: FitDataKit and web regression
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fitdatakit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web-regression:
+    name: Web build, lint and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run lint
+      - run: npm test
+
+  fitdatakit:
+    name: Shared Swift tests and iOS/watchOS builds
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Report selected Xcode
+        run: xcodebuild -version
+      - name: Report selected Swift
+        run: swift --version
+      - name: Test and compile FitDataKit
+        run: bash scripts/test-fitdatakit.sh

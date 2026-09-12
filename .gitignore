@@ -37,3 +37,10 @@ pnpm-debug.log*
 
 # Supabase CLI transient metadata
 supabase/.temp/
+
+# Swift/Xcode generated state
+.build/
+.swiftpm/
+DerivedData/
+*.xcuserstate
+xcuserdata/
