@@ -9,7 +9,7 @@ import { weekDays, reduceWeekRows, todayPlanFor } from "./lib/weekSummary.js";
 import { THEMES, LOCKED_FAMILIES, DEFAULT_THEME_KEY, resolveTheme, resolveDark, ThemeCtx, useTheme } from "./lib/theme.js";
 import { localDate } from "./lib/dates.js";
 import { withPlanExerciseIDs, assignmentOrigin, computePRs, setsDataOf, setLabel, normalizeExercises, editSet, sessionFromRow, bestsFromView, prEventsBySession } from "./lib/workouts.js";
-import { sb, setAuthLostHandler, resolveSession, hasDbId, withDbId, foodDeleteFilter } from "./lib/supabase.js";
+import { sb, setAuthLostHandler, setDataGenerationLostHandler, observeDataGenerationChange, resolveSession, hasDbId, withDbId, foodDeleteFilter } from "./lib/supabase.js";
 import { parseActions, LEGACY_PREFIXES, callCoach, applyActions as applyCoachActions, coachHeaders, coachErrorText } from "./lib/coach.js";
 import { searchFood, searchLocalFood, searchSupp, searchLocalSupp, searchStatus } from "./lib/search.js";
 import { bmr, tdee, calcCalFromRate, macrosForCal, computeGoals } from "./lib/bodyMetrics.js";
@@ -168,6 +168,7 @@ function RecipeCard({m,idx,onAddFood,setMessages}){
 function AISidePanel({open,onClose,onAddFood,onAddSupp,onAddWorkout,onAddWater,liveContext={},userName="",userId=""}){
   const T=useTheme();
   const STORAGE_KEY="wifit_chat_"+(userId||"demo");
+  const chatDataContext=useRef(sb.dataContext());
 
   // ── Feature 7: Persistent chat — load from localStorage ───────
   const [messages,setMessages]=useState(()=>{
@@ -181,6 +182,7 @@ function AISidePanel({open,onClose,onAddFood,onAddSupp,onAddWorkout,onAddWater,l
   // Persist messages to localStorage whenever they change (keep last 30)
   useEffect(()=>{
     // Never persist error bubbles — a transient failure shouldn't outlive the session.
+    if(userId&&!sb.isDataContextCurrent(chatDataContext.current))return;
     try{localStorage.setItem(STORAGE_KEY,JSON.stringify(messages.filter(m=>!m.isError).slice(-30)));}catch{}
   },[messages]);
 
@@ -2272,6 +2274,7 @@ function ActiveWorkout({workout,onFinish,onClose,bests={},restore=null,snapKey=n
   // failure the timestamp timer exists to prevent.
   const startedAtRef=useRef(restore?.startedAt||Date.now());
   const restEndsAtRef=useRef(restore?.restEndsAt??null);
+  const workoutDataContext=useRef(sb.dataContext());
 
   // Rest is a deadline, not a countdown, for the same reason.
   const startRest=(secs)=>{restEndsAtRef.current=Date.now()+secs*1000;setRestSecs(secs);setRestTotal(secs);};
@@ -2293,8 +2296,9 @@ function ActiveWorkout({workout,onFinish,onClose,bests={},restore=null,snapKey=n
     if(!snapKey)return;
     const t=setTimeout(()=>{
       try{
+        if(!sb.isDataContextCurrent(workoutDataContext.current))return;
         localStorage.setItem(snapKey,JSON.stringify({
-          v:1,workout,sets,
+          v:1,workout,sets,dataGeneration:workoutDataContext.current.generation,
           startedAt:startedAtRef.current,
           restEndsAt:restEndsAtRef.current,
           savedAt:Date.now(),
@@ -4973,6 +4977,9 @@ function readWorkoutSnapshot(key){
   try{
     const s=JSON.parse(localStorage.getItem(key)||"null");
     if(!s||!s.workout||!s.startedAt||!Array.isArray(s.sets))return null;
+    const scope=sb.dataContext();
+    if(scope&&key==="wifit_workout_"+scope.owner&&(s.dataGeneration??0)!==scope.generation
+      &&!hasDbId({id:s.workout.trainerAssignmentID||s.workout.trainer_assignment_id}))return null;
     // Staleness is measured from when the work started, not when it was last
     // saved: a session left open overnight must not resurrect. 6h is longer
     // than any real workout, and an age rule beats a calendar-day rule — the
@@ -5303,6 +5310,8 @@ function ProgressPage({uid,goals,suppList=[],userName,log={},suppTaken={},workou
 // ── APP ───────────────────────────────────────────────────────────
 export default function App(){
   const [authState,setAuthState]=useState("loading");
+  const [dataRecovery,setDataRecovery]=useState(null);
+  const dataLoadRequest=useRef(0);
   const [isDark,setIsDarkState]=useState(false);
   const [themeFam,setThemeFamState]=useState(DEFAULT_THEME);
   const T=resolveTheme(themeFam+"_"+(isDark?"dark":"light")).T;
@@ -5407,7 +5416,12 @@ export default function App(){
   // Resolve the session to a definite state before any data load runs.
   useEffect(()=>{
     // Lets a mid-session refresh failure inside any sb.* call route to sign-in.
-    setAuthLostHandler(()=>setAuthState("auth"));
+    setAuthLostHandler(()=>{setDataRecovery(null);setAuthState("auth");});
+    setDataGenerationLostHandler(()=>{
+      dataLoadRequest.current+=1;
+      setDataRecovery("changed");setAuthState("data-recovery");
+    });
+    window.addEventListener("storage",observeDataGenerationChange);
     (async()=>{
       try{
         const res=await resolveSession();
@@ -5419,9 +5433,14 @@ export default function App(){
         setAuthState("auth");
       }
     })();
+    return()=>{
+      setAuthLostHandler(null);setDataGenerationLostHandler(null);
+      window.removeEventListener("storage",observeDataGenerationChange);
+    };
   },[]);
 
   const loadUserData=async(uid)=>{
+    const request=++dataLoadRequest.current;
     // Has identity been established? Decides where the catch below routes: a
     // failure after the profile loaded is a secondary-load problem and the app
     // stays usable; a failure before it means we never learned who this user is,
@@ -5429,10 +5448,16 @@ export default function App(){
     // a real profile. Shared by both callers (mount and post-sign-in).
     let profileLoaded=false;
     try{
+      const generation=await sb.loadDataGeneration(uid);
+      if(request!==dataLoadRequest.current||sb.getUser()?.id!==uid)return;
+      if(!generation.ok){setDataRecovery(generation.reason);setAuthState("data-recovery");return;}
+      setDataRecovery(null);
       // selectAuth, not select: select() turns a 401 into [], which reads as
       // "new user" and sends an expired session to the onboarding wizard.
-      const {authError,rows:profiles}=await sb.selectAuth("profiles","id=eq."+uid);
+      const {ok:profileOk,authError,rows:profiles}=await sb.selectAuth("profiles","id=eq."+uid);
+      if(request!==dataLoadRequest.current||!sb.isDataContextCurrent(generation.context))return;
       if(authError){setAuthState("auth");return;}
+      if(!profileOk){setDataRecovery("unavailable");setAuthState("data-recovery");return;}
       if(profiles&&profiles.length>0){
         profileLoaded=true;
         // Every read below goes through selectAuth and keys on ok. null means
@@ -5440,7 +5465,7 @@ export default function App(){
         // in loadFailures — the banner offers Retry and the writes that would
         // be destructive against an empty state are guarded. [] means empty.
         const failed=[];
-        const read=async(label,table,filter,opts)=>{const r=await sb.selectAuth(table,filter,opts);if(!r.ok){failed.push(label);return null;}return r.rows;};
+        const read=async(label,table,filter,opts)=>{const r=await sb.selectAuth(table,filter,opts);if(request!==dataLoadRequest.current||!sb.isDataContextCurrent(generation.context))throw new Error("Account data changed during loading");if(!r.ok){failed.push(label);return null;}return r.rows;};
         const p=profiles[0];
         setUserName(p.name||"");
         setProfileCreatedAt(p.created_at||null);
@@ -5453,7 +5478,7 @@ export default function App(){
         }
         // Food log for today
         const foodRows=await read("food","food_log","user_id=eq."+uid+"&logged_date=eq."+today);
-        if(foodRows?.length>0){
+        if(foodRows!==null){
           const nl={breakfast:[],lunch:[],dinner:[],snacks:[]};
           foodRows.forEach(r=>{
             const item={id:r.id,name:r.food_name,grams:r.grams,color:r.color||COLORS[0],per100:{cal:r.per100_cal,protein:r.per100_protein,carbs:r.per100_carbs,fat:r.per100_fat,fiber:r.per100_fiber||0,sugar:r.per100_sugar||0,sodium:r.per100_sodium||0}};
@@ -5463,7 +5488,7 @@ export default function App(){
         }
         // Custom foods
         const cf=await read("custom foods","custom_foods","user_id=eq."+uid,{order:"created_at.desc"});
-        if(cf?.length>0)setCustomFoods(cf.map(customFoodFromRow));
+        if(cf!==null)setCustomFoods(cf.map(customFoodFromRow));
         // Supplement stack
         const suppRows=await read("supplements","supplement_stack","user_id=eq."+uid,{order:"sort_order.asc"});
         if(suppRows?.length>0){
@@ -5477,7 +5502,7 @@ export default function App(){
             suppLog.forEach(l=>{taken[l.supplement_id]=l.taken;});
             setSuppTaken(taken);
           }
-        }
+        }else if(suppRows!==null){setSuppList([]);setSuppTaken({});}
         // Workout history
         // selectAuth, not select: a failed read must NOT become an empty
         // history. Empty bests means every lift is "a first" and a genuine
@@ -5486,26 +5511,26 @@ export default function App(){
         const {ok:histOk,rows:sessions}=await sb.selectAuth("workout_sessions","user_id=eq."+uid,{order:"created_at.desc",limit:20});
         const bestsOk=histOk&&await loadBests(uid);
         setHistoryStatus(!histOk||!bestsOk?"failed":"ready");
-        if(sessions?.length>0){
+        if(histOk){
           setHistory(sessions.map(sessionFromRow));
         }
         // Water intake today
         const waterRows=await read("water","water_log","user_id=eq."+uid+"&log_date=eq."+today);
-        if(waterRows?.length>0)setWaterOzState(waterRows[0].oz||0);
+        if(waterRows!==null)setWaterOzState(waterRows[0]?.oz||0);
         // Weight log (last 30 days)
         // Newest 30, then reversed: asc+limit returned the OLDEST 30, so from
         // weigh-in #31 on, Home's strip and the coach froze on old data. This
         // read serves today's entry; range/all-time history is read where it
         // is displayed (Progress), never through a row ceiling.
         const weightRows=await read("weight","body_weight_log","user_id=eq."+uid,{order:"log_date.desc",limit:30});
-        if(weightRows?.length>0)setWeightLog(weightRows.map(w=>({date:w.log_date,lbs:w.weight_lbs})).reverse());
+        if(weightRows!==null)setWeightLog(weightRows.map(w=>({date:w.log_date,lbs:w.weight_lbs})).reverse());
         // Workout plans
         const planRows=await read("plans","workout_plans","user_id=eq."+uid,{order:"sort_order.asc"});
         // A failed plans read must NOT leave the INITIAL_WORKOUTS seed on screen
         // as if the user were new: editing a seed would PATCH id=eq.w1 at a
         // uuid, and the Home card would present starter content as theirs.
         if(planRows===null)setWorkouts([]);
-        if(planRows?.length>0){
+        if(planRows!==null){
           setWorkouts(planRows.map(p=>({
             id:p.id,
             trainerAssignmentID:p.trainer_assignment_id||undefined,
@@ -5517,18 +5542,20 @@ export default function App(){
             exercises:withPlanExerciseIDs(p.exercises),
           })));
         }
+        if(request!==dataLoadRequest.current||!sb.isDataContextCurrent(generation.context))return;
         setLoadFailures(failed);
         setAuthState("app");
       }else{
         setAuthState("onboarding");
       }
     }catch(e){
+      if(request!==dataLoadRequest.current)return;
       console.error("loadUserData error:",e);
       setAuthState(profileLoaded?"app":"auth");
     }
   };
 
-  const handleAuth=(user,isNew)=>{
+  const handleAuth=(user)=>{
     if(user?.id==="demo"){
       // Demo mode — skip onboarding, go straight to app
       setUserName("Johnny");
@@ -5536,11 +5563,11 @@ export default function App(){
       setAuthState("app");
       return;
     }
-    if(isNew)setAuthState("onboarding");
-    else loadUserData(user.id);
+    loadUserData(user.id);
   };
 
   const handleSignOut=async()=>{
+    dataLoadRequest.current+=1;setDataRecovery(null);
     await sb.signOut();
     // Clear persisted chat and any in-progress workout. Both are keyed per user,
     // and on a shared device leaving either behind would hand the next person
@@ -5851,6 +5878,19 @@ export default function App(){
 
   const taken=suppList.filter(s=>suppTaken[s.k]).length;
   const total=suppList.length;
+
+  if(dataRecovery)return(
+    <ThemeCtx.Provider value={T}><GlobalStyle/>
+      <main data-testid="data-generation-recovery" style={{minHeight:"100vh",background:T.appBg,color:T.text,display:"grid",placeItems:"center",padding:24,fontFamily:"-apple-system,sans-serif"}}>
+        <section style={{maxWidth:400,background:T.card,border:"1px solid "+T.border,borderRadius:24,padding:24}}>
+          <h1 style={{fontSize:24,marginTop:0}}>{dataRecovery==="changed"?"Your WiFit data was removed":"Your data could not be verified"}</h1>
+          <p style={{lineHeight:1.6,color:T.muted}}>{dataRecovery==="changed"?"This page contains an older copy. Reload to read your current records. Old personal drafts will be cleared; your account and assigned workouts stay available.":"Your account is still signed in. Check your connection and retry before viewing or changing your records."}</p>
+          <button type="button" onClick={()=>{if(dataRecovery==="changed")window.location.reload();else{const owner=sb.getUser()?.id;if(owner)loadUserData(owner);}}} style={{minHeight:48,width:"100%",border:0,borderRadius:14,background:T.accent,color:"white",fontWeight:700}}>{dataRecovery==="changed"?"Reload current data":"Retry verified load"}</button>
+          <button type="button" onClick={handleSignOut} style={{minHeight:48,width:"100%",border:0,background:"transparent",color:T.text,marginTop:8}}>Sign out</button>
+        </section>
+      </main>
+    </ThemeCtx.Provider>
+  );
 
   // Loading state
   if(authState==="loading")return(

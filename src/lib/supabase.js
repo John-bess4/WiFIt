@@ -61,9 +61,74 @@ export const hasDbId=(item)=>typeof item?.id==="string"&&UUID_RE.test(item.id);
 // Replace the local item with one carrying the database id, by reference.
 export const withDbId=(items,item,row)=>items.map(i=>i===item?{...i,id:row.id}:i);
 export const foodDeleteFilter=(item,uid)=>hasDbId(item)&&uid?"id=eq."+item.id+"&user_id=eq."+uid:null;
+const PERSONAL_TABLES=new Set(["food_log","custom_foods","saved_meals","saved_meal_items","water_log","body_weight_log","workouts","workout_plans","workout_sessions","supplement_stack","supplement_log","supplement_notes","health_quantity_log"]);
+const generationKey=owner=>"wifit_data_generation_"+owner;
+let onDataGenerationLost=null;
+export function setDataGenerationLostHandler(handler){onDataGenerationLost=handler;}
+const blockedGenerationResponse=()=>new Response(JSON.stringify({code:"WIFIT_GENERATION_CHANGED",message:"WiFit data was removed. Reload before creating new records."}),{status:409,headers:{"Content-Type":"application/json"}});
+function blockDataGeneration(){
+  sb._generationBlocked=true;
+  if(onDataGenerationLost)onDataGenerationLost();
+}
+function storedGeneration(owner){
+  const raw=localStorage.getItem(generationKey(owner));
+  if(raw===null)return 0;
+  const value=Number(raw);
+  if(!Number.isSafeInteger(value)||value<0)throw new Error("Unreadable data generation");
+  return value;
+}
+function reconcileLocalGeneration(owner,generation){
+  const previous=storedGeneration(owner);
+  if(previous>generation)throw new Error("Data generation moved backwards");
+  if(previous<generation){
+    const key="wifit_workout_"+owner,raw=localStorage.getItem(key);
+    if(raw){
+      const draft=JSON.parse(raw),assignment=draft?.workout?.trainerAssignmentID||draft?.workout?.trainer_assignment_id;
+      // Assigned recovery survives; malformed ownership stops cleanup.
+      if(!draft||typeof draft!=="object"||!draft.workout)throw new Error("Review the saved workout before continuing");
+      if(!UUID_RE.test(assignment||""))localStorage.removeItem(key);
+    }
+    localStorage.removeItem("wifit_chat_"+owner);
+    // Publish the floor only after this account's old personal files are gone.
+    localStorage.setItem(generationKey(owner),String(generation));
+  }
+}
+export function observeDataGenerationChange(event){
+  const context=sb._dataContext;
+  if(!context||event.key!==generationKey(context.owner))return;
+  try{if(storedGeneration(context.owner)!==context.generation)blockDataGeneration();}
+  catch{blockDataGeneration();}
+}
 
 export const sb={
-  _url:SUPABASE_URL,_key:SUPABASE_ANON,_session:null,
+  _url:SUPABASE_URL,_key:SUPABASE_ANON,_session:null,_dataContext:null,_generationBlocked:false,_pageDataGenerations:new Map(),
+  dataContext(){return this._dataContext;},
+  isDataContextCurrent(context){
+    try{return !!context&&!this._generationBlocked&&this.getUser()?.id===context.owner&&this._dataContext===context&&storedGeneration(context.owner)<=context.generation;}
+    catch{return false;}
+  },
+  async loadDataGeneration(owner){
+    try{
+      if(this.getUser()?.id!==owner)return{ok:false,reason:"account"};
+      const r=await this._fetch("/rest/v1/rpc/wifit_data_generation",{method:"POST",body:"{}",cache:"no-store"});
+      const body=await r.json().catch(()=>null);
+      // Compatibility before the separately reviewed removal migration only.
+      // A network error, forbidden call or other missing resource is not zero.
+      const missing=r.status===404&&body?.code==="PGRST202";
+      const generation=missing?0:body;
+      if((!r.ok&&!missing)||!Number.isSafeInteger(generation)||generation<0)return{ok:false,reason:"unavailable"};
+      if(this.getUser()?.id!==owner)return{ok:false,reason:"account"};
+      if((this._pageDataGenerations.has(owner)&&this._pageDataGenerations.get(owner)!==generation)
+        ||(this._dataContext?.owner===owner&&this._generationBlocked)){
+        blockDataGeneration();return{ok:false,reason:"changed"};
+      }
+      reconcileLocalGeneration(owner,generation);
+      if(this._dataContext?.owner!==owner)this._dataContext=Object.freeze({owner,generation});
+      this._pageDataGenerations.set(owner,generation);
+      this._generationBlocked=false;
+      return{ok:true,context:this._dataContext};
+    }catch{return{ok:false,reason:"unavailable"};}
+  },
   headers(extra={}){
     return{"Content-Type":"application/json","apikey":this._key,"Authorization":"Bearer "+(this._session?.access_token||this._key),...extra};
   },
@@ -84,11 +149,29 @@ export const sb={
   // Retries exactly once — this never calls itself, so no loop is possible.
   async _fetch(path,init={},extra={}){
     const sent=this._session?.access_token||null;
-    const r=await fetch(this._url+path,{...init,headers:this.headers(extra)});
-    if(r.status!==401)return r;
+    const owner=this.getUser()?.id;
+    const table=path.match(/^\/rest\/v1\/([^/?]+)/)?.[1];
+    const write=PERSONAL_TABLES.has(table)&&["POST","PATCH","DELETE"].includes((init.method||"GET").toUpperCase());
+    // Capture once. Neither refresh nor a late response may adopt a newer
+    // generation and replay a draft created before removal.
+    const context=this._dataContext;
+    if(write&&(this._generationBlocked||(context&&!this.isDataContextCurrent(context)))){
+      blockDataGeneration();return blockedGenerationResponse();
+    }
+    const headers=write?{...extra,"x-wifit-data-generation":String(context?.generation??0)}:extra;
+    const inspect=async response=>{
+      if(write&&response.status===409){
+        const error=await response.clone().json().catch(()=>null);
+        if(error?.code==="PT409"&&error?.message?.includes("WiFit data was removed"))blockDataGeneration();
+      }
+      return response;
+    };
+    const r=await fetch(this._url+path,{...init,headers:this.headers(headers)});
+    if(r.status!==401)return inspect(r);
     if(!(await reauth(sent)))return r;
+    if(this.getUser()?.id!==owner||(write&&(this._generationBlocked||context!==this._dataContext)))return write?blockedGenerationResponse():r;
     console.warn("[sb] access_token expired mid-session — refreshed, retrying",path.split("?")[0]);
-    return fetch(this._url+path,{...init,headers:this.headers(extra)});
+    return inspect(await fetch(this._url+path,{...init,headers:this.headers(headers)}));
   },
   async signUp(email,password){
     const r=await fetch(this._url+"/auth/v1/signup",{method:"POST",headers:{"Content-Type":"application/json","apikey":this._key},body:JSON.stringify({email,password})});
@@ -102,7 +185,7 @@ export const sb={
   },
   async signOut(){
     await fetch(this._url+"/auth/v1/logout",{method:"POST",headers:this.headers()});
-    this._session=null;localStorage.removeItem("sb_session");
+    this._session=null;this._dataContext=null;this._generationBlocked=false;localStorage.removeItem("sb_session");
   },
   getUser(){return this._session?.user||null;},
   async select(table,filters="",opts={}){
